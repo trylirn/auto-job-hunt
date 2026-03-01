@@ -14,10 +14,10 @@ interface JobFiltersProps {
   onJobTypeChange: (value: string) => void;
   remoteOnly: boolean;
   onRemoteToggle: () => void;
-  category: string;
-  onCategoryChange: (value: string) => void;
   location: string;
   onLocationChange: (value: string) => void;
+  dateRange: string;
+  onDateRangeChange: (value: string) => void;
   onClearFilters: () => void;
   hasActiveFilters: boolean;
 }
@@ -27,19 +27,19 @@ export function JobFilters({
   onJobTypeChange,
   remoteOnly,
   onRemoteToggle,
-  category,
-  onCategoryChange,
   location,
   onLocationChange,
+  dateRange,
+  onDateRangeChange,
   onClearFilters,
   hasActiveFilters,
 }: JobFiltersProps) {
   const { data: options } = useFilterOptions();
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
       <Select value={jobType} onValueChange={onJobTypeChange}>
-        <SelectTrigger className="w-[150px]">
+        <SelectTrigger className="w-full sm:w-[140px] text-sm">
           <SelectValue placeholder="Job type" />
         </SelectTrigger>
         <SelectContent>
@@ -51,21 +51,8 @@ export function JobFilters({
         </SelectContent>
       </Select>
 
-      <Select value={category} onValueChange={onCategoryChange}>
-        <SelectTrigger className="w-[170px]">
-          <SelectValue placeholder="Category" />
-        </SelectTrigger>
-        <SelectContent>
-          {options?.categories.map((cat) => (
-            <SelectItem key={cat} value={cat}>
-              {cat}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
       <Select value={location} onValueChange={onLocationChange}>
-        <SelectTrigger className="w-[170px]">
+        <SelectTrigger className="w-full sm:w-[150px] text-sm">
           <SelectValue placeholder="Location" />
         </SelectTrigger>
         <SelectContent>
@@ -77,11 +64,22 @@ export function JobFilters({
         </SelectContent>
       </Select>
 
+      <Select value={dateRange} onValueChange={onDateRangeChange}>
+        <SelectTrigger className="w-full sm:w-[140px] text-sm">
+          <SelectValue placeholder="Date posted" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="24h">Past 24 hours</SelectItem>
+          <SelectItem value="week">Past week</SelectItem>
+          <SelectItem value="month">Past month</SelectItem>
+        </SelectContent>
+      </Select>
+
       <Button
         variant={remoteOnly ? "default" : "outline"}
         size="sm"
         onClick={onRemoteToggle}
-        className="gap-1.5"
+        className="gap-1.5 text-sm"
       >
         🌍 Remote
       </Button>
@@ -89,7 +87,7 @@ export function JobFilters({
       {hasActiveFilters && (
         <Button variant="ghost" size="sm" onClick={onClearFilters} className="gap-1">
           <X className="h-3.5 w-3.5" />
-          Clear filters
+          Clear
         </Button>
       )}
     </div>

@@ -6,6 +6,8 @@ export interface Job {
   job_type: string | null;
   category: string | null;
   description: string | null;
+  clean_description: string | null;
+  apply_url: string | null;
   url: string;
   source: string | null;
   external_id: string | null;

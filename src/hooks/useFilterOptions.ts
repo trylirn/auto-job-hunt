@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 interface FilterOptions {
   locations: string[];
   jobTypes: string[];
-  categories: string[];
 }
 
 async function fetchDistinct(column: string): Promise<string[]> {
@@ -24,14 +23,13 @@ export function useFilterOptions() {
   return useQuery<FilterOptions>({
     queryKey: ["filter-options"],
     queryFn: async () => {
-      const [locations, jobTypes, categories] = await Promise.all([
+      const [locations, jobTypes] = await Promise.all([
         fetchDistinct("location"),
         fetchDistinct("job_type"),
-        fetchDistinct("category"),
       ]);
 
-      return { locations, jobTypes, categories };
+      return { locations, jobTypes };
     },
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60 * 10,
   });
 }

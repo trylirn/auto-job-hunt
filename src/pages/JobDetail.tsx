@@ -17,6 +17,27 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
+function extractApplyUrl(description: string | null): string | null {
+  if (!description) return null;
+  const regex = /<a\s[^>]*href=["'](https?:\/\/[^"']+)["']/gi;
+  let match;
+  while ((match = regex.exec(description)) !== null) {
+    const url = match[1];
+    // Skip garbage and internal links
+    if (
+      url.includes("yeshub.ng") ||
+      url.includes("chatgpt://") ||
+      url.includes("facebook.com/sharer") ||
+      url.includes("twitter.com/intent") ||
+      url.includes("linkedin.com/sharing") ||
+      url.includes("wa.me") ||
+      url.includes("t.me/share")
+    ) continue;
+    return url;
+  }
+  return null;
+}
+
 const JobDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { data: job, isLoading } = useJob(id ?? "");
@@ -26,7 +47,7 @@ const JobDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="container max-w-3xl py-8 space-y-6">
+        <div className="container max-w-3xl py-6 md:py-8 space-y-4 md:space-y-6">
           <Skeleton className="h-6 w-32" />
           <Skeleton className="h-10 w-3/4" />
           <Skeleton className="h-6 w-1/2" />
@@ -56,14 +77,12 @@ const JobDetail = () => {
     ? formatDistanceToNow(new Date(job.posted_at), { addSuffix: true })
     : null;
 
-  // Extract first link from description HTML
-  const extractedUrl = (() => {
-    if (!job.description) return null;
-    const match = job.description.match(/<a\s[^>]*href=["']([^"']+)["']/i);
-    return match ? match[1] : null;
-  })();
+  // Priority: AI-extracted apply_url > regex from description > scroll to description
+  const applyUrl =
+    job.apply_url ||
+    extractApplyUrl(job.clean_description || job.description);
 
-  const applyUrl = extractedUrl || (job.url && job.source !== "yeshub" ? job.url : null);
+  const displayDescription = job.clean_description || job.description;
 
   const handleApply = () => {
     if (applyUrl) {
@@ -83,40 +102,40 @@ const JobDetail = () => {
         <meta property="og:type" content="website" />
       </Helmet>
       <Header />
-      <div className="container max-w-3xl py-8">
+      <div className="container max-w-3xl py-4 md:py-8 px-4">
         <Link
           to="/"
-          className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="mb-4 md:mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to jobs
         </Link>
 
         <Card className="overflow-hidden">
-          <CardContent className="p-6 md:p-8">
+          <CardContent className="p-4 md:p-8">
             {/* Header: Logo + Title + Company */}
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-3 md:gap-4">
               {job.company_logo ? (
                 <img
                   src={job.company_logo}
                   alt={job.company}
-                  className="h-14 w-14 rounded-xl border object-contain bg-card"
+                  className="h-10 w-10 md:h-14 md:w-14 rounded-xl border object-contain bg-card shrink-0"
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl border bg-muted">
-                  <Building2 className="h-7 w-7 text-muted-foreground" />
+                <div className="flex h-10 w-10 md:h-14 md:w-14 items-center justify-center rounded-xl border bg-muted shrink-0">
+                  <Building2 className="h-5 w-5 md:h-7 md:w-7 text-muted-foreground" />
                 </div>
               )}
-              <div>
-                <h1 className="font-display text-2xl font-bold md:text-3xl">
+              <div className="min-w-0">
+                <h1 className="font-display text-xl font-bold md:text-3xl break-words">
                   {job.title}
                 </h1>
-                <p className="mt-1 text-lg text-muted-foreground">{job.company}</p>
+                <p className="mt-1 text-base md:text-lg text-muted-foreground">{job.company}</p>
               </div>
             </div>
 
-            {/* Meta info: location, time */}
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+            {/* Meta info */}
+            <div className="mt-3 md:mt-4 flex flex-wrap items-center gap-2 md:gap-3 text-sm text-muted-foreground">
               {job.location && (
                 <span className="flex items-center gap-1">
                   <MapPin className="h-4 w-4" />
@@ -131,8 +150,8 @@ const JobDetail = () => {
               )}
             </div>
 
-            {/* Badges: remote, job type, salary, tags */}
-            <div className="mt-4 flex flex-wrap gap-2">
+            {/* Badges */}
+            <div className="mt-3 md:mt-4 flex flex-wrap gap-1.5 md:gap-2">
               {job.is_remote && (
                 <Badge className="bg-accent/15 text-accent border-0">Remote</Badge>
               )}
@@ -151,8 +170,8 @@ const JobDetail = () => {
             </div>
 
             {/* Description */}
-            {job.description && (
-              <div ref={descriptionRef} className="mt-8 border-t pt-6">
+            {displayDescription && (
+              <div ref={descriptionRef} className="mt-6 md:mt-8 border-t pt-4 md:pt-6">
                 <h2 className="font-display text-lg font-semibold mb-3">
                   Job Description
                 </h2>
@@ -162,15 +181,16 @@ const JobDetail = () => {
                     prose-a:text-primary prose-a:no-underline hover:prose-a:underline
                     prose-li:marker:text-muted-foreground
                     prose-strong:text-foreground
-                    break-words overflow-hidden [overflow-wrap:anywhere]"
-                  dangerouslySetInnerHTML={{ __html: job.description }}
+                    break-words overflow-hidden [overflow-wrap:anywhere]
+                    [word-break:break-word]"
+                  dangerouslySetInnerHTML={{ __html: displayDescription }}
                 />
               </div>
             )}
 
             {/* Apply button */}
-            <div className="mt-8 border-t pt-6">
-              <Button size="lg" className="gap-2" onClick={handleApply}>
+            <div className="mt-6 md:mt-8 border-t pt-4 md:pt-6">
+              <Button size="lg" className="gap-2 w-full sm:w-auto" onClick={handleApply}>
                 Apply
                 {applyUrl && <ExternalLink className="h-4 w-4" />}
               </Button>

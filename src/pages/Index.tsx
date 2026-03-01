@@ -14,20 +14,20 @@ const Index = () => {
   const [search, setSearch] = useState("");
   const [jobType, setJobType] = useState("");
   const [remoteOnly, setRemoteOnly] = useState(false);
-  const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
+  const [dateRange, setDateRange] = useState("");
   const [page, setPage] = useState(1);
 
   const debouncedSearch = useDebounce(search, 300);
 
-  const hasActiveFilters = !!jobType || remoteOnly || !!category || !!location;
+  const hasActiveFilters = !!jobType || remoteOnly || !!location || !!dateRange;
 
   const { data, isLoading } = useJobs({
     search: debouncedSearch,
     jobType,
     isRemote: remoteOnly ? true : undefined,
-    category,
     location,
+    dateRange: dateRange as "24h" | "week" | "month" | "",
     page,
     listingType: "jobs",
   });
@@ -35,8 +35,8 @@ const Index = () => {
   const clearFilters = useCallback(() => {
     setJobType("");
     setRemoteOnly(false);
-    setCategory("");
     setLocation("");
+    setDateRange("");
     setPage(1);
   }, []);
 
@@ -50,31 +50,31 @@ const Index = () => {
 
       {/* Hero */}
       <section className="border-b bg-card">
-        <div className="container py-12 md:py-16">
-          <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
+        <div className="container py-8 md:py-16">
+          <h1 className="font-display text-2xl font-bold tracking-tight md:text-4xl lg:text-5xl">
             Find your next opportunity
           </h1>
-          <p className="mt-3 max-w-xl text-lg text-muted-foreground">
+          <p className="mt-2 max-w-xl text-base text-muted-foreground md:text-lg">
             Thousands of jobs updated automatically.
           </p>
-          <div className="mt-6 max-w-2xl">
+          <div className="mt-4 md:mt-6 max-w-2xl">
             <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} />
           </div>
         </div>
       </section>
 
       {/* Main */}
-      <main className="container py-8">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <main className="container py-6 md:py-8">
+        <div className="mb-4 md:mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <JobFilters
             jobType={jobType}
             onJobTypeChange={(v) => { setJobType(v); setPage(1); }}
             remoteOnly={remoteOnly}
             onRemoteToggle={() => { setRemoteOnly(!remoteOnly); setPage(1); }}
-            category={category}
-            onCategoryChange={(v) => { setCategory(v); setPage(1); }}
             location={location}
             onLocationChange={(v) => { setLocation(v); setPage(1); }}
+            dateRange={dateRange}
+            onDateRangeChange={(v) => { setDateRange(v); setPage(1); }}
             onClearFilters={clearFilters}
             hasActiveFilters={hasActiveFilters}
           />
@@ -86,19 +86,19 @@ const Index = () => {
         </div>
 
         {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <JobCardSkeleton key={i} />
             ))}
           </div>
         ) : data?.jobs.length ? (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {data.jobs.map((job) => (
                 <JobCard key={job.id} job={job} />
               ))}
             </div>
-            <div className="mt-8">
+            <div className="mt-6 md:mt-8">
               <JobPagination
                 currentPage={page}
                 totalPages={data.totalPages}
@@ -107,7 +107,7 @@ const Index = () => {
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="flex flex-col items-center justify-center py-16 md:py-20 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
               <Briefcase className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -119,7 +119,6 @@ const Index = () => {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="border-t bg-card">
         <div className="container py-6 text-center text-sm text-muted-foreground">
           <p>JobFlow — Discover opportunities that match your ambitions.</p>

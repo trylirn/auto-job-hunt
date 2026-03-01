@@ -16,7 +16,9 @@ export type Database = {
     Tables: {
       jobs: {
         Row: {
+          apply_url: string | null
           category: string | null
+          clean_description: string | null
           company: string
           company_logo: string | null
           created_at: string
@@ -35,7 +37,9 @@ export type Database = {
           url: string
         }
         Insert: {
+          apply_url?: string | null
           category?: string | null
+          clean_description?: string | null
           company: string
           company_logo?: string | null
           created_at?: string
@@ -54,7 +58,9 @@ export type Database = {
           url: string
         }
         Update: {
+          apply_url?: string | null
           category?: string | null
+          clean_description?: string | null
           company?: string
           company_logo?: string | null
           created_at?: string

@@ -130,6 +130,24 @@ Deno.serve(async (req) => {
 
     console.log(`Done: ${inserted} processed, ${skipped} skipped`);
 
+    // Trigger AI cleanup of new job descriptions
+    try {
+      const cleanupRes = await fetch(
+        `${supabaseUrl}/functions/v1/clean-job-descriptions`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const cleanupResult = await cleanupRes.json();
+      console.log("AI cleanup result:", cleanupResult);
+    } catch (e) {
+      console.error("AI cleanup trigger error:", e);
+    }
+
     return new Response(
       JSON.stringify({ success: true, fetched: yeshubJobs.length, inserted, skipped }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
