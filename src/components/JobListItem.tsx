@@ -1,0 +1,67 @@
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Clock, Building2 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { Link } from "react-router-dom";
+import type { Job } from "@/types/job";
+
+interface JobListItemProps {
+  job: Job;
+}
+
+export function JobListItem({ job }: JobListItemProps) {
+  const timeAgo = job.posted_at
+    ? formatDistanceToNow(new Date(job.posted_at), { addSuffix: true })
+    : "Recently";
+
+  return (
+    <Link
+      to={`/job/${job.id}`}
+      className="group flex items-center gap-3 rounded-lg border bg-card p-3 transition-all hover:shadow-md hover:border-primary/30 overflow-hidden"
+    >
+      {job.company_logo ? (
+        <img
+          src={job.company_logo}
+          alt={job.company}
+          className="h-10 w-10 shrink-0 rounded-lg border object-contain bg-card"
+        />
+      ) : (
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-muted">
+          <Building2 className="h-5 w-5 text-muted-foreground" />
+        </div>
+      )}
+
+      <div className="min-w-0 flex-1">
+        <h3 className="font-display font-semibold text-sm leading-tight text-foreground group-hover:text-primary transition-colors truncate">
+          {job.title}
+        </h3>
+        <p className="text-xs text-muted-foreground truncate">{job.company}</p>
+      </div>
+
+      <div className="hidden sm:flex items-center gap-2 shrink-0">
+        {job.is_remote && (
+          <Badge variant="secondary" className="text-xs bg-accent/15 text-accent border-0">
+            Remote
+          </Badge>
+        )}
+        {job.job_type && (
+          <Badge variant="outline" className="text-xs">
+            {job.job_type}
+          </Badge>
+        )}
+      </div>
+
+      <div className="hidden md:flex items-center gap-3 text-xs text-muted-foreground shrink-0">
+        {job.location && (
+          <span className="flex items-center gap-1">
+            <MapPin className="h-3 w-3" />
+            <span className="max-w-[120px] truncate">{job.location}</span>
+          </span>
+        )}
+        <span className="flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          {timeAgo}
+        </span>
+      </div>
+    </Link>
+  );
+}

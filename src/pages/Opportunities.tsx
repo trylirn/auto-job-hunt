@@ -3,8 +3,10 @@ import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/Header";
 import { SearchBar } from "@/components/SearchBar";
 import { JobCard } from "@/components/JobCard";
+import { JobListItem } from "@/components/JobListItem";
 import { JobCardSkeleton } from "@/components/JobCardSkeleton";
 import { JobPagination } from "@/components/JobPagination";
+import { ViewToggle } from "@/components/ViewToggle";
 import { useJobs } from "@/hooks/useJobs";
 import { GraduationCap } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -12,6 +14,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 const Opportunities = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -52,6 +55,7 @@ const Opportunities = () => {
               {data.totalCount} opportunit{data.totalCount !== 1 ? "ies" : "y"} found
             </p>
           )}
+          <ViewToggle value={viewMode} onChange={setViewMode} />
         </div>
 
         {isLoading ? (
@@ -62,11 +66,19 @@ const Opportunities = () => {
           </div>
         ) : data?.jobs.length ? (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
-              {data.jobs.map((job) => (
-                <JobCard key={job.id} job={job} />
-              ))}
-            </div>
+            {viewMode === "grid" ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
+                {data.jobs.map((job) => (
+                  <JobCard key={job.id} job={job} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {data.jobs.map((job) => (
+                  <JobListItem key={job.id} job={job} />
+                ))}
+              </div>
+            )}
             <div className="mt-8">
               <JobPagination
                 currentPage={page}

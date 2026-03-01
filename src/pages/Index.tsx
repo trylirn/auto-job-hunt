@@ -4,8 +4,10 @@ import { Header } from "@/components/Header";
 import { SearchBar } from "@/components/SearchBar";
 import { JobFilters } from "@/components/JobFilters";
 import { JobCard } from "@/components/JobCard";
+import { JobListItem } from "@/components/JobListItem";
 import { JobCardSkeleton } from "@/components/JobCardSkeleton";
 import { JobPagination } from "@/components/JobPagination";
+import { ViewToggle } from "@/components/ViewToggle";
 import { useJobs } from "@/hooks/useJobs";
 import { Briefcase } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -17,6 +19,7 @@ const Index = () => {
   const [location, setLocation] = useState("");
   const [dateRange, setDateRange] = useState("");
   const [page, setPage] = useState(1);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -78,11 +81,14 @@ const Index = () => {
             onClearFilters={clearFilters}
             hasActiveFilters={hasActiveFilters}
           />
-          {data && (
-            <p className="text-sm text-muted-foreground whitespace-nowrap">
-              {data.totalCount} job{data.totalCount !== 1 ? "s" : ""} found
-            </p>
-          )}
+          <div className="flex items-center gap-3">
+            {data && (
+              <p className="text-sm text-muted-foreground whitespace-nowrap">
+                {data.totalCount} job{data.totalCount !== 1 ? "s" : ""} found
+              </p>
+            )}
+            <ViewToggle value={viewMode} onChange={setViewMode} />
+          </div>
         </div>
 
         {isLoading ? (
@@ -93,11 +99,19 @@ const Index = () => {
           </div>
         ) : data?.jobs.length ? (
           <>
-            <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
-              {data.jobs.map((job) => (
-                <JobCard key={job.id} job={job} />
-              ))}
-            </div>
+            {viewMode === "grid" ? (
+              <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
+                {data.jobs.map((job) => (
+                  <JobCard key={job.id} job={job} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {data.jobs.map((job) => (
+                  <JobListItem key={job.id} job={job} />
+                ))}
+              </div>
+            )}
             <div className="mt-6 md:mt-8">
               <JobPagination
                 currentPage={page}
