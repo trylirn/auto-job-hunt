@@ -75,7 +75,7 @@ export function JobCard({ job }: JobCardProps) {
 
           {job.description && (
             <p className="mt-3 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-              {job.description}
+              {job.description.replace(/<[^>]*>/g, "")}
             </p>
           )}
         </CardContent>
