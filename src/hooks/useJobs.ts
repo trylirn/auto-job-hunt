@@ -8,7 +8,6 @@ const OPPORTUNITY_CATEGORIES = ["fellowship", "grants", "scholarship", "conferen
 interface UseJobsParams {
   search?: string;
   jobType?: string;
-  isRemote?: boolean;
   location?: string;
   page?: number;
   pageSize?: number;
@@ -20,7 +19,6 @@ interface UseJobsParams {
 export function useJobs({
   search = "",
   jobType = "",
-  isRemote,
   location = "",
   page = 1,
   pageSize = 12,
@@ -29,7 +27,7 @@ export function useJobs({
   dateRange = "",
 }: UseJobsParams = {}) {
   return useQuery({
-    queryKey: ["jobs", search, jobType, isRemote, location, page, sortBy, listingType, dateRange],
+    queryKey: ["jobs", search, jobType, location, page, sortBy, listingType, dateRange],
     queryFn: async () => {
       let query = supabase
         .from("jobs")
@@ -45,10 +43,6 @@ export function useJobs({
 
       if (jobType) {
         query = query.eq("job_type", jobType);
-      }
-
-      if (isRemote !== undefined) {
-        query = query.eq("is_remote", isRemote);
       }
 
       if (location) {
