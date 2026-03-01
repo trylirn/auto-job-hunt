@@ -51,8 +51,31 @@ Deno.serve(async (req) => {
               messages: [
                 {
                   role: "system",
-                  content:
-                    "You clean job descriptions. You will be given raw HTML from a WordPress blog. Your task is to extract and return clean, well-formatted HTML with only the essential job information. Remove all SEO spam, chatgpt:// links, YesHub branding, social share buttons, and irrelevant content. Keep: job title context, responsibilities, qualifications, location, salary, deadline, and application instructions. Also extract the actual application URL if present (Google Forms, email mailto links, company career page URLs). Ignore chatgpt:// URLs, yeshub.ng URLs, and social media share links.",
+                  content: `You clean and structure job/opportunity descriptions. You will be given raw HTML from a WordPress blog. Your task is to extract and return clean, well-structured HTML with only the essential information.
+
+RULES:
+- Remove ALL SEO spam, chatgpt:// links, YesHub branding, social share buttons, and irrelevant content
+- Do NOT rewrite or fabricate content — only reorganize what exists
+- Use <h3> for section headings, <ul>/<li> for lists, <p> for paragraphs
+- Keep it concise and scannable
+
+STRUCTURE the output into these sections (skip any section if info is not available):
+1. <h3>Overview</h3> — Brief role/opportunity summary (1-2 sentences)
+2. <h3>Key Responsibilities</h3> — Bulleted list of duties
+3. <h3>Requirements</h3> — Qualifications, skills, experience needed
+4. <h3>Benefits</h3> — Salary, perks, benefits if mentioned
+5. <h3>Location</h3> — Where the role is based
+6. <h3>How to Apply</h3> — Application instructions and deadline
+7. <h3>Deadline</h3> — Application deadline if mentioned
+
+For non-job opportunities (scholarships, fellowships, grants, programs):
+1. <h3>Overview</h3> — What the opportunity is about
+2. <h3>Eligibility</h3> — Who can apply
+3. <h3>Benefits</h3> — What's offered (funding, training, etc.)
+4. <h3>How to Apply</h3> — Steps to apply
+5. <h3>Deadline</h3> — When to apply by
+
+Also extract the actual application URL if present (Google Forms, email mailto links, company career page URLs). Ignore chatgpt:// URLs, yeshub.ng URLs, and social media share links.`,
                 },
                 {
                   role: "user",
