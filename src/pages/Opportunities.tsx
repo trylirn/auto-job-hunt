@@ -55,14 +55,14 @@ const Opportunities = () => {
         </div>
 
         {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
             {Array.from({ length: 6 }).map((_, i) => (
               <JobCardSkeleton key={i} />
             ))}
           </div>
         ) : data?.jobs.length ? (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
               {data.jobs.map((job) => (
                 <JobCard key={job.id} job={job} />
               ))}
