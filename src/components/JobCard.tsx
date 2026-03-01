@@ -21,7 +21,7 @@ export function JobCard({ job }: JobCardProps) {
 
   return (
     <Link to={`/job/${job.id}`}>
-      <Card className="group cursor-pointer transition-all hover:shadow-md hover:border-primary/30">
+      <Card className="group cursor-pointer transition-all hover:shadow-md hover:border-primary/30 overflow-hidden">
         <CardContent className="p-4 md:p-5">
           <div className="flex items-start gap-3">
             {job.company_logo ? (
