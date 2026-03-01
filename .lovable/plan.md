@@ -1,24 +1,33 @@
 
 
-## Plan: Fix Horizontal Card Overflow on Mobile
+## Plan: Fix Edge Function Timeout + Add List View Toggle
 
-### Root Cause
-Two issues are causing cards to stretch horizontally on mobile:
-1. The `container` class uses a fixed `padding: "2rem"` (32px per side) regardless of screen size — too much for narrow mobile screens
-2. Long text content (titles, descriptions, locations) can push card width beyond its grid column
+### Issue 1: Edge Function Timeout
 
-### Fix
+The `fetch-jobs` function fetches jobs from two external APIs, upserts them, then synchronously calls `clean-job-descriptions` (which makes up to 20 AI calls). This chain exceeds the edge function timeout limit.
 
-**File: `tailwind.config.ts`** (line 10)
-- Change container padding to be responsive: `"1rem"` on mobile, `"2rem"` on larger screens
-- This gives more breathing room on narrow viewports
+**Fix in `supabase/functions/fetch-jobs/index.ts`:**
+- Remove the synchronous `await` on the cleanup call — use a fire-and-forget pattern instead
+- Wrap the cleanup fetch in a non-blocking call so `fetch-jobs` returns immediately after upserting jobs
+- The cleanup function will still run, just independently
 
-**File: `src/components/JobCard.tsx`**
-- Add `overflow-hidden` and `w-full` to the wrapping `Link` element to ensure it respects grid column width
-- Add `max-w-full` to the Card so it never exceeds its parent
-- Ensure the title uses `break-words` in addition to `line-clamp-2`
-- Add `truncate` to the location span to prevent long location strings from overflowing
+### Issue 2: Add List View Toggle
 
-### Result
-Cards will stay within the viewport on all screen sizes. No horizontal scroll.
+Add a grid/list view toggle so users can switch between card grid and a compact list layout.
+
+**New file: `src/components/ViewToggle.tsx`**
+- A small toggle component with Grid and List icons using `ToggleGroup` from the existing UI primitives
+- Stores the current view mode (`grid` | `list`)
+
+**New file: `src/components/JobListItem.tsx`**
+- A compact horizontal card layout for list view — shows logo, title, company, location, badges, and time in a single row
+- Reuses existing Badge component and icons
+
+**Edit: `src/pages/Index.tsx`**
+- Add `viewMode` state (`grid` | `list`)
+- Render `ViewToggle` next to the job count
+- Conditionally render grid of `JobCard` components or a stacked list of `JobListItem` components
+
+**Edit: `src/pages/Opportunities.tsx`**
+- Same view toggle addition as Index page
 
