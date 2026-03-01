@@ -56,12 +56,19 @@ const JobDetail = () => {
     ? formatDistanceToNow(new Date(job.posted_at), { addSuffix: true })
     : null;
 
+  // Extract first link from description HTML
+  const extractedUrl = (() => {
+    if (!job.description) return null;
+    const match = job.description.match(/<a\s[^>]*href=["']([^"']+)["']/i);
+    return match ? match[1] : null;
+  })();
+
+  const applyUrl = extractedUrl || (job.url && job.source !== "yeshub" ? job.url : null);
+
   const handleApply = () => {
-    // If there's an application URL and the source isn't yeshub, open the URL
-    if (job.url && job.source !== "yeshub") {
-      window.open(job.url, "_blank", "noopener,noreferrer");
+    if (applyUrl) {
+      window.open(applyUrl, "_blank", "noopener,noreferrer");
     } else {
-      // Scroll to description which contains application instructions
       descriptionRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   };
@@ -85,7 +92,7 @@ const JobDetail = () => {
           Back to jobs
         </Link>
 
-        <Card>
+        <Card className="overflow-hidden">
           <CardContent className="p-6 md:p-8">
             {/* Header: Logo + Title + Company */}
             <div className="flex items-start gap-4">
@@ -154,7 +161,8 @@ const JobDetail = () => {
                     prose-headings:text-foreground prose-headings:font-display
                     prose-a:text-primary prose-a:no-underline hover:prose-a:underline
                     prose-li:marker:text-muted-foreground
-                    prose-strong:text-foreground"
+                    prose-strong:text-foreground
+                    break-words overflow-hidden [overflow-wrap:anywhere]"
                   dangerouslySetInnerHTML={{ __html: job.description }}
                 />
               </div>
@@ -164,9 +172,7 @@ const JobDetail = () => {
             <div className="mt-8 border-t pt-6">
               <Button size="lg" className="gap-2" onClick={handleApply}>
                 Apply
-                {job.url && job.source !== "yeshub" && (
-                  <ExternalLink className="h-4 w-4" />
-                )}
+                {applyUrl && <ExternalLink className="h-4 w-4" />}
               </Button>
             </div>
           </CardContent>
