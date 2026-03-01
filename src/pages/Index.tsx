@@ -32,7 +32,7 @@ const Index = () => {
     location,
     dateRange: dateRange as "24h" | "week" | "month" | "",
     page,
-    listingType: "jobs",
+    listingType: "jobs"
   });
 
   const clearFilters = useCallback(() => {
@@ -57,11 +57,11 @@ const Index = () => {
           <h1 className="font-display text-2xl font-bold tracking-tight md:text-4xl lg:text-5xl">
             Find your next opportunity
           </h1>
-          <p className="mt-2 max-w-xl text-base text-muted-foreground md:text-lg">
-            Thousands of jobs updated automatically.
+          <p className="mt-2 max-w-xl text-base text-muted-foreground md:text-lg">Thousands of jobs available to be taken.
+
           </p>
           <div className="mt-4 md:mt-6 max-w-2xl">
-            <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} />
+            <SearchBar value={search} onChange={(v) => {setSearch(v);setPage(1);}} />
           </div>
         </div>
       </section>
@@ -71,57 +71,57 @@ const Index = () => {
         <div className="mb-4 md:mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <JobFilters
             jobType={jobType}
-            onJobTypeChange={(v) => { setJobType(v); setPage(1); }}
+            onJobTypeChange={(v) => {setJobType(v);setPage(1);}}
             remoteOnly={remoteOnly}
-            onRemoteToggle={() => { setRemoteOnly(!remoteOnly); setPage(1); }}
+            onRemoteToggle={() => {setRemoteOnly(!remoteOnly);setPage(1);}}
             location={location}
-            onLocationChange={(v) => { setLocation(v); setPage(1); }}
+            onLocationChange={(v) => {setLocation(v);setPage(1);}}
             dateRange={dateRange}
-            onDateRangeChange={(v) => { setDateRange(v); setPage(1); }}
+            onDateRangeChange={(v) => {setDateRange(v);setPage(1);}}
             onClearFilters={clearFilters}
-            hasActiveFilters={hasActiveFilters}
-          />
+            hasActiveFilters={hasActiveFilters} />
+
           <div className="flex items-center gap-3">
-            {data && (
-              <p className="text-sm text-muted-foreground whitespace-nowrap">
+            {data &&
+            <p className="text-sm text-muted-foreground whitespace-nowrap">
                 {data.totalCount} job{data.totalCount !== 1 ? "s" : ""} found
               </p>
-            )}
+            }
             <ViewToggle value={viewMode} onChange={setViewMode} />
           </div>
         </div>
 
-        {isLoading ? (
+        {isLoading ?
+        <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
+            {Array.from({ length: 6 }).map((_, i) =>
+          <JobCardSkeleton key={i} />
+          )}
+          </div> :
+        data?.jobs.length ?
+        <>
+            {viewMode === "grid" ?
           <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <JobCardSkeleton key={i} />
-            ))}
-          </div>
-        ) : data?.jobs.length ? (
-          <>
-            {viewMode === "grid" ? (
-              <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
-                {data.jobs.map((job) => (
-                  <JobCard key={job.id} job={job} />
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {data.jobs.map((job) => (
-                  <JobListItem key={job.id} job={job} />
-                ))}
-              </div>
+                {data.jobs.map((job) =>
+            <JobCard key={job.id} job={job} />
             )}
+              </div> :
+
+          <div className="flex flex-col gap-2">
+                {data.jobs.map((job) =>
+            <JobListItem key={job.id} job={job} />
+            )}
+              </div>
+          }
             <div className="mt-6 md:mt-8">
               <JobPagination
-                currentPage={page}
-                totalPages={data.totalPages}
-                onPageChange={setPage}
-              />
+              currentPage={page}
+              totalPages={data.totalPages}
+              onPageChange={setPage} />
+
             </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16 md:py-20 text-center">
+          </> :
+
+        <div className="flex flex-col items-center justify-center py-16 md:py-20 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
               <Briefcase className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -130,7 +130,7 @@ const Index = () => {
               Try adjusting your search or filters
             </p>
           </div>
-        )}
+        }
       </main>
 
       <footer className="border-t bg-card">
@@ -138,8 +138,8 @@ const Index = () => {
           <p>JobFlow — Discover opportunities that match your ambitions.</p>
         </div>
       </footer>
-    </div>
-  );
+    </div>);
+
 };
 
 export default Index;
