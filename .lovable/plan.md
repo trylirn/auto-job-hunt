@@ -1,33 +1,30 @@
 
 
-## Plan: Fix Edge Function Timeout + Add List View Toggle
+## Plan: Add New Job Sources
 
-### Issue 1: Edge Function Timeout
+### Source 1: Opportunities for Youth (opportunitiesforyouth.org) — Feasible
 
-The `fetch-jobs` function fetches jobs from two external APIs, upserts them, then synchronously calls `clean-job-descriptions` (which makes up to 20 AI calls). This chain exceeds the edge function timeout limit.
+This is a WordPress site with a public REST API (`/wp-json/wp/v2/posts`). It follows the exact same pattern as YesHub and Global South. Categories include Fellowship, Conferences, Short Courses, Scholarships, etc.
 
-**Fix in `supabase/functions/fetch-jobs/index.ts`:**
-- Remove the synchronous `await` on the cleanup call — use a fire-and-forget pattern instead
-- Wrap the cleanup fetch in a non-blocking call so `fetch-jobs` returns immediately after upserting jobs
-- The cleanup function will still run, just independently
+**Edit: `supabase/functions/fetch-jobs/index.ts`**
+- Add a new `fetchOpportunitiesForYouthJobs()` function following the same WordPress REST API pattern
+- Fetch categories from `/wp-json/wp/v2/categories`
+- Fetch 2 pages of 50 posts each with `_embed` for featured images
+- Map categories to our normalized types (fellowship, scholarship, conference, internships, etc.)
+- Set `source: "opportunitiesforyouth"`, `location: "Global"`
+- Parse title to extract company using existing `extractCompany()` helper
+- Include in the `allJobs` array for upsert alongside existing sources
+- Update the response to report this source's count
 
-### Issue 2: Add List View Toggle
+### Source 2: Afrorama (afrorama.org) — Not Feasible
 
-Add a grid/list view toggle so users can switch between card grid and a compact list layout.
+Afrorama runs on **Circle.so**, a community platform with no public API. The job board is rendered client-side and there's no REST endpoint to pull structured data from. Scraping would be required, which conflicts with the project's approach of using direct public APIs only.
 
-**New file: `src/components/ViewToggle.tsx`**
-- A small toggle component with Grid and List icons using `ToggleGroup` from the existing UI primitives
-- Stores the current view mode (`grid` | `list`)
+**Alternative**: If you know of other Africa-focused job boards built on WordPress or with public APIs, those could be added instead.
 
-**New file: `src/components/JobListItem.tsx`**
-- A compact horizontal card layout for list view — shows logo, title, company, location, badges, and time in a single row
-- Reuses existing Badge component and icons
-
-**Edit: `src/pages/Index.tsx`**
-- Add `viewMode` state (`grid` | `list`)
-- Render `ViewToggle` next to the job count
-- Conditionally render grid of `JobCard` components or a stacked list of `JobListItem` components
-
-**Edit: `src/pages/Opportunities.tsx`**
-- Same view toggle addition as Index page
+### Technical Notes
+- The edge function already handles multiple sources and batched upserts — adding one more source fits naturally
+- The `source,external_id` unique constraint prevents duplicates
+- The hourly cron job will automatically pick up the new source
+- No database changes needed
 
