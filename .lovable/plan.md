@@ -1,48 +1,44 @@
-## Plan: Remove Source References, Improve Job Detail Layout, Fix Apply Button
 
-### What's wrong now
 
-1. **Source references visible**: The "Source" filter dropdown exists, and `JobDetail.tsx` shows "via remotive/yeshub/arbeitnow" on job pages. The JobCard shows "YesHub.ng" as the company name (hardcoded in the fetch function).
-2. **Job detail page layout**: Description is plain text dumped with `whitespace-pre-wrap` — no structure, hard to read.
-3. **"View Original & Apply" button**: Links to job board source URLs (remotive.com, yeshub.ng, arbeitnow.com) instead of the original company's application page.
+## Plan: Restructure to YesHub-Only with Jobs/Opportunities Tabs
+
+### Issues identified
+
+1. **"YesHub.ng" still in data** — The edge function was updated but existing DB records still have `company: "YesHub.ng"`. Need to re-fetch AND clean existing data.
+2. **Truncated YesHub content** — Edge function uses `p.excerpt?.rendered` (short summary) and slices to 2000 chars. Need to use full `p.content?.rendered` without truncation.
+3. **Fellowships/scholarships mixed with jobs** — Categories like `fellowship`, `grants`, `scholarship`, `conference`, `internships` should be in a separate "Opportunities" tab.
+4. **Remotive/Arbeitnow still in edge function** — Remove them, keep only YesHub.
 
 ### What will be done
 
-**1. Remove all source references from the UI**
+**1. Edge function: YesHub only + full content**
+- Remove `fetchRemotiveJobs()` and `fetchArbeitnowJobs()` functions entirely
+- Use `p.content?.rendered` (full HTML) instead of excerpt, remove the 2000-char slice
+- Improve company name extraction
+- Delete existing non-yeshub records from DB via the function
 
-- Remove the Source filter dropdown from `JobFilters.tsx` and all related state/props from `Index.tsx`
-- Remove the "via {source}" line from `JobDetail.tsx`
-- Remove `source` from `useFilterOptions` hook
-- Remove `source` param from `useJobs` (keep in DB, just hide from users)
+**2. Add Opportunities tab to Header + routing**
+- Update `Header.tsx` with two nav links: "Jobs" (`/`) and "Opportunities" (`/opportunities`)
+- Create `src/pages/Opportunities.tsx` — same layout as Index but filters for non-job categories: fellowship, grants, scholarship, conference, internships
+- Add route in `App.tsx`
 
-**2. Fix YesHub company names in the fetch function**
+**3. Filter jobs vs opportunities in queries**
+- `useJobs` on the Jobs page: exclude opportunity categories (`fellowship`, `grants`, `scholarship`, `conference`, `internships`)
+- `useJobs` on Opportunities page: include only those categories
+- Add a `listingType` param to `useJobs` to handle this
 
-- The edge function hardcodes `company: "YesHub.ng"` for all YesHub posts — instead, extract the actual company name from the post title (e.g., "State Program Manager at PATH" → company = "PATH"). Fall back to extracting from content if not in title.
+**4. Clean up existing DB data**
+- Edge function will delete all `source != 'yeshub'` records on next run
+- Re-fetch YesHub with full content and proper company names
 
-**3. Improve job detail page layout**
-
-- Show description with proper formatting — render HTML content safely since the raw descriptions contain structure
-- Better visual hierarchy: title, company, location/time/badges in a clear layout
-- Show tags, salary, job type prominently
-- Move description above the apply button so users read the full details first
-
-**4. Fix the Apply button**
-
-- Change text from "View Original & Apply" to "Apply"
-- The `url` field currently points to the job board page (remotive.com/..., yeshub.ng/...). For Remotive and Arbeitnow, these URLs typically redirect to or contain the original application link — so they're not acceptable as-is. 
-- For YesHub posts, the URL points to the blog post which contains application instructions (email addresses, links). Since we already show the full description on our site, the Apply button should scroll to the description section where those instructions are, rather than linking out to yeshub.ng.
-- Logic: if `job.url` exists and source is not yeshub → open URL. If source is yeshub or no URL → scroll to description section on the page.
-
-**5. Remove source from footer text**
-
-- Change "Jobs aggregated from multiple sources across the web" to something neutral
+**5. Remove "YesHub" references from descriptions**
+- The descriptions come from the WordPress API with HTML — no "YesHub" branding is injected by us, but titles like "First embrace jobs in Kano" have YesHub SEO text in the description body. We can't control that content, but we ensure no UI-level references exist.
 
 ### Files to change
+- `supabase/functions/fetch-jobs/index.ts` — remove Remotive/Arbeitnow, use full content, clean old data
+- `src/hooks/useJobs.ts` — add `listingType` filter (jobs vs opportunities)
+- `src/components/Header.tsx` — add "Opportunities" nav link
+- `src/App.tsx` — add `/opportunities` route
+- `src/pages/Opportunities.tsx` — new page for fellowships/grants/scholarships
+- `src/pages/Index.tsx` — pass `listingType: "jobs"` to exclude opportunities
 
-- `supabase/functions/fetch-jobs/index.ts` — fix YesHub company name extraction
-- `src/components/JobFilters.tsx` — remove Source dropdown
-- `src/pages/Index.tsx` — remove source state and props
-- `src/hooks/useFilterOptions.ts` — remove source fetching
-- `src/hooks/useJobs.ts` — remove source param
-- `src/pages/JobDetail.tsx` — remove "via source", improve layout, fix Apply button
-- `src/components/JobCard.tsx` — no source references currently, but will verify
