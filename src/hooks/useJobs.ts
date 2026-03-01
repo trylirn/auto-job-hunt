@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Job } from "@/types/job";
 
+const OPPORTUNITY_CATEGORIES = ["fellowship", "grants", "scholarship", "conference", "internships"];
+
 interface UseJobsParams {
   search?: string;
   jobType?: string;
@@ -11,6 +13,7 @@ interface UseJobsParams {
   page?: number;
   pageSize?: number;
   sortBy?: "posted_at" | "created_at";
+  listingType?: "jobs" | "opportunities";
 }
 
 export function useJobs({
@@ -22,9 +25,10 @@ export function useJobs({
   page = 1,
   pageSize = 12,
   sortBy = "posted_at",
+  listingType,
 }: UseJobsParams = {}) {
   return useQuery({
-    queryKey: ["jobs", search, jobType, isRemote, category, location, page, sortBy],
+    queryKey: ["jobs", search, jobType, isRemote, category, location, page, sortBy, listingType],
     queryFn: async () => {
       let query = supabase
         .from("jobs")
@@ -52,6 +56,17 @@ export function useJobs({
 
       if (location) {
         query = query.ilike("location", `%${location}%`);
+      }
+
+      // Filter by listing type
+      if (listingType === "jobs") {
+        // Exclude opportunity categories
+        for (const cat of OPPORTUNITY_CATEGORIES) {
+          query = query.neq("category", cat);
+        }
+      } else if (listingType === "opportunities") {
+        // Include only opportunity categories
+        query = query.in("category", OPPORTUNITY_CATEGORIES);
       }
 
       const { data, error, count } = await query;

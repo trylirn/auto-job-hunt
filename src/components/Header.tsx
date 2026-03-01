@@ -1,7 +1,10 @@
 import { Briefcase } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 export function Header() {
+  const location = useLocation();
+
   return (
     <header className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between">
@@ -13,9 +16,24 @@ export function Header() {
             JobFlow
           </span>
         </Link>
-        <nav className="flex items-center gap-4 text-sm font-medium text-muted-foreground">
-          <Link to="/" className="transition-colors hover:text-foreground">
-            Browse Jobs
+        <nav className="flex items-center gap-4 text-sm font-medium">
+          <Link
+            to="/"
+            className={cn(
+              "transition-colors hover:text-foreground",
+              location.pathname === "/" ? "text-foreground" : "text-muted-foreground"
+            )}
+          >
+            Jobs
+          </Link>
+          <Link
+            to="/opportunities"
+            className={cn(
+              "transition-colors hover:text-foreground",
+              location.pathname === "/opportunities" ? "text-foreground" : "text-muted-foreground"
+            )}
+          >
+            Opportunities
           </Link>
         </nav>
       </div>

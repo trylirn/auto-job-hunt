@@ -23,60 +23,6 @@ interface NormalizedJob {
   is_remote: boolean;
 }
 
-async function fetchRemotiveJobs(): Promise<NormalizedJob[]> {
-  try {
-    const res = await fetch("https://remotive.com/api/remote-jobs?limit=50");
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.jobs || []).map((j: any) => ({
-      title: j.title,
-      company: j.company_name,
-      location: j.candidate_required_location || null,
-      job_type: j.job_type?.toLowerCase().replace("_", "-") || null,
-      category: j.category?.toLowerCase() || null,
-      description: (j.description || "").replace(/<[^>]*>/g, "").slice(0, 2000),
-      url: j.url,
-      source: "remotive",
-      external_id: String(j.id),
-      posted_at: j.publication_date || null,
-      salary: j.salary || null,
-      tags: j.tags || null,
-      company_logo: j.company_logo || null,
-      is_remote: true,
-    }));
-  } catch (e) {
-    console.error("Remotive fetch error:", e);
-    return [];
-  }
-}
-
-async function fetchArbeitnowJobs(): Promise<NormalizedJob[]> {
-  try {
-    const res = await fetch("https://www.arbeitnow.com/api/job-board-api");
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.data || []).map((j: any) => ({
-      title: j.title,
-      company: j.company_name,
-      location: j.location || null,
-      job_type: j.remote ? "remote" : "full-time",
-      category: j.tags?.[0]?.toLowerCase() || null,
-      description: (j.description || "").replace(/<[^>]*>/g, "").slice(0, 2000),
-      url: j.url,
-      source: "arbeitnow",
-      external_id: String(j.slug),
-      posted_at: j.created_at ? new Date(j.created_at * 1000).toISOString() : null,
-      salary: null,
-      tags: j.tags || null,
-      company_logo: null,
-      is_remote: !!j.remote,
-    }));
-  } catch (e) {
-    console.error("Arbeitnow fetch error:", e);
-    return [];
-  }
-}
-
 async function fetchYeshubJobs(): Promise<NormalizedJob[]> {
   try {
     // Fetch categories first to map IDs to names
@@ -101,9 +47,9 @@ async function fetchYeshubJobs(): Promise<NormalizedJob[]> {
       const featuredMedia = p._embedded?.["wp:featuredmedia"]?.[0]?.source_url || null;
 
       const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
-      const description = (p.excerpt?.rendered || p.content?.rendered || "")
-        .trim()
-        .slice(0, 2000);
+      
+      // Use full content instead of excerpt
+      const description = (p.content?.rendered || "").trim();
 
       // Extract company name from title patterns like "Job Title at Company" or "Job Title – Company"
       let company = "Unknown";
@@ -148,26 +94,31 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log("Fetching jobs from APIs...");
-    const [remotiveJobs, arbeitnowJobs, yeshubJobs] = await Promise.all([
-      fetchRemotiveJobs(),
-      fetchArbeitnowJobs(),
-      fetchYeshubJobs(),
-    ]);
+    // Clean up non-yeshub records
+    const { error: deleteError } = await supabase
+      .from("jobs")
+      .delete()
+      .neq("source", "yeshub");
+    
+    if (deleteError) {
+      console.error("Error cleaning non-yeshub records:", deleteError);
+    } else {
+      console.log("Cleaned non-yeshub records");
+    }
 
-    const allJobs = [...remotiveJobs, ...arbeitnowJobs, ...yeshubJobs];
-    console.log(`Fetched ${allJobs.length} total jobs (Remotive: ${remotiveJobs.length}, Arbeitnow: ${arbeitnowJobs.length}, YesHub: ${yeshubJobs.length})`);
+    console.log("Fetching jobs from YesHub...");
+    const yeshubJobs = await fetchYeshubJobs();
+    console.log(`Fetched ${yeshubJobs.length} jobs from YesHub`);
 
     let inserted = 0;
     let skipped = 0;
 
-    // Upsert in batches
     const batchSize = 50;
-    for (let i = 0; i < allJobs.length; i += batchSize) {
-      const batch = allJobs.slice(i, i + batchSize);
-      const { data, error } = await supabase
+    for (let i = 0; i < yeshubJobs.length; i += batchSize) {
+      const batch = yeshubJobs.slice(i, i + batchSize);
+      const { error } = await supabase
         .from("jobs")
-        .upsert(batch, { onConflict: "source,external_id", ignoreDuplicates: true });
+        .upsert(batch, { onConflict: "source,external_id", ignoreDuplicates: false });
 
       if (error) {
         console.error("Upsert error:", error);
@@ -180,7 +131,7 @@ Deno.serve(async (req) => {
     console.log(`Done: ${inserted} processed, ${skipped} skipped`);
 
     return new Response(
-      JSON.stringify({ success: true, fetched: allJobs.length, inserted, skipped }),
+      JSON.stringify({ success: true, fetched: yeshubJobs.length, inserted, skipped }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
