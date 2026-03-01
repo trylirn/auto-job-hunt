@@ -16,12 +16,11 @@ const Index = () => {
   const [remoteOnly, setRemoteOnly] = useState(false);
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
-  const [source, setSource] = useState("");
   const [page, setPage] = useState(1);
 
   const debouncedSearch = useDebounce(search, 300);
 
-  const hasActiveFilters = !!jobType || remoteOnly || !!category || !!location || !!source;
+  const hasActiveFilters = !!jobType || remoteOnly || !!category || !!location;
 
   const { data, isLoading } = useJobs({
     search: debouncedSearch,
@@ -29,7 +28,6 @@ const Index = () => {
     isRemote: remoteOnly ? true : undefined,
     category,
     location,
-    source,
     page,
   });
 
@@ -38,7 +36,6 @@ const Index = () => {
     setRemoteOnly(false);
     setCategory("");
     setLocation("");
-    setSource("");
     setPage(1);
   }, []);
 
@@ -46,7 +43,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Helmet>
         <title>JobFlow — Find Your Next Opportunity</title>
-        <meta name="description" content="Thousands of jobs from across the web, updated automatically. Search remote, full-time, and freelance opportunities worldwide." />
+        <meta name="description" content="Thousands of jobs updated automatically. Search remote, full-time, and freelance opportunities worldwide." />
       </Helmet>
       <Header />
 
@@ -57,7 +54,7 @@ const Index = () => {
             Find your next opportunity
           </h1>
           <p className="mt-3 max-w-xl text-lg text-muted-foreground">
-            Thousands of jobs from across the web, updated automatically.
+            Thousands of jobs updated automatically.
           </p>
           <div className="mt-6 max-w-2xl">
             <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} />
@@ -77,8 +74,6 @@ const Index = () => {
             onCategoryChange={(v) => { setCategory(v); setPage(1); }}
             location={location}
             onLocationChange={(v) => { setLocation(v); setPage(1); }}
-            source={source}
-            onSourceChange={(v) => { setSource(v); setPage(1); }}
             onClearFilters={clearFilters}
             hasActiveFilters={hasActiveFilters}
           />
@@ -126,7 +121,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t bg-card">
         <div className="container py-6 text-center text-sm text-muted-foreground">
-          <p>JobFlow — Jobs aggregated from multiple sources across the web.</p>
+          <p>JobFlow — Discover opportunities that match your ambitions.</p>
         </div>
       </footer>
     </div>

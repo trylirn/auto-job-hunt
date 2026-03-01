@@ -8,7 +8,6 @@ interface UseJobsParams {
   isRemote?: boolean;
   category?: string;
   location?: string;
-  source?: string;
   page?: number;
   pageSize?: number;
   sortBy?: "posted_at" | "created_at";
@@ -20,13 +19,12 @@ export function useJobs({
   isRemote,
   category = "",
   location = "",
-  source = "",
   page = 1,
   pageSize = 12,
   sortBy = "posted_at",
 }: UseJobsParams = {}) {
   return useQuery({
-    queryKey: ["jobs", search, jobType, isRemote, category, location, source, page, sortBy],
+    queryKey: ["jobs", search, jobType, isRemote, category, location, page, sortBy],
     queryFn: async () => {
       let query = supabase
         .from("jobs")
@@ -54,10 +52,6 @@ export function useJobs({
 
       if (location) {
         query = query.ilike("location", `%${location}%`);
-      }
-
-      if (source) {
-        query = query.eq("source", source);
       }
 
       const { data, error, count } = await query;
