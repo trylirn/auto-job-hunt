@@ -15,7 +15,6 @@ import { useDebounce } from "@/hooks/useDebounce";
 const Index = () => {
   const [search, setSearch] = useState("");
   const [jobType, setJobType] = useState("");
-  const [remoteOnly, setRemoteOnly] = useState(false);
   const [location, setLocation] = useState("");
   const [dateRange, setDateRange] = useState("");
   const [page, setPage] = useState(1);
@@ -23,12 +22,11 @@ const Index = () => {
 
   const debouncedSearch = useDebounce(search, 300);
 
-  const hasActiveFilters = !!jobType || remoteOnly || !!location || !!dateRange;
+  const hasActiveFilters = !!jobType || !!location || !!dateRange;
 
   const { data, isLoading } = useJobs({
     search: debouncedSearch,
     jobType,
-    isRemote: remoteOnly ? true : undefined,
     location,
     dateRange: dateRange as "24h" | "week" | "month" | "",
     page,
@@ -37,7 +35,6 @@ const Index = () => {
 
   const clearFilters = useCallback(() => {
     setJobType("");
-    setRemoteOnly(false);
     setLocation("");
     setDateRange("");
     setPage(1);
@@ -46,7 +43,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>JobFlow — Find Your Next Opportunity</title>
+        <title>Eplicant — Find Your Next Opportunity</title>
         <meta name="description" content="Thousands of jobs updated automatically. Search remote, full-time, and freelance opportunities worldwide." />
       </Helmet>
       <Header />
@@ -57,9 +54,7 @@ const Index = () => {
           <h1 className="font-display text-2xl font-bold tracking-tight md:text-4xl lg:text-5xl">
             Find your next opportunity
           </h1>
-          <p className="mt-2 max-w-xl text-base text-muted-foreground md:text-lg">Thousands of jobs available to be taken.
-
-          </p>
+          <p className="mt-2 max-w-xl text-base text-muted-foreground md:text-lg">Thousands of jobs available to be taken.</p>
           <div className="mt-4 md:mt-6 max-w-2xl">
             <SearchBar value={search} onChange={(v) => {setSearch(v);setPage(1);}} />
           </div>
@@ -72,8 +67,6 @@ const Index = () => {
           <JobFilters
             jobType={jobType}
             onJobTypeChange={(v) => {setJobType(v);setPage(1);}}
-            remoteOnly={remoteOnly}
-            onRemoteToggle={() => {setRemoteOnly(!remoteOnly);setPage(1);}}
             location={location}
             onLocationChange={(v) => {setLocation(v);setPage(1);}}
             dateRange={dateRange}
@@ -105,7 +98,6 @@ const Index = () => {
             <JobCard key={job.id} job={job} />
             )}
               </div> :
-
           <div className="flex flex-col gap-2">
                 {data.jobs.map((job) =>
             <JobListItem key={job.id} job={job} />
@@ -117,10 +109,8 @@ const Index = () => {
               currentPage={page}
               totalPages={data.totalPages}
               onPageChange={setPage} />
-
             </div>
           </> :
-
         <div className="flex flex-col items-center justify-center py-16 md:py-20 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
               <Briefcase className="h-8 w-8 text-muted-foreground" />
@@ -139,7 +129,6 @@ const Index = () => {
         </div>
       </footer>
     </div>);
-
 };
 
 export default Index;

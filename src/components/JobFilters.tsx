@@ -12,8 +12,6 @@ import { useFilterOptions } from "@/hooks/useFilterOptions";
 interface JobFiltersProps {
   jobType: string;
   onJobTypeChange: (value: string) => void;
-  remoteOnly: boolean;
-  onRemoteToggle: () => void;
   location: string;
   onLocationChange: (value: string) => void;
   dateRange: string;
@@ -25,8 +23,6 @@ interface JobFiltersProps {
 export function JobFilters({
   jobType,
   onJobTypeChange,
-  remoteOnly,
-  onRemoteToggle,
   location,
   onLocationChange,
   dateRange,
@@ -40,19 +36,17 @@ export function JobFilters({
     <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
       <Select value={jobType} onValueChange={onJobTypeChange}>
         <SelectTrigger className="w-full sm:w-[140px] text-sm">
-          <SelectValue placeholder="Job type" />
+          <SelectValue placeholder="Work mode" />
         </SelectTrigger>
         <SelectContent>
-          {options?.jobTypes.map((type) => (
-            <SelectItem key={type} value={type}>
-              {type}
-            </SelectItem>
-          ))}
+          <SelectItem value="Remote">Remote</SelectItem>
+          <SelectItem value="Hybrid">Hybrid</SelectItem>
+          <SelectItem value="Physical">Physical</SelectItem>
         </SelectContent>
       </Select>
 
       <Select value={location} onValueChange={onLocationChange}>
-        <SelectTrigger className="w-full sm:w-[150px] text-sm">
+        <SelectTrigger className="w-full sm:w-[180px] text-sm">
           <SelectValue placeholder="Location" />
         </SelectTrigger>
         <SelectContent>
@@ -74,15 +68,6 @@ export function JobFilters({
           <SelectItem value="month">Past month</SelectItem>
         </SelectContent>
       </Select>
-
-      <Button
-        variant={remoteOnly ? "default" : "outline"}
-        size="sm"
-        onClick={onRemoteToggle}
-        className="gap-1.5 text-sm"
-      >
-        🌍 Remote
-      </Button>
 
       {hasActiveFilters && (
         <Button variant="ghost" size="sm" onClick={onClearFilters} className="gap-1">

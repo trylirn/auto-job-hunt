@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     // Fetch jobs that haven't been cleaned yet
     const { data: jobs, error } = await supabase
       .from("jobs")
-      .select("id, title, description")
+      .select("id, title, description, location, job_type")
       .is("clean_description", null)
       .not("description", "is", null)
       .limit(20);
@@ -75,11 +75,14 @@ For non-job opportunities (scholarships, fellowships, grants, programs):
 4. <h3>How to Apply</h3> — Steps to apply
 5. <h3>Deadline</h3> — When to apply by
 
-Also extract the actual application URL if present (Google Forms, email mailto links, company career page URLs). Ignore chatgpt:// URLs, yeshub.ng URLs, and social media share links.`,
+Also extract:
+- The actual application URL if present (Google Forms, email mailto links, company career page URLs). Ignore chatgpt:// URLs, yeshub.ng URLs, and social media share links.
+- The SPECIFIC location where the role/opportunity is based. Look for city names, country names, or regions mentioned in the description. Examples: "Lagos, Nigeria", "Nairobi, Kenya", "Remote", "Washington DC, USA", "Multiple Locations". If truly global or location not specified, use "Global".
+- The work mode: determine if this is "Remote", "Hybrid", or "Physical" based on the description. If explicitly mentions remote work, use "Remote". If mentions hybrid/flexible, use "Hybrid". If mentions a specific office/location where you must be present, use "Physical". Default to "Physical" if unclear.`,
                 },
                 {
                   role: "user",
-                  content: `Clean this job description and extract the apply URL:\n\nTitle: ${job.title}\n\nHTML:\n${job.description}`,
+                  content: `Clean this job description and extract details:\n\nTitle: ${job.title}\nCurrent location: ${job.location || "Unknown"}\nCurrent job_type: ${job.job_type || "Unknown"}\n\nHTML:\n${job.description}`,
                 },
               ],
               tools: [
@@ -88,7 +91,7 @@ Also extract the actual application URL if present (Google Forms, email mailto l
                   function: {
                     name: "save_cleaned_job",
                     description:
-                      "Save the cleaned job description and extracted apply URL",
+                      "Save the cleaned job description, apply URL, detected location, and work mode",
                     parameters: {
                       type: "object",
                       properties: {
@@ -102,8 +105,19 @@ Also extract the actual application URL if present (Google Forms, email mailto l
                           description:
                             "The actual application URL (Google Forms, mailto, company career page). null if not found. Must start with https:// or mailto:",
                         },
+                        detected_location: {
+                          type: "string",
+                          description:
+                            "The specific location where the role is based, e.g. 'Lagos, Nigeria', 'Nairobi, Kenya', 'Remote', 'Washington DC, USA', 'Multiple Locations', 'Global'. Be as specific as possible.",
+                        },
+                        work_mode: {
+                          type: "string",
+                          enum: ["Remote", "Hybrid", "Physical"],
+                          description:
+                            "The work mode: Remote, Hybrid, or Physical. Default to Physical if unclear.",
+                        },
                       },
-                      required: ["clean_description"],
+                      required: ["clean_description", "detected_location", "work_mode"],
                       additionalProperties: false,
                     },
                   },
@@ -133,13 +147,25 @@ Also extract the actual application URL if present (Google Forms, email mailto l
         const args = JSON.parse(toolCall.function.arguments);
         const cleanDesc = args.clean_description || null;
         const applyUrl = args.apply_url || null;
+        const detectedLocation = args.detected_location || null;
+        const workMode = args.work_mode || null;
+
+        const updateData: Record<string, unknown> = {
+          clean_description: cleanDesc,
+          apply_url: applyUrl && (applyUrl.startsWith("https://") || applyUrl.startsWith("mailto:")) ? applyUrl : null,
+        };
+
+        if (detectedLocation) {
+          updateData.location = detectedLocation;
+        }
+
+        if (workMode && ["Remote", "Hybrid", "Physical"].includes(workMode)) {
+          updateData.job_type = workMode;
+        }
 
         const { error: updateError } = await supabase
           .from("jobs")
-          .update({
-            clean_description: cleanDesc,
-            apply_url: applyUrl && (applyUrl.startsWith("https://") || applyUrl.startsWith("mailto:")) ? applyUrl : null,
-          })
+          .update(updateData)
           .eq("id", job.id);
 
         if (updateError) {

@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/Header";
 import { SearchBar } from "@/components/SearchBar";
+import { JobFilters } from "@/components/JobFilters";
 import { JobCard } from "@/components/JobCard";
 import { JobListItem } from "@/components/JobListItem";
 import { JobCardSkeleton } from "@/components/JobCardSkeleton";
@@ -13,21 +14,36 @@ import { useDebounce } from "@/hooks/useDebounce";
 
 const Opportunities = () => {
   const [search, setSearch] = useState("");
+  const [jobType, setJobType] = useState("");
+  const [location, setLocation] = useState("");
+  const [dateRange, setDateRange] = useState("");
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const debouncedSearch = useDebounce(search, 300);
 
+  const hasActiveFilters = !!jobType || !!location || !!dateRange;
+
   const { data, isLoading } = useJobs({
     search: debouncedSearch,
+    jobType,
+    location,
+    dateRange: dateRange as "24h" | "week" | "month" | "",
     page,
     listingType: "opportunities",
   });
 
+  const clearFilters = useCallback(() => {
+    setJobType("");
+    setLocation("");
+    setDateRange("");
+    setPage(1);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Opportunities — Fellowships, Grants & Scholarships | JobFlow</title>
+        <title>Opportunities — Fellowships, Grants & Scholarships | Eplicant</title>
         <meta name="description" content="Discover fellowships, scholarships, grants, conferences, and internship opportunities." />
       </Helmet>
       <Header />
@@ -49,13 +65,25 @@ const Opportunities = () => {
 
       {/* Main */}
       <main className="container py-8">
-        <div className="mb-6 flex items-center justify-between">
-          {data && (
-            <p className="text-sm text-muted-foreground">
-              {data.totalCount} opportunit{data.totalCount !== 1 ? "ies" : "y"} found
-            </p>
-          )}
-          <ViewToggle value={viewMode} onChange={setViewMode} />
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <JobFilters
+            jobType={jobType}
+            onJobTypeChange={(v) => { setJobType(v); setPage(1); }}
+            location={location}
+            onLocationChange={(v) => { setLocation(v); setPage(1); }}
+            dateRange={dateRange}
+            onDateRangeChange={(v) => { setDateRange(v); setPage(1); }}
+            onClearFilters={clearFilters}
+            hasActiveFilters={hasActiveFilters}
+          />
+          <div className="flex items-center gap-3">
+            {data && (
+              <p className="text-sm text-muted-foreground">
+                {data.totalCount} opportunit{data.totalCount !== 1 ? "ies" : "y"} found
+              </p>
+            )}
+            <ViewToggle value={viewMode} onChange={setViewMode} />
+          </div>
         </div>
 
         {isLoading ? (
@@ -94,7 +122,7 @@ const Opportunities = () => {
             </div>
             <h2 className="mt-4 font-display text-xl font-semibold">No opportunities found</h2>
             <p className="mt-1 text-muted-foreground">
-              Try adjusting your search
+              Try adjusting your search or filters
             </p>
           </div>
         )}
@@ -102,7 +130,7 @@ const Opportunities = () => {
 
       <footer className="border-t bg-card">
         <div className="container py-6 text-center text-sm text-muted-foreground">
-          <p>JobFlow — Discover opportunities that match your ambitions.</p>
+          <p>Eplicant — Discover opportunities that match your ambitions.</p>
         </div>
       </footer>
     </div>
