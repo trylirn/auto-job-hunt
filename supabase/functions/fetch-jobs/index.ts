@@ -77,6 +77,58 @@ async function fetchArbeitnowJobs(): Promise<NormalizedJob[]> {
   }
 }
 
+async function fetchYeshubJobs(): Promise<NormalizedJob[]> {
+  try {
+    // Fetch categories first to map IDs to names
+    const catRes = await fetch("https://yeshub.ng/wp-json/wp/v2/categories?per_page=100");
+    const categories: Record<number, string> = {};
+    if (catRes.ok) {
+      const cats = await catRes.json();
+      for (const c of cats) {
+        categories[c.id] = (c.name || "").toLowerCase();
+      }
+    }
+
+    const res = await fetch("https://yeshub.ng/wp-json/wp/v2/posts?per_page=50&_embed");
+    if (!res.ok) return [];
+    const posts = await res.json();
+
+    return posts.map((p: any) => {
+      const catIds: number[] = p.categories || [];
+      const catName = catIds.length > 0 ? categories[catIds[0]] || null : null;
+
+      // Get featured image from _embedded
+      const featuredMedia = p._embedded?.["wp:featuredmedia"]?.[0]?.source_url || null;
+
+      const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
+      const description = (p.excerpt?.rendered || p.content?.rendered || "")
+        .replace(/<[^>]*>/g, "")
+        .trim()
+        .slice(0, 2000);
+
+      return {
+        title,
+        company: "YesHub.ng",
+        location: "Nigeria",
+        job_type: catName || "opportunity",
+        category: catName,
+        description,
+        url: p.link,
+        source: "yeshub",
+        external_id: String(p.id),
+        posted_at: p.date || null,
+        salary: null,
+        tags: catIds.map((id: number) => categories[id]).filter(Boolean),
+        company_logo: featuredMedia,
+        is_remote: false,
+      };
+    });
+  } catch (e) {
+    console.error("YesHub fetch error:", e);
+    return [];
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -88,13 +140,14 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     console.log("Fetching jobs from APIs...");
-    const [remotiveJobs, arbeitnowJobs] = await Promise.all([
+    const [remotiveJobs, arbeitnowJobs, yeshubJobs] = await Promise.all([
       fetchRemotiveJobs(),
       fetchArbeitnowJobs(),
+      fetchYeshubJobs(),
     ]);
 
-    const allJobs = [...remotiveJobs, ...arbeitnowJobs];
-    console.log(`Fetched ${allJobs.length} total jobs`);
+    const allJobs = [...remotiveJobs, ...arbeitnowJobs, ...yeshubJobs];
+    console.log(`Fetched ${allJobs.length} total jobs (Remotive: ${remotiveJobs.length}, Arbeitnow: ${arbeitnowJobs.length}, YesHub: ${yeshubJobs.length})`);
 
     let inserted = 0;
     let skipped = 0;
