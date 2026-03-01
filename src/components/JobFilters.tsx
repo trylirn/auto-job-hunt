@@ -18,8 +18,6 @@ interface JobFiltersProps {
   onCategoryChange: (value: string) => void;
   location: string;
   onLocationChange: (value: string) => void;
-  source: string;
-  onSourceChange: (value: string) => void;
   onClearFilters: () => void;
   hasActiveFilters: boolean;
 }
@@ -33,12 +31,10 @@ export function JobFilters({
   onCategoryChange,
   location,
   onLocationChange,
-  source,
-  onSourceChange,
   onClearFilters,
   hasActiveFilters,
 }: JobFiltersProps) {
-  const { data: options, isLoading } = useFilterOptions();
+  const { data: options } = useFilterOptions();
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -76,19 +72,6 @@ export function JobFilters({
           {options?.locations.map((loc) => (
             <SelectItem key={loc} value={loc}>
               {loc}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select value={source} onValueChange={onSourceChange}>
-        <SelectTrigger className="w-[150px]">
-          <SelectValue placeholder="Source" />
-        </SelectTrigger>
-        <SelectContent>
-          {options?.sources.map((src) => (
-            <SelectItem key={src} value={src}>
-              {src}
             </SelectItem>
           ))}
         </SelectContent>

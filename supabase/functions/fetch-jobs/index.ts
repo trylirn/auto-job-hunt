@@ -102,13 +102,22 @@ async function fetchYeshubJobs(): Promise<NormalizedJob[]> {
 
       const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
       const description = (p.excerpt?.rendered || p.content?.rendered || "")
-        .replace(/<[^>]*>/g, "")
         .trim()
         .slice(0, 2000);
 
+      // Extract company name from title patterns like "Job Title at Company" or "Job Title – Company"
+      let company = "Unknown";
+      const atMatch = title.match(/\bat\s+(.+)$/i);
+      const dashMatch = title.match(/[–—-]\s*(.+)$/);
+      if (atMatch) {
+        company = atMatch[1].trim();
+      } else if (dashMatch) {
+        company = dashMatch[1].trim();
+      }
+
       return {
         title,
-        company: "YesHub.ng",
+        company,
         location: "Nigeria",
         job_type: catName || "opportunity",
         category: catName,
