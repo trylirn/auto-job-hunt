@@ -87,6 +87,57 @@ const GSO_CATEGORY_MAP: Record<number, string> = {
   1: "opportunity",
 };
 
+async function fetchOpportunitiesForYouthJobs(): Promise<NormalizedJob[]> {
+  try {
+    const catRes = await fetch("https://opportunitiesforyouth.org/wp-json/wp/v2/categories?per_page=100");
+    const categories: Record<number, string> = {};
+    if (catRes.ok) {
+      const cats = await catRes.json();
+      for (const c of cats) {
+        categories[c.id] = (c.name || "").toLowerCase();
+      }
+    }
+
+    const allPosts: any[] = [];
+    for (let page = 1; page <= 2; page++) {
+      const res = await fetch(
+        `https://opportunitiesforyouth.org/wp-json/wp/v2/posts?per_page=50&page=${page}&_embed`
+      );
+      if (!res.ok) break;
+      const posts = await res.json();
+      allPosts.push(...posts);
+    }
+
+    return allPosts.map((p: any) => {
+      const catIds: number[] = p.categories || [];
+      const catName = catIds.length > 0 ? categories[catIds[0]] || null : null;
+      const featuredMedia = p._embedded?.["wp:featuredmedia"]?.[0]?.source_url || null;
+      const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
+      const description = (p.content?.rendered || "").trim();
+
+      return {
+        title,
+        company: extractCompany(title),
+        location: "Global",
+        job_type: catName || "opportunity",
+        category: catName,
+        description,
+        url: p.link,
+        source: "opportunitiesforyouth",
+        external_id: String(p.id),
+        posted_at: p.date || null,
+        salary: null,
+        tags: catIds.map((id: number) => categories[id]).filter(Boolean),
+        company_logo: featuredMedia,
+        is_remote: false,
+      };
+    });
+  } catch (e) {
+    console.error("Opportunities for Youth fetch error:", e);
+    return [];
+  }
+}
+
 async function fetchGlobalSouthJobs(): Promise<NormalizedJob[]> {
   try {
     // Fetch categories for tag mapping
@@ -174,7 +225,11 @@ Deno.serve(async (req) => {
     const globalSouthJobs = await fetchGlobalSouthJobs();
     console.log(`Fetched ${globalSouthJobs.length} jobs from Global South`);
 
-    const allJobs = [...yeshubJobs, ...globalSouthJobs];
+    console.log("Fetching jobs from Opportunities for Youth...");
+    const ofy4Jobs = await fetchOpportunitiesForYouthJobs();
+    console.log(`Fetched ${ofy4Jobs.length} jobs from Opportunities for Youth`);
+
+    const allJobs = [...yeshubJobs, ...globalSouthJobs, ...ofy4Jobs];
     let inserted = 0;
     let skipped = 0;
 
@@ -211,7 +266,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        fetched: { yeshub: yeshubJobs.length, globalsouth: globalSouthJobs.length, total: allJobs.length },
+        fetched: { yeshub: yeshubJobs.length, globalsouth: globalSouthJobs.length, opportunitiesforyouth: ofy4Jobs.length, total: allJobs.length },
         inserted,
         skipped,
       }),
