@@ -1,0 +1,144 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Fetch jobs that haven't been cleaned yet
+    const { data: jobs, error } = await supabase
+      .from("jobs")
+      .select("id, title, description")
+      .is("clean_description", null)
+      .not("description", "is", null)
+      .limit(20);
+
+    if (error) throw error;
+    if (!jobs || jobs.length === 0) {
+      return new Response(
+        JSON.stringify({ success: true, processed: 0 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Processing ${jobs.length} jobs for AI cleanup`);
+    let processed = 0;
+
+    for (const job of jobs) {
+      try {
+        const response = await fetch(
+          "https://ai.gateway.lovable.dev/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${lovableApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash-lite",
+              messages: [
+                {
+                  role: "system",
+                  content:
+                    "You clean job descriptions. You will be given raw HTML from a WordPress blog. Your task is to extract and return clean, well-formatted HTML with only the essential job information. Remove all SEO spam, chatgpt:// links, YesHub branding, social share buttons, and irrelevant content. Keep: job title context, responsibilities, qualifications, location, salary, deadline, and application instructions. Also extract the actual application URL if present (Google Forms, email mailto links, company career page URLs). Ignore chatgpt:// URLs, yeshub.ng URLs, and social media share links.",
+                },
+                {
+                  role: "user",
+                  content: `Clean this job description and extract the apply URL:\n\nTitle: ${job.title}\n\nHTML:\n${job.description}`,
+                },
+              ],
+              tools: [
+                {
+                  type: "function",
+                  function: {
+                    name: "save_cleaned_job",
+                    description:
+                      "Save the cleaned job description and extracted apply URL",
+                    parameters: {
+                      type: "object",
+                      properties: {
+                        clean_description: {
+                          type: "string",
+                          description:
+                            "Clean HTML description with only essential job information. Well-formatted with proper paragraphs, lists, and headings.",
+                        },
+                        apply_url: {
+                          type: "string",
+                          description:
+                            "The actual application URL (Google Forms, mailto, company career page). null if not found. Must start with https:// or mailto:",
+                        },
+                      },
+                      required: ["clean_description"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+              ],
+              tool_choice: {
+                type: "function",
+                function: { name: "save_cleaned_job" },
+              },
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error(`AI error for job ${job.id}:`, response.status, errText);
+          continue;
+        }
+
+        const result = await response.json();
+        const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
+        if (!toolCall) {
+          console.error(`No tool call for job ${job.id}`);
+          continue;
+        }
+
+        const args = JSON.parse(toolCall.function.arguments);
+        const cleanDesc = args.clean_description || null;
+        const applyUrl = args.apply_url || null;
+
+        const { error: updateError } = await supabase
+          .from("jobs")
+          .update({
+            clean_description: cleanDesc,
+            apply_url: applyUrl && (applyUrl.startsWith("https://") || applyUrl.startsWith("mailto:")) ? applyUrl : null,
+          })
+          .eq("id", job.id);
+
+        if (updateError) {
+          console.error(`Update error for job ${job.id}:`, updateError);
+        } else {
+          processed++;
+        }
+      } catch (e) {
+        console.error(`Error processing job ${job.id}:`, e);
+      }
+    }
+
+    console.log(`Cleaned ${processed}/${jobs.length} jobs`);
+    return new Response(
+      JSON.stringify({ success: true, processed, total: jobs.length }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("Error:", error);
+    return new Response(
+      JSON.stringify({ success: false, error: (error as Error).message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
