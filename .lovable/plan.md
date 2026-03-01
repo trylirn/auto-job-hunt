@@ -1,31 +1,40 @@
 
 
-## Plan: Expand Job Filters
+## Review: Hardcoded Issues & Netlify/SEO Fixes
 
-The current hardcoded filter lists don't match the actual data in the database. This plan replaces them with dynamic, data-driven filters and adds new ones.
+### Hardcoded issues found
 
-### Problems with current filters
-- The hardcoded category list (engineering, design, marketing...) doesn't match actual categories in the DB (ai / ml, software development, fellowship, grants, scholarship, etc.)
-- Job types are also mismatched — DB has scholarship, fellowship, grants, conference, etc. that aren't in the dropdown
-- No location or source filter exists
+The codebase is mostly clean — filters are already dynamic. The remaining hardcoded items are:
+
+1. **`index.html`** — Title says "Lovable App", description says "Lovable Generated Project", OG tags reference Lovable branding and generic OG image
+2. **Footer in `Index.tsx`** — Minor, but the text "JobFlow — Jobs aggregated from multiple sources across the web." is fine as static branding
+3. **No `_redirects` file for Netlify** — SPA client-side routing will break on direct URL access or page refresh (e.g. `/job/123` returns 404)
+4. **No sitemap or structured SEO meta tags** — No dynamic `<title>` per page, no Open Graph tags for job detail pages
 
 ### What will be done
 
-1. **Create a `useFilterOptions` hook** that fetches distinct values for location, job_type, category, and source from the database — so filters always reflect real data
+**1. Fix hardcoded metadata in `index.html`**
+- Update title to "JobFlow — Find Your Next Opportunity"
+- Update description, OG title, OG description, twitter tags to match the app
+- Remove Lovable OG image placeholder (or replace with a generic one)
 
-2. **Add new filters to `JobFilters.tsx`**:
-   - **Location** dropdown — populated dynamically from DB (Germany, Nigeria, USA, Munich, Berlin, etc.)
-   - **Source** dropdown — filter by Remotive, Arbeitnow, or YesHub
-   - Keep the **Remote** toggle button
-   - Replace hardcoded job type and category lists with dynamic ones
+**2. Add `react-helmet-async` for dynamic per-page SEO**
+- Add `<Helmet>` to `Index.tsx` with the main title/description
+- Add `<Helmet>` to `JobDetail.tsx` with job-specific title, description, and OG tags (title, company, location) so shared links on LinkedIn/Google show meaningful previews
 
-3. **Update `useJobs` hook** to support `location` and `source` filter params
+**3. Add Netlify SPA support**
+- Create `public/_redirects` with `/* /index.html 200` so all routes resolve to the SPA
+- Create `public/_headers` with cache headers and security headers (X-Frame-Options, etc.)
 
-4. **Update `Index.tsx`** to wire up the new location and source state + pass to filters and query
+**4. Add `public/sitemap.xml`** (static)
+- A basic sitemap pointing to `/` for Google indexing — dynamic job page sitemaps would require a serverless function, but the static one covers the main entry point
+
+**5. Improve `robots.txt`**
+- Add sitemap reference
 
 ### Technical details
-- New hook queries: `SELECT DISTINCT location FROM jobs`, `SELECT DISTINCT source FROM jobs`, etc.
-- Location filter will use `ilike` matching (since locations vary in format: "Berlin" vs "Berlin, Berlin, Germany")
-- Source filter uses exact match via `.eq("source", value)`
-- All filters reset page to 1 when changed
+
+- Will install `react-helmet-async` for managing `<head>` tags per route
+- `_redirects` file is the standard Netlify approach for SPAs using client-side routing
+- LinkedIn uses OG tags (`og:title`, `og:description`, `og:image`) from the HTML response — for an SPA, the `index.html` defaults matter most since there's no server-side rendering. The per-page Helmet tags help with Google (which renders JS) but won't help LinkedIn on deep links without SSR. The `index.html` defaults will be set to meaningful JobFlow branding so shared links look good everywhere.
 
