@@ -6,8 +6,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
+import { useFilterOptions } from "@/hooks/useFilterOptions";
 
 interface JobFiltersProps {
   jobType: string;
@@ -16,29 +16,13 @@ interface JobFiltersProps {
   onRemoteToggle: () => void;
   category: string;
   onCategoryChange: (value: string) => void;
+  location: string;
+  onLocationChange: (value: string) => void;
+  source: string;
+  onSourceChange: (value: string) => void;
   onClearFilters: () => void;
   hasActiveFilters: boolean;
 }
-
-const JOB_TYPES = [
-  { value: "full-time", label: "Full-time" },
-  { value: "part-time", label: "Part-time" },
-  { value: "contract", label: "Contract" },
-  { value: "freelance", label: "Freelance" },
-  { value: "internship", label: "Internship" },
-];
-
-const CATEGORIES = [
-  { value: "engineering", label: "Engineering" },
-  { value: "design", label: "Design" },
-  { value: "marketing", label: "Marketing" },
-  { value: "sales", label: "Sales" },
-  { value: "product", label: "Product" },
-  { value: "operations", label: "Operations" },
-  { value: "finance", label: "Finance" },
-  { value: "hr", label: "Human Resources" },
-  { value: "other", label: "Other" },
-];
 
 export function JobFilters({
   jobType,
@@ -47,9 +31,15 @@ export function JobFilters({
   onRemoteToggle,
   category,
   onCategoryChange,
+  location,
+  onLocationChange,
+  source,
+  onSourceChange,
   onClearFilters,
   hasActiveFilters,
 }: JobFiltersProps) {
+  const { data: options, isLoading } = useFilterOptions();
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Select value={jobType} onValueChange={onJobTypeChange}>
@@ -57,22 +47,48 @@ export function JobFilters({
           <SelectValue placeholder="Job type" />
         </SelectTrigger>
         <SelectContent>
-          {JOB_TYPES.map((type) => (
-            <SelectItem key={type.value} value={type.value}>
-              {type.label}
+          {options?.jobTypes.map((type) => (
+            <SelectItem key={type} value={type}>
+              {type}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
 
       <Select value={category} onValueChange={onCategoryChange}>
-        <SelectTrigger className="w-[160px]">
+        <SelectTrigger className="w-[170px]">
           <SelectValue placeholder="Category" />
         </SelectTrigger>
         <SelectContent>
-          {CATEGORIES.map((cat) => (
-            <SelectItem key={cat.value} value={cat.value}>
-              {cat.label}
+          {options?.categories.map((cat) => (
+            <SelectItem key={cat} value={cat}>
+              {cat}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={location} onValueChange={onLocationChange}>
+        <SelectTrigger className="w-[170px]">
+          <SelectValue placeholder="Location" />
+        </SelectTrigger>
+        <SelectContent>
+          {options?.locations.map((loc) => (
+            <SelectItem key={loc} value={loc}>
+              {loc}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={source} onValueChange={onSourceChange}>
+        <SelectTrigger className="w-[150px]">
+          <SelectValue placeholder="Source" />
+        </SelectTrigger>
+        <SelectContent>
+          {options?.sources.map((src) => (
+            <SelectItem key={src} value={src}>
+              {src}
             </SelectItem>
           ))}
         </SelectContent>

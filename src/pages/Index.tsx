@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { SearchBar } from "@/components/SearchBar";
 import { JobFilters } from "@/components/JobFilters";
@@ -14,17 +14,21 @@ const Index = () => {
   const [jobType, setJobType] = useState("");
   const [remoteOnly, setRemoteOnly] = useState(false);
   const [category, setCategory] = useState("");
+  const [location, setLocation] = useState("");
+  const [source, setSource] = useState("");
   const [page, setPage] = useState(1);
 
   const debouncedSearch = useDebounce(search, 300);
 
-  const hasActiveFilters = !!jobType || remoteOnly || !!category;
+  const hasActiveFilters = !!jobType || remoteOnly || !!category || !!location || !!source;
 
   const { data, isLoading } = useJobs({
     search: debouncedSearch,
     jobType,
     isRemote: remoteOnly ? true : undefined,
     category,
+    location,
+    source,
     page,
   });
 
@@ -32,6 +36,8 @@ const Index = () => {
     setJobType("");
     setRemoteOnly(false);
     setCategory("");
+    setLocation("");
+    setSource("");
     setPage(1);
   }, []);
 
@@ -64,6 +70,10 @@ const Index = () => {
             onRemoteToggle={() => { setRemoteOnly(!remoteOnly); setPage(1); }}
             category={category}
             onCategoryChange={(v) => { setCategory(v); setPage(1); }}
+            location={location}
+            onLocationChange={(v) => { setLocation(v); setPage(1); }}
+            source={source}
+            onSourceChange={(v) => { setSource(v); setPage(1); }}
             onClearFilters={clearFilters}
             hasActiveFilters={hasActiveFilters}
           />
