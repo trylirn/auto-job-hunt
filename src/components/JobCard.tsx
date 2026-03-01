@@ -20,10 +20,10 @@ export function JobCard({ job }: JobCardProps) {
     .trim();
 
   return (
-    <Link to={`/job/${job.id}`}>
-      <Card className="group cursor-pointer transition-all hover:shadow-md hover:border-primary/30 overflow-hidden">
+    <Link to={`/job/${job.id}`} className="block w-full overflow-hidden">
+      <Card className="group cursor-pointer transition-all hover:shadow-md hover:border-primary/30 overflow-hidden max-w-full">
         <CardContent className="p-4 md:p-5">
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-3 min-w-0">
             {job.company_logo ? (
               <img
                 src={job.company_logo}
@@ -35,8 +35,8 @@ export function JobCard({ job }: JobCardProps) {
                 <Building2 className="h-5 w-5 text-muted-foreground" />
               </div>
             )}
-            <div className="min-w-0">
-              <h3 className="font-display font-semibold leading-tight text-foreground group-hover:text-primary transition-colors line-clamp-2">
+            <div className="min-w-0 flex-1">
+              <h3 className="font-display font-semibold leading-tight text-foreground group-hover:text-primary transition-colors line-clamp-2 break-words">
                 {job.title}
               </h3>
               <p className="mt-0.5 text-sm text-muted-foreground truncate">
@@ -47,9 +47,9 @@ export function JobCard({ job }: JobCardProps) {
 
           <div className="mt-2.5 md:mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             {job.location && (
-              <span className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                {job.location}
+              <span className="flex items-center gap-1 truncate max-w-[180px]">
+                <MapPin className="h-3 w-3 shrink-0" />
+                <span className="truncate">{job.location}</span>
               </span>
             )}
             <span className="flex items-center gap-1">
