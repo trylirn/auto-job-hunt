@@ -23,9 +23,16 @@ interface NormalizedJob {
   is_remote: boolean;
 }
 
+function extractCompany(title: string): string {
+  const atMatch = title.match(/\bat\s+(.+)$/i);
+  const dashMatch = title.match(/[–—-]\s*(.+)$/);
+  if (atMatch) return atMatch[1].trim();
+  if (dashMatch) return dashMatch[1].trim();
+  return "Unknown";
+}
+
 async function fetchYeshubJobs(): Promise<NormalizedJob[]> {
   try {
-    // Fetch categories first to map IDs to names
     const catRes = await fetch("https://yeshub.ng/wp-json/wp/v2/categories?per_page=100");
     const categories: Record<number, string> = {};
     if (catRes.ok) {
@@ -42,28 +49,13 @@ async function fetchYeshubJobs(): Promise<NormalizedJob[]> {
     return posts.map((p: any) => {
       const catIds: number[] = p.categories || [];
       const catName = catIds.length > 0 ? categories[catIds[0]] || null : null;
-
-      // Get featured image from _embedded
       const featuredMedia = p._embedded?.["wp:featuredmedia"]?.[0]?.source_url || null;
-
       const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
-      
-      // Use full content instead of excerpt
       const description = (p.content?.rendered || "").trim();
-
-      // Extract company name from title patterns like "Job Title at Company" or "Job Title – Company"
-      let company = "Unknown";
-      const atMatch = title.match(/\bat\s+(.+)$/i);
-      const dashMatch = title.match(/[–—-]\s*(.+)$/);
-      if (atMatch) {
-        company = atMatch[1].trim();
-      } else if (dashMatch) {
-        company = dashMatch[1].trim();
-      }
 
       return {
         title,
-        company,
+        company: extractCompany(title),
         location: "Nigeria",
         job_type: catName || "opportunity",
         category: catName,
@@ -84,6 +76,86 @@ async function fetchYeshubJobs(): Promise<NormalizedJob[]> {
   }
 }
 
+const OPINION_CATEGORY_ID = 2;
+
+const GSO_CATEGORY_MAP: Record<number, string> = {
+  20: "jobs",
+  25: "fellowship",
+  18: "scholarship",
+  19: "internships",
+  26: "funding",
+  1: "opportunity",
+};
+
+async function fetchGlobalSouthJobs(): Promise<NormalizedJob[]> {
+  try {
+    // Fetch categories for tag mapping
+    const catRes = await fetch("https://www.globalsouthopportunities.com/wp-json/wp/v2/categories?per_page=100");
+    const categories: Record<number, string> = {};
+    if (catRes.ok) {
+      const cats = await catRes.json();
+      for (const c of cats) {
+        categories[c.id] = (c.name || "").toLowerCase();
+      }
+    }
+
+    const allPosts: any[] = [];
+    // Fetch 2 pages of 50 for good volume
+    for (let page = 1; page <= 2; page++) {
+      const res = await fetch(
+        `https://www.globalsouthopportunities.com/wp-json/wp/v2/posts?per_page=50&page=${page}&_embed`
+      );
+      if (!res.ok) break;
+      const posts = await res.json();
+      allPosts.push(...posts);
+    }
+
+    return allPosts
+      .filter((p: any) => {
+        const catIds: number[] = p.categories || [];
+        return !catIds.includes(OPINION_CATEGORY_ID);
+      })
+      .map((p: any) => {
+        const catIds: number[] = p.categories || [];
+        // Map to our normalized category using known IDs
+        let catName: string | null = null;
+        for (const id of catIds) {
+          if (GSO_CATEGORY_MAP[id]) {
+            catName = GSO_CATEGORY_MAP[id];
+            break;
+          }
+        }
+        if (!catName && catIds.length > 0) {
+          catName = categories[catIds[0]] || "opportunity";
+        }
+
+        const featuredMedia = p._embedded?.["wp:featuredmedia"]?.[0]?.source_url || null;
+        const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
+        const description = (p.content?.rendered || "").trim();
+
+        return {
+          title,
+          company: extractCompany(title),
+          location: "Global",
+          job_type: catName || "opportunity",
+          category: catName,
+          description,
+          url: p.link,
+          source: "globalsouth",
+          external_id: String(p.id),
+          posted_at: p.date || null,
+          salary: null,
+          tags: catIds.map((id: number) => categories[id]).filter(Boolean),
+          company_logo: featuredMedia,
+          is_remote: false,
+        };
+      });
+  } catch (e) {
+    console.error("Global South fetch error:", e);
+    return [];
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -94,28 +166,21 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Clean up non-yeshub records
-    const { error: deleteError } = await supabase
-      .from("jobs")
-      .delete()
-      .neq("source", "yeshub");
-    
-    if (deleteError) {
-      console.error("Error cleaning non-yeshub records:", deleteError);
-    } else {
-      console.log("Cleaned non-yeshub records");
-    }
-
     console.log("Fetching jobs from YesHub...");
     const yeshubJobs = await fetchYeshubJobs();
     console.log(`Fetched ${yeshubJobs.length} jobs from YesHub`);
 
+    console.log("Fetching jobs from Global South Opportunities...");
+    const globalSouthJobs = await fetchGlobalSouthJobs();
+    console.log(`Fetched ${globalSouthJobs.length} jobs from Global South`);
+
+    const allJobs = [...yeshubJobs, ...globalSouthJobs];
     let inserted = 0;
     let skipped = 0;
 
     const batchSize = 50;
-    for (let i = 0; i < yeshubJobs.length; i += batchSize) {
-      const batch = yeshubJobs.slice(i, i + batchSize);
+    for (let i = 0; i < allJobs.length; i += batchSize) {
+      const batch = allJobs.slice(i, i + batchSize);
       const { error } = await supabase
         .from("jobs")
         .upsert(batch, { onConflict: "source,external_id", ignoreDuplicates: false });
@@ -149,7 +214,12 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, fetched: yeshubJobs.length, inserted, skipped }),
+      JSON.stringify({
+        success: true,
+        fetched: { yeshub: yeshubJobs.length, globalsouth: globalSouthJobs.length, total: allJobs.length },
+        inserted,
+        skipped,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
