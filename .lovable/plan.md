@@ -1,22 +1,24 @@
 
 
-## Plan: Fix Job Card Stretching
+## Plan: Fix Horizontal Card Overflow on Mobile
 
-### Problem
-The `h-full` class on each Card forces all cards in a grid row to stretch to the height of the tallest card. Cards with shorter titles or no description end up with large empty spaces, which looks poor especially on desktop (3-column grid).
+### Root Cause
+Two issues are causing cards to stretch horizontally on mobile:
+1. The `container` class uses a fixed `padding: "2rem"` (32px per side) regardless of screen size — too much for narrow mobile screens
+2. Long text content (titles, descriptions, locations) can push card width beyond its grid column
 
 ### Fix
 
-**File: `src/components/JobCard.tsx`** (line 24)
-- Remove `h-full` from the Card component
-- This lets each card be its natural height
+**File: `tailwind.config.ts`** (line 10)
+- Change container padding to be responsive: `"1rem"` on mobile, `"2rem"` on larger screens
+- This gives more breathing room on narrow viewports
 
-**File: `src/pages/Index.tsx`** (lines 91, 98)
-- Add `items-start` to the grid containers so cards align to the top instead of stretching: `grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start`
-
-**File: `src/pages/Opportunities.tsx`** (lines 67, 74)
-- Same `items-start` addition to the grid containers
+**File: `src/components/JobCard.tsx`**
+- Add `overflow-hidden` and `w-full` to the wrapping `Link` element to ensure it respects grid column width
+- Add `max-w-full` to the Card so it never exceeds its parent
+- Ensure the title uses `break-words` in addition to `line-clamp-2`
+- Add `truncate` to the location span to prevent long location strings from overflowing
 
 ### Result
-Cards will size to their content and align to the top of each row — no more awkward stretching.
+Cards will stay within the viewport on all screen sizes. No horizontal scroll.
 
