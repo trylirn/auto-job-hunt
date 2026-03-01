@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { useJob } from "@/hooks/useJobs";
 import { Header } from "@/components/Header";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +56,13 @@ const JobDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>{`${job.title} at ${job.company} — JobFlow`}</title>
+        <meta name="description" content={`${job.title} at ${job.company}${job.location ? ` in ${job.location}` : ""}. Apply now on JobFlow.`} />
+        <meta property="og:title" content={`${job.title} at ${job.company}`} />
+        <meta property="og:description" content={`${job.title} at ${job.company}${job.location ? ` in ${job.location}` : ""}${job.salary ? ` — ${job.salary}` : ""}`} />
+        <meta property="og:type" content="website" />
+      </Helmet>
       <Header />
       <div className="container max-w-3xl py-8">
         <Link

@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/Header";
 import { SearchBar } from "@/components/SearchBar";
 import { JobFilters } from "@/components/JobFilters";
@@ -43,6 +44,10 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>JobFlow — Find Your Next Opportunity</title>
+        <meta name="description" content="Thousands of jobs from across the web, updated automatically. Search remote, full-time, and freelance opportunities worldwide." />
+      </Helmet>
       <Header />
 
       {/* Hero */}
