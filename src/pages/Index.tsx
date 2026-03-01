@@ -135,7 +135,7 @@ const Index = () => {
 
       <footer className="border-t bg-card">
         <div className="container py-6 text-center text-sm text-muted-foreground">
-          <p>JobFlow — Discover opportunities that match your ambitions.</p>
+          <p>Eplicant — Discover opportunities that match your ambitions.</p>
         </div>
       </footer>
     </div>);
