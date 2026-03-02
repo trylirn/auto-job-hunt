@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
       .select("id, title, description, location, job_type, category")
       .is("clean_description", null)
       .not("description", "is", null)
-      .limit(20);
+      .limit(5);
 
     if (error) throw error;
     if (!jobs || jobs.length === 0) {
