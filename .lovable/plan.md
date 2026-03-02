@@ -1,49 +1,72 @@
 
 
-## Plan: AI-Powered Content Classification + Work Mode Detection
+## Netlify Deployment: Steps, Prerendering & Optimization
 
-### Problem
-The `category` column has messy values from WordPress sources: "africa", "continent", "asia", "remote jobs", "short courses", "phd", "awards", etc. The current code uses a hardcoded list of opportunity categories to separate Jobs from Opportunities, but many listings (e.g., fellowships tagged "africa" or "continent") slip through and appear in the wrong tab.
+### Part 1: Deployment Steps
 
-### Solution
-Have the AI classify each listing as either `"job"` or `"opportunity"` during the cleanup step, and store that in a new `listing_type` column. This replaces the unreliable category-based filtering.
+Your project is already well-configured for Netlify (`_redirects`, `_headers` are in place). Here's the full process:
 
-### 1. Add `listing_type` column to jobs table
+**Prerequisites:**
+- A Netlify account (free tier works)
+- Your project pushed to GitHub (Lovable can connect to GitHub via Settings > Connectors > GitHub)
 
-**Database migration:**
-```sql
-ALTER TABLE jobs ADD COLUMN listing_type text DEFAULT NULL;
-```
+**Steps:**
+1. Go to [app.netlify.com](https://app.netlify.com) and click "Add new site" > "Import an existing project"
+2. Connect your GitHub repo
+3. Configure build settings:
+   - **Build command:** `npm run build`
+   - **Publish directory:** `dist`
+   - **Node version:** Set environment variable `NODE_VERSION` to `18` (or `20`)
+4. Add environment variables in Netlify dashboard (Site settings > Environment variables):
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`
+   - `VITE_SUPABASE_PROJECT_ID`
+   (Copy the values from your current `.env` file)
+5. Click "Deploy site"
 
-### 2. Update AI cleanup to classify listing type
+### Part 2: Enable Netlify Prerendering
 
-**Edit: `supabase/functions/clean-job-descriptions/index.ts`**
-- Add `listing_type` to the AI prompt: classify as `"job"` (standard employment: full-time, part-time, contract, freelance) or `"opportunity"` (fellowships, scholarships, grants, conferences, training programs, awards, PhD positions, short courses)
-- Add `listing_type` to the `save_cleaned_job` tool schema with enum `["job", "opportunity"]`
-- Save the result to the new `listing_type` column
+Netlify has a built-in prerendering feature specifically for SPAs that serves pre-rendered HTML to bots/crawlers (Google, Twitter, Facebook, etc.) while serving the normal SPA to humans.
 
-### 3. Update query hook to use `listing_type`
+**How to enable:**
+1. Go to your Netlify site dashboard
+2. Navigate to **Site configuration > Build & deploy > Post processing > Prerendering**
+3. Toggle **"Enable prerendering"** ON
+4. Select **"Netlify" as the provider** (it's free and built-in)
 
-**Edit: `src/hooks/useJobs.ts`**
-- Replace the `OPPORTUNITY_CATEGORIES` array and complex `.neq()` loop with a simple `.eq("listing_type", "job")` or `.eq("listing_type", "opportunity")`
-- This is cleaner and relies on AI classification instead of brittle category matching
+That's it -- Netlify automatically detects bot user agents and serves a pre-rendered snapshot. No code changes needed.
 
-### 4. Update Job type
+### Part 3: Code Optimizations for Prerendering
 
-**Edit: `src/types/job.ts`**
-- Add `listing_type: string | null` to the `Job` interface
+To make prerendering work well, the site needs proper meta tags, structured data, and a complete sitemap. Here's the plan:
 
-### 5. Re-process all jobs
+#### 3a. Update `robots.txt` with correct domain
+The current `robots.txt` references `jobflow.app` but the site is "Eplicant". Update to the correct deployed domain.
 
-- Null out `clean_description` for all 265 jobs so they get re-processed with the updated prompt that now detects `listing_type`, `work_mode`, and `location` correctly
-- Trigger the cleanup function multiple times (13 batches of 20)
+#### 3b. Expand `sitemap.xml`
+Currently only has `/`. Add `/opportunities` as a static entry. For dynamic job pages (`/job/:id`), we should create an edge function that generates the sitemap dynamically from the database.
 
-### Files Changed
-- `supabase/functions/clean-job-descriptions/index.ts` — add `listing_type` extraction
-- `src/hooks/useJobs.ts` — replace category-based filtering with `listing_type` column
-- `src/types/job.ts` — add `listing_type` field
-- Database migration: add `listing_type` column
+#### 3c. Add a `netlify.toml` config file
+Replace the `_redirects` and `_headers` files with a single `netlify.toml` for cleaner configuration, and include the prerendering directive.
 
-### One-time data operation
-- `UPDATE jobs SET clean_description = NULL;` to re-process all listings
+#### 3d. Add structured data (JSON-LD) to job detail pages
+Add `JobPosting` schema markup to `JobDetail.tsx` so that when Netlify's prerenderer serves the page to Google, it contains rich structured data. This significantly improves SEO for job boards.
+
+#### 3e. Add `<noscript>` fallback
+Add a minimal noscript tag in `index.html` so crawlers that don't execute JS still see something meaningful.
+
+#### 3f. Ensure meta tags are complete on all pages
+The pages already use `react-helmet-async` which is good. We'll verify all pages have complete OG tags (title, description, image, url) so social sharing previews work when prerendered.
+
+### Files to Change
+- `public/robots.txt` -- update domain reference
+- `public/sitemap.xml` -- add `/opportunities` route
+- `public/netlify.toml` -- new file, consolidates config + prerendering settings
+- `public/_redirects` -- delete (moved to netlify.toml)
+- `public/_headers` -- delete (moved to netlify.toml)
+- `index.html` -- add noscript fallback
+- `src/pages/JobDetail.tsx` -- add JSON-LD structured data for JobPosting schema
+- `src/pages/Index.tsx` -- ensure complete OG meta tags
+- `src/pages/Opportunities.tsx` -- ensure complete OG meta tags
+- `supabase/functions/sitemap/index.ts` -- new edge function to generate dynamic sitemap with all job URLs
 
