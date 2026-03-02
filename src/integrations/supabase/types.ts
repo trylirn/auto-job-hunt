@@ -27,6 +27,7 @@ export type Database = {
           id: string
           is_remote: boolean | null
           job_type: string | null
+          listing_type: string | null
           location: string | null
           posted_at: string | null
           salary: string | null
@@ -48,6 +49,7 @@ export type Database = {
           id?: string
           is_remote?: boolean | null
           job_type?: string | null
+          listing_type?: string | null
           location?: string | null
           posted_at?: string | null
           salary?: string | null
@@ -69,6 +71,7 @@ export type Database = {
           id?: string
           is_remote?: boolean | null
           job_type?: string | null
+          listing_type?: string | null
           location?: string | null
           posted_at?: string | null
           salary?: string | null

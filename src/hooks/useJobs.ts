@@ -3,8 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Job } from "@/types/job";
 import { subDays } from "date-fns";
 
-const OPPORTUNITY_CATEGORIES = ["fellowship", "grants", "scholarship", "conference", "internships", "funding"];
-
 interface UseJobsParams {
   search?: string;
   jobType?: string;
@@ -59,11 +57,9 @@ export function useJobs({
       }
 
       if (listingType === "jobs") {
-        for (const cat of OPPORTUNITY_CATEGORIES) {
-          query = query.neq("category", cat);
-        }
+        query = query.eq("listing_type", "job");
       } else if (listingType === "opportunities") {
-        query = query.in("category", OPPORTUNITY_CATEGORIES);
+        query = query.eq("listing_type", "opportunity");
       }
 
       const { data, error, count } = await query;
