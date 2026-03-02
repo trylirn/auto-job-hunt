@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     // Fetch jobs that haven't been cleaned yet
     const { data: jobs, error } = await supabase
       .from("jobs")
-      .select("id, title, description, location, job_type")
+      .select("id, title, description, location, job_type, category")
       .is("clean_description", null)
       .not("description", "is", null)
       .limit(20);
@@ -77,12 +77,13 @@ For non-job opportunities (scholarships, fellowships, grants, programs):
 
 Also extract:
 - The actual application URL if present (Google Forms, email mailto links, company career page URLs). Ignore chatgpt:// URLs, yeshub.ng URLs, and social media share links.
-- The SPECIFIC location where the role/opportunity is based. Look for city names, country names, or regions mentioned in the description. Examples: "Lagos, Nigeria", "Nairobi, Kenya", "Remote", "Washington DC, USA", "Multiple Locations". If truly global or location not specified, use "Global".
-- The work mode: determine if this is "Remote", "Hybrid", or "Physical" based on the description. If explicitly mentions remote work, use "Remote". If mentions hybrid/flexible, use "Hybrid". If mentions a specific office/location where you must be present, use "Physical". Default to "Physical" if unclear.`,
+- The SPECIFIC location where the role/opportunity is based. Look carefully in the description for city names, country names, or regions. Examples: "Lagos, Nigeria", "Nairobi, Kenya", "Remote", "Washington DC, USA", "Multiple Locations", "Cairo, Egypt", "Accra, Ghana". If the listing mentions a specific country or city anywhere in the text, use that. Only use "Global" if the opportunity is truly open worldwide with no specific location mentioned.
+- The work mode: determine if this is "Remote", "Hybrid", or "Physical" based on the description. If explicitly mentions remote work, work from home, or virtual, use "Remote". If mentions hybrid/flexible, use "Hybrid". If mentions a specific office/location where you must be present, or doesn't mention remote at all, use "Physical". Default to "Physical" if unclear.
+- The listing type: classify as "job" or "opportunity". Use "job" for standard employment positions (full-time, part-time, contract, freelance, internships at companies). Use "opportunity" for fellowships, scholarships, grants, conferences, training programs, awards, PhD positions, short courses, competitions, calls for proposals, and non-employment programs.`,
                 },
                 {
                   role: "user",
-                  content: `Clean this job description and extract details:\n\nTitle: ${job.title}\nCurrent location: ${job.location || "Unknown"}\nCurrent job_type: ${job.job_type || "Unknown"}\n\nHTML:\n${job.description}`,
+                  content: `Clean this listing and extract details:\n\nTitle: ${job.title}\nCurrent location: ${job.location || "Unknown"}\nCurrent job_type: ${job.job_type || "Unknown"}\nCurrent category: ${job.category || "Unknown"}\n\nHTML:\n${job.description}`,
                 },
               ],
               tools: [
@@ -91,7 +92,7 @@ Also extract:
                   function: {
                     name: "save_cleaned_job",
                     description:
-                      "Save the cleaned job description, apply URL, detected location, and work mode",
+                      "Save the cleaned job description, apply URL, detected location, work mode, and listing type",
                     parameters: {
                       type: "object",
                       properties: {
@@ -108,7 +109,7 @@ Also extract:
                         detected_location: {
                           type: "string",
                           description:
-                            "The specific location where the role is based, e.g. 'Lagos, Nigeria', 'Nairobi, Kenya', 'Remote', 'Washington DC, USA', 'Multiple Locations', 'Global'. Be as specific as possible.",
+                            "The specific location where the role is based, e.g. 'Lagos, Nigeria', 'Nairobi, Kenya', 'Remote', 'Washington DC, USA', 'Multiple Locations', 'Global'. Be as specific as possible based on the description content.",
                         },
                         work_mode: {
                           type: "string",
@@ -116,8 +117,14 @@ Also extract:
                           description:
                             "The work mode: Remote, Hybrid, or Physical. Default to Physical if unclear.",
                         },
+                        listing_type: {
+                          type: "string",
+                          enum: ["job", "opportunity"],
+                          description:
+                            "Whether this is a 'job' (standard employment) or 'opportunity' (fellowship, scholarship, grant, conference, training, award, PhD, short course).",
+                        },
                       },
-                      required: ["clean_description", "detected_location", "work_mode"],
+                      required: ["clean_description", "detected_location", "work_mode", "listing_type"],
                       additionalProperties: false,
                     },
                   },
@@ -149,6 +156,7 @@ Also extract:
         const applyUrl = args.apply_url || null;
         const detectedLocation = args.detected_location || null;
         const workMode = args.work_mode || null;
+        const listingType = args.listing_type || null;
 
         const updateData: Record<string, unknown> = {
           clean_description: cleanDesc,
@@ -161,6 +169,10 @@ Also extract:
 
         if (workMode && ["Remote", "Hybrid", "Physical"].includes(workMode)) {
           updateData.job_type = workMode;
+        }
+
+        if (listingType && ["job", "opportunity"].includes(listingType)) {
+          updateData.listing_type = listingType;
         }
 
         const { error: updateError } = await supabase
