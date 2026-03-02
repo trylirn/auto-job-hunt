@@ -1,62 +1,49 @@
 
 
-## Plan: AI-Powered Location Detection + Filter Overhaul
+## Plan: AI-Powered Content Classification + Work Mode Detection
 
-### 1. Expand AI cleanup to extract location and work mode
+### Problem
+The `category` column has messy values from WordPress sources: "africa", "continent", "asia", "remote jobs", "short courses", "phd", "awards", etc. The current code uses a hardcoded list of opportunity categories to separate Jobs from Opportunities, but many listings (e.g., fellowships tagged "africa" or "continent") slip through and appear in the wrong tab.
+
+### Solution
+Have the AI classify each listing as either `"job"` or `"opportunity"` during the cleanup step, and store that in a new `listing_type` column. This replaces the unreliable category-based filtering.
+
+### 1. Add `listing_type` column to jobs table
+
+**Database migration:**
+```sql
+ALTER TABLE jobs ADD COLUMN listing_type text DEFAULT NULL;
+```
+
+### 2. Update AI cleanup to classify listing type
 
 **Edit: `supabase/functions/clean-job-descriptions/index.ts`**
-- Update the AI prompt to also extract:
-  - `detected_location` — the specific country/city/region mentioned in the description (e.g., "Kenya", "Lagos, Nigeria", "Washington DC, USA")
-  - `work_mode` — one of "Remote", "Hybrid", or "Physical" based on what the description indicates
-- Add these two fields to the `save_cleaned_job` tool schema
-- After AI responds, update the `location` and `job_type` columns with the detected values
-- Also select `location` and `job_type` in the query so AI has current context
+- Add `listing_type` to the AI prompt: classify as `"job"` (standard employment: full-time, part-time, contract, freelance) or `"opportunity"` (fellowships, scholarships, grants, conferences, training programs, awards, PhD positions, short courses)
+- Add `listing_type` to the `save_cleaned_job` tool schema with enum `["job", "opportunity"]`
+- Save the result to the new `listing_type` column
 
-### 2. Re-process existing jobs
-
-Since ~259 jobs already have `clean_description` set, the AI cleanup won't re-process them. We need to:
-- **Temporarily** null out `clean_description` for all jobs so they get re-processed with the new prompt, OR
-- Add a separate query batch that targets jobs where `location IN ('Global', 'Nigeria')` (the generic defaults) to re-analyze them
-
-The simpler approach: null out `clean_description` for all jobs so every listing gets the enhanced AI treatment. This is a one-time data update.
-
-### 3. Update job type filter to Remote / Hybrid / Physical
-
-**Edit: `src/components/JobFilters.tsx`**
-- Replace the current job type select options (which pull messy DB values) with three hardcoded options: Remote, Hybrid, Physical
-- Remove the Remote toggle button (it's now part of job type)
-- Keep the location filter but populate it dynamically from `useFilterOptions` (since AI will now provide real locations)
-- Keep date range filter as-is
-
-**Edit: `src/hooks/useFilterOptions.ts`**
-- Keep this hook but only for fetching distinct `location` values (now meaningful after AI enrichment)
-- Remove `jobTypes` from it since those are hardcoded
-
-### 4. Update query hook
+### 3. Update query hook to use `listing_type`
 
 **Edit: `src/hooks/useJobs.ts`**
-- Remove `isRemote` parameter
-- `jobType` filter now matches against `job_type` column with values "Remote", "Hybrid", or "Physical"
-- `location` filter remains as ilike match
+- Replace the `OPPORTUNITY_CATEGORIES` array and complex `.neq()` loop with a simple `.eq("listing_type", "job")` or `.eq("listing_type", "opportunity")`
+- This is cleaner and relies on AI classification instead of brittle category matching
 
-### 5. Update pages
+### 4. Update Job type
 
-**Edit: `src/pages/Index.tsx`**
-- Remove `remoteOnly` state
-- Remove `onRemoteToggle` prop
-- Update `JobFilters` props accordingly
+**Edit: `src/types/job.ts`**
+- Add `listing_type: string | null` to the `Job` interface
 
-**Edit: `src/pages/Opportunities.tsx`**
-- Add the same filter bar
+### 5. Re-process all jobs
+
+- Null out `clean_description` for all 265 jobs so they get re-processed with the updated prompt that now detects `listing_type`, `work_mode`, and `location` correctly
+- Trigger the cleanup function multiple times (13 batches of 20)
 
 ### Files Changed
-- `supabase/functions/clean-job-descriptions/index.ts` — add location + work_mode extraction
-- `src/components/JobFilters.tsx` — new filter layout (Job Type: Remote/Hybrid/Physical, Location from DB, Date Posted)
-- `src/hooks/useJobs.ts` — remove `isRemote`, update `jobType` matching
-- `src/hooks/useFilterOptions.ts` — simplify to locations only
-- `src/pages/Index.tsx` — remove remote state, update filter props
-- `src/pages/Opportunities.tsx` — add filters
+- `supabase/functions/clean-job-descriptions/index.ts` — add `listing_type` extraction
+- `src/hooks/useJobs.ts` — replace category-based filtering with `listing_type` column
+- `src/types/job.ts` — add `listing_type` field
+- Database migration: add `listing_type` column
 
 ### One-time data operation
-- Null out `clean_description` for all existing jobs so they get re-processed with the new AI prompt that extracts location and work mode
+- `UPDATE jobs SET clean_description = NULL;` to re-process all listings
 
