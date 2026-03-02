@@ -1,37 +1,83 @@
 
 
+## Plan: Build Webhook Dispatcher for Social Media Posting
 
-## Plan: Add YuthAxis Source + Updated Netlify Prerender Guide
+### What We're Building
 
-### Part 1: Add YuthAxis as a Job Source ✅
+A backend function that automatically sends new job listings to your Zapier webhooks whenever they're added to the database. Zapier then posts them to LinkedIn and X/Twitter on your behalf.
 
-YuthAxis (yuthaxis.com) is a WordPress site with a standard WP REST API. It has well-structured categories that map cleanly to our system:
+### How It Works
 
-- **Jobs** (id: 32, 766 posts)
-- **Internships** (id: 31, 317 posts)
-- **Fellowships** (id: 36, 115 posts)
-- **Scholarships** (id: 33, 67 posts)
-- **Grants** (id: 38, 18 posts)
-- **Embassy Jobs** (id: 5527, 1 post)
+```text
+New job inserted into database
+  └─► Database trigger fires
+        └─► Calls "post-to-socials" backend function
+              └─► Sends job data to your Zapier webhook URLs
+                    ├─► Zapier Zap #1 → Posts to LinkedIn
+                    └─► Zapier Zap #2 → Posts to X/Twitter
+```
 
-**Implemented in `supabase/functions/fetch-jobs/index.ts`** — fetches 2 pages of 50 posts, source `"yuthaxis"`, location `"Global"`.
+### What I'll Build (Code Changes)
 
-### Part 2: Updated Netlify Prerender Guide
+1. **Create `post-to-socials` Edge Function** — receives job data, formats a nice post message, and sends it to your Zapier webhook URLs (stored as secrets)
 
-The old prerendering approach (Site config > Post processing > toggle ON) is now **legacy**. Netlify has replaced it with a new **Prerender Extension**.
+2. **Create a database trigger** — when a new job is inserted into the `jobs` table AND has a `clean_description` (meaning it's been processed by AI), it calls the Edge Function automatically
 
-**Updated steps for your Netlify deployment:**
+3. **Register the function** in config
 
-1. **If you already enabled the legacy prerendering**, disable it first: go to *Project Configuration > Build & Deploy > scroll to "Prerendering"* and turn it OFF.
+### What You Need to Do on Zapier (Step-by-Step)
 
-2. **Install the new Prerender Extension**: visit [https://app.netlify.com/extensions/prerender](https://app.netlify.com/extensions/prerender) and install it for your Netlify account.
+**Before I build anything, here's your Zapier setup — do this first:**
 
-3. **Enable for your project**: in your Netlify project sidebar, find *"Netlify Prerender Extension (Early Access)"* at the bottom. Click it, check *"Enable prerendering"*, save changes, and **re-deploy**.
+#### Zap #1: LinkedIn Posting
 
-4. **Test it**: in Chrome DevTools, go to Network conditions and set a custom User-Agent string (e.g., `Googlebot`). Reload your deployed site and check for the `X-Prerendered` response header on the HTML document.
+1. Go to [zapier.com](https://zapier.com) and sign up (free tier: 100 tasks/month)
+2. Click **"Create a Zap"**
+3. **Trigger step**: Search for **"Webhooks by Zapier"** → choose **"Catch Hook"** → click Continue → Zapier gives you a **webhook URL** (copy it — you'll give it to me later)
+4. **Action step**: Search for **"LinkedIn"** → choose **"Create Share Update"** → connect your LinkedIn account when prompted
+5. Map the fields:
+   - **Message**: Click in the field → select `message` from the webhook data (this is the formatted post text I'll send)
+   - **Visibility**: Choose "Anyone" (public)
+6. Turn the Zap ON
 
-**Key differences from the old approach:**
-- Full visibility via serverless function logs in your Netlify dashboard
-- Configurable cache settings with the ability to purge cached pages
-- Automatically handles all major crawlers, AI crawlers, and AI agents (ChatGPT, etc.)
-- No code changes needed -- the extension handles everything at the edge
+#### Zap #2: X/Twitter Posting
+
+1. Click **"Create a Zap"** again
+2. **Trigger step**: **"Webhooks by Zapier"** → **"Catch Hook"** → get the webhook URL (different from the LinkedIn one)
+3. **Action step**: Search for **"Twitter"** (or "X") → choose **"Create Tweet"** → connect your X account
+4. Map the fields:
+   - **Message**: Select `message` from the webhook data
+5. Turn the Zap ON
+
+#### After You Create Both Zaps
+
+You'll have **two webhook URLs** that look like:
+- `https://hooks.zapier.com/hooks/catch/12345/abcdef/` (LinkedIn)
+- `https://hooks.zapier.com/hooks/catch/12345/ghijkl/` (Twitter)
+
+Give me both URLs and I'll store them securely as secrets in your backend.
+
+### Files to Create/Change
+
+- `supabase/functions/post-to-socials/index.ts` — new Edge Function
+- `supabase/config.toml` — register the new function
+- Database migration — add trigger on `jobs` table to call the function on new inserts
+
+### Post Format
+
+Each social post will look something like:
+> 🚀 **New Opportunity**: Senior Developer at Google
+> 📍 Lagos, Nigeria | 💼 Remote
+> 
+> Apply now: https://eplicant.com/job/abc123
+
+### Important Notes
+
+- **Zapier free tier** gives you 100 tasks/month. Each post to each platform = 1 task. So ~50 new jobs/month can be posted to both platforms on the free plan.
+- The trigger only fires for **newly inserted** jobs (not updates to existing ones)
+- If you later want to add Facebook or WhatsApp, you just create another Zap and give me the webhook URL — no code changes needed
+
+### Next Step
+
+Go create those two Zaps on Zapier and come back with the webhook URLs. Then I'll build everything.
+
