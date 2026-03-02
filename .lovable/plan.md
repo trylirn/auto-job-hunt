@@ -1,8 +1,9 @@
 
 
+
 ## Plan: Add YuthAxis Source + Updated Netlify Prerender Guide
 
-### Part 1: Add YuthAxis as a Job Source
+### Part 1: Add YuthAxis as a Job Source ✅
 
 YuthAxis (yuthaxis.com) is a WordPress site with a standard WP REST API. It has well-structured categories that map cleanly to our system:
 
@@ -13,12 +14,7 @@ YuthAxis (yuthaxis.com) is a WordPress site with a standard WP REST API. It has 
 - **Grants** (id: 38, 18 posts)
 - **Embassy Jobs** (id: 5527, 1 post)
 
-**Edit: `supabase/functions/fetch-jobs/index.ts`**
-- Add a new `fetchYuthAxisJobs()` function following the same WordPress pattern as the existing sources
-- Fetch 2 pages of 50 posts via `https://yuthaxis.com/wp-json/wp/v2/posts?per_page=50&page={n}&_embed`
-- Use source name `"yuthaxis"`
-- Set location to `"Global"` (site covers international opportunities)
-- Wire it into the main handler alongside the other sources
+**Implemented in `supabase/functions/fetch-jobs/index.ts`** — fetches 2 pages of 50 posts, source `"yuthaxis"`, location `"Global"`.
 
 ### Part 2: Updated Netlify Prerender Guide
 
@@ -39,11 +35,3 @@ The old prerendering approach (Site config > Post processing > toggle ON) is now
 - Configurable cache settings with the ability to purge cached pages
 - Automatically handles all major crawlers, AI crawlers, and AI agents (ChatGPT, etc.)
 - No code changes needed -- the extension handles everything at the edge
-
-**Update: `.lovable/plan.md`**
-- Replace the outdated Part 2 instructions with the new extension-based approach
-
-### Files to Change
-- `supabase/functions/fetch-jobs/index.ts` -- add `fetchYuthAxisJobs()` function and wire into main handler
-- `.lovable/plan.md` -- update prerender instructions to reflect the new extension
-
