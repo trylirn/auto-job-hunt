@@ -45,6 +45,15 @@ const Index = () => {
       <Helmet>
         <title>Eplicant — Find Your Next Opportunity</title>
         <meta name="description" content="Thousands of jobs updated automatically. Search remote, full-time, and freelance opportunities worldwide." />
+        <link rel="canonical" href="https://auto-job-hunt.lovable.app/" />
+        <meta property="og:title" content="Eplicant — Find Your Next Opportunity" />
+        <meta property="og:description" content="Thousands of jobs updated automatically. Search remote, full-time, and freelance opportunities worldwide." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://auto-job-hunt.lovable.app/" />
+        <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/efd56ee5-8a5e-49bb-89ba-4f7e8643961a/id-preview-92a29c77--87d973e3-d02d-4b67-b29b-996d6d79bb82.lovable.app-1772372990864.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Eplicant — Find Your Next Opportunity" />
+        <meta name="twitter:description" content="Thousands of jobs updated automatically. Search remote, full-time, and freelance opportunities worldwide." />
       </Helmet>
       <Header />
 

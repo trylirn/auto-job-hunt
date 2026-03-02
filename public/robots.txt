@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://jobflow.app/sitemap.xml
+Sitemap: https://auto-job-hunt.lovable.app/sitemap.xml
