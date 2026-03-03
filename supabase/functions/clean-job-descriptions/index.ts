@@ -77,9 +77,11 @@ For non-job opportunities (scholarships, fellowships, grants, programs):
 
 Also extract:
 - The actual application URL if present (Google Forms, email mailto links, company career page URLs). Ignore chatgpt:// URLs, yeshub.ng URLs, and social media share links.
-- The SPECIFIC location where the role/opportunity is based. Look carefully in the description for city names, country names, or regions. Examples: "Lagos, Nigeria", "Nairobi, Kenya", "Remote", "Washington DC, USA", "Multiple Locations", "Cairo, Egypt", "Accra, Ghana". If the listing mentions a specific country or city anywhere in the text, use that. Only use "Global" if the opportunity is truly open worldwide with no specific location mentioned.
-- The work mode: determine if this is "Remote", "Hybrid", or "Physical" based on the description. If explicitly mentions remote work, work from home, or virtual, use "Remote". If mentions hybrid/flexible, use "Hybrid". If mentions a specific office/location where you must be present, or doesn't mention remote at all, use "Physical". Default to "Physical" if unclear.
-- The listing type: classify as "job" or "opportunity". Use "job" for standard employment positions (full-time, part-time, contract, freelance, internships at companies). Use "opportunity" for fellowships, scholarships, grants, conferences, training programs, awards, PhD positions, short courses, competitions, calls for proposals, and non-employment programs.`,
+- COMPANY NAME: Extract the actual hiring organization/company name. Look for patterns like "at [Company]", "by [Company]", "[Company] is hiring", or company names mentioned in the description. Do NOT use the blog/source site name (e.g., not "YesHub"). If no company can be identified, return null.
+- LOCATION (COUNTRY ONLY): Return ONLY the country name (e.g., "Nigeria", "Kenya", "USA", "United Kingdom", "Global"). Do NOT include city names. If the listing mentions a specific country anywhere, use that. Only use "Global" if truly open worldwide.
+- The work mode: determine if this is "Remote", "Hybrid", or "Physical" based on the description. Default to "Physical" if unclear.
+- The listing type: classify as "job" or "opportunity". Use "job" for standard employment positions. Use "opportunity" for fellowships, scholarships, grants, conferences, training programs, awards, PhD positions, short courses, competitions.
+- OPPORTUNITY CATEGORY: If the listing is an "opportunity", also classify its sub-category as one of: "fellowship", "scholarship", "grant", "conference", "internship". Use "fellowship" as default for opportunities that don't fit other categories.`,
                 },
                 {
                   role: "user",
@@ -106,22 +108,33 @@ Also extract:
                           description:
                             "The actual application URL (Google Forms, mailto, company career page). null if not found. Must start with https:// or mailto:",
                         },
+                        company_name: {
+                          type: "string",
+                          description:
+                            "The actual hiring company/organization name extracted from the listing. null if not identifiable.",
+                        },
                         detected_location: {
                           type: "string",
                           description:
-                            "The specific location where the role is based, e.g. 'Lagos, Nigeria', 'Nairobi, Kenya', 'Remote', 'Washington DC, USA', 'Multiple Locations', 'Global'. Be as specific as possible based on the description content.",
+                            "Country name ONLY, e.g. 'Nigeria', 'Kenya', 'USA', 'Global'. No cities.",
                         },
                         work_mode: {
                           type: "string",
                           enum: ["Remote", "Hybrid", "Physical"],
                           description:
-                            "The work mode: Remote, Hybrid, or Physical. Default to Physical if unclear.",
+                            "The work mode: Remote, Hybrid, or Physical.",
                         },
                         listing_type: {
                           type: "string",
                           enum: ["job", "opportunity"],
                           description:
-                            "Whether this is a 'job' (standard employment) or 'opportunity' (fellowship, scholarship, grant, conference, training, award, PhD, short course).",
+                            "Whether this is a 'job' or 'opportunity'.",
+                        },
+                        opportunity_category: {
+                          type: "string",
+                          enum: ["fellowship", "scholarship", "grant", "conference", "internship"],
+                          description:
+                            "Sub-category for opportunities. Only required when listing_type is 'opportunity'.",
                         },
                       },
                       required: ["clean_description", "detected_location", "work_mode", "listing_type"],
@@ -154,14 +167,20 @@ Also extract:
         const args = JSON.parse(toolCall.function.arguments);
         const cleanDesc = args.clean_description || null;
         const applyUrl = args.apply_url || null;
+        const companyName = args.company_name || null;
         const detectedLocation = args.detected_location || null;
         const workMode = args.work_mode || null;
         const listingType = args.listing_type || null;
+        const opportunityCategory = args.opportunity_category || null;
 
         const updateData: Record<string, unknown> = {
           clean_description: cleanDesc,
           apply_url: applyUrl && (applyUrl.startsWith("https://") || applyUrl.startsWith("mailto:")) ? applyUrl : null,
         };
+
+        if (companyName) {
+          updateData.company = companyName;
+        }
 
         if (detectedLocation) {
           updateData.location = detectedLocation;
@@ -173,6 +192,10 @@ Also extract:
 
         if (listingType && ["job", "opportunity"].includes(listingType)) {
           updateData.listing_type = listingType;
+        }
+
+        if (opportunityCategory) {
+          updateData.category = opportunityCategory;
         }
 
         const { error: updateError } = await supabase

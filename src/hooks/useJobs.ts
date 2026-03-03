@@ -12,6 +12,7 @@ interface UseJobsParams {
   sortBy?: "posted_at" | "created_at";
   listingType?: "jobs" | "opportunities";
   dateRange?: "24h" | "week" | "month" | "";
+  opportunityCategory?: string;
 }
 
 export function useJobs({
@@ -23,9 +24,10 @@ export function useJobs({
   sortBy = "posted_at",
   listingType,
   dateRange = "",
+  opportunityCategory = "",
 }: UseJobsParams = {}) {
   return useQuery({
-    queryKey: ["jobs", search, jobType, location, page, sortBy, listingType, dateRange],
+    queryKey: ["jobs", search, jobType, location, page, sortBy, listingType, dateRange, opportunityCategory],
     queryFn: async () => {
       let query = supabase
         .from("jobs")
@@ -60,6 +62,10 @@ export function useJobs({
         query = query.eq("listing_type", "job");
       } else if (listingType === "opportunities") {
         query = query.eq("listing_type", "opportunity");
+      }
+
+      if (opportunityCategory) {
+        query = query.ilike("category", `%${opportunityCategory}%`);
       }
 
       const { data, error, count } = await query;
