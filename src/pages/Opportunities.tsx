@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/Header";
 import { SearchBar } from "@/components/SearchBar";
-import { JobFilters } from "@/components/JobFilters";
+import { OpportunityFilters } from "@/components/OpportunityFilters";
 import { JobCard } from "@/components/JobCard";
 import { JobListItem } from "@/components/JobListItem";
 import { JobCardSkeleton } from "@/components/JobCardSkeleton";
@@ -14,7 +14,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 
 const Opportunities = () => {
   const [search, setSearch] = useState("");
-  const [jobType, setJobType] = useState("");
+  const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
   const [dateRange, setDateRange] = useState("");
   const [page, setPage] = useState(1);
@@ -22,19 +22,19 @@ const Opportunities = () => {
 
   const debouncedSearch = useDebounce(search, 300);
 
-  const hasActiveFilters = !!jobType || !!location || !!dateRange;
+  const hasActiveFilters = !!category || !!location || !!dateRange;
 
   const { data, isLoading } = useJobs({
     search: debouncedSearch,
-    jobType,
     location,
     dateRange: dateRange as "24h" | "week" | "month" | "",
     page,
     listingType: "opportunities",
+    opportunityCategory: category,
   });
 
   const clearFilters = useCallback(() => {
-    setJobType("");
+    setCategory("");
     setLocation("");
     setDateRange("");
     setPage(1);
@@ -75,9 +75,9 @@ const Opportunities = () => {
       {/* Main */}
       <main className="container py-8">
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <JobFilters
-            jobType={jobType}
-            onJobTypeChange={(v) => { setJobType(v); setPage(1); }}
+          <OpportunityFilters
+            category={category}
+            onCategoryChange={(v) => { setCategory(v); setPage(1); }}
             location={location}
             onLocationChange={(v) => { setLocation(v); setPage(1); }}
             dateRange={dateRange}
