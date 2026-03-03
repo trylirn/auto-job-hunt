@@ -7,7 +7,12 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
-import { useFilterOptions } from "@/hooks/useFilterOptions";
+const COUNTRIES = [
+  "Nigeria", "Kenya", "South Africa", "Ghana", "Egypt", "Tanzania",
+  "Uganda", "Rwanda", "Ethiopia", "Cameroon", "Senegal",
+  "USA", "United Kingdom", "Canada", "Germany", "France",
+  "Netherlands", "Australia", "India", "UAE", "Global",
+];
 
 interface JobFiltersProps {
   jobType: string;
@@ -30,8 +35,6 @@ export function JobFilters({
   onClearFilters,
   hasActiveFilters,
 }: JobFiltersProps) {
-  const { data: options } = useFilterOptions();
-
   return (
     <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
       <Select value={jobType} onValueChange={onJobTypeChange}>
@@ -47,12 +50,12 @@ export function JobFilters({
 
       <Select value={location} onValueChange={onLocationChange}>
         <SelectTrigger className="w-full sm:w-[180px] text-sm">
-          <SelectValue placeholder="Location" />
+          <SelectValue placeholder="Country" />
         </SelectTrigger>
         <SelectContent>
-          {options?.locations.map((loc) => (
-            <SelectItem key={loc} value={loc}>
-              {loc}
+          {COUNTRIES.map((c) => (
+            <SelectItem key={c} value={c}>
+              {c}
             </SelectItem>
           ))}
         </SelectContent>
