@@ -146,7 +146,7 @@ const Index = () => {
             <AccordionItem value="what">
               <AccordionTrigger>What is Eplicant?</AccordionTrigger>
               <AccordionContent>
-                Eplicant is a job and opportunity aggregator that automatically collects and organizes listings from multiple sources across Africa and beyond, making it easy to discover roles that match your ambitions.
+                Eplicant is a job and opportunity Job site that automatically collects and organizes listings from verified sources across Africa and beyond, making it easy to discover roles that match your ambitions.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="updated">
