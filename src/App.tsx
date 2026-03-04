@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import JobDetail from "./pages/JobDetail";
 import Opportunities from "./pages/Opportunities";
 import NotFound from "./pages/NotFound";
+import { WhatsAppBanner } from "./components/WhatsAppBanner";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        <WhatsAppBanner />
       </TooltipProvider>
     </QueryClientProvider>
   </HelmetProvider>

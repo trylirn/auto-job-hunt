@@ -15,6 +15,7 @@ import {
   Building2,
   DollarSign,
 } from "lucide-react";
+import { ShareButtons } from "@/components/ShareButtons";
 import { formatDistanceToNow } from "date-fns";
 
 function extractApplyUrl(description: string | null): string | null {
@@ -255,11 +256,16 @@ const JobDetail = () => {
             )}
 
             {/* Apply button */}
-            <div className="mt-6 md:mt-8 border-t pt-4 md:pt-6">
+            <div className="mt-6 md:mt-8 border-t pt-4 md:pt-6 space-y-4">
               <Button size="lg" className="gap-2 w-full sm:w-auto" onClick={handleApply}>
                 Apply
                 {applyUrl && <ExternalLink className="h-4 w-4" />}
               </Button>
+              <ShareButtons
+                title={job.title}
+                company={job.company}
+                jobUrl={`https://auto-job-hunt.lovable.app/job/${job.id}`}
+              />
             </div>
           </CardContent>
         </Card>

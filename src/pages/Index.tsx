@@ -11,6 +11,12 @@ import { ViewToggle } from "@/components/ViewToggle";
 import { useJobs } from "@/hooks/useJobs";
 import { Briefcase } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const Index = () => {
   const [search, setSearch] = useState("");
@@ -131,6 +137,45 @@ const Index = () => {
           </div>
         }
       </main>
+
+      {/* FAQ */}
+      <section className="border-t bg-card">
+        <div className="container py-10 md:py-16 max-w-3xl">
+          <h2 className="font-display text-xl font-bold md:text-2xl mb-6">Frequently Asked Questions</h2>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="what">
+              <AccordionTrigger>What is Eplicant?</AccordionTrigger>
+              <AccordionContent>
+                Eplicant is a job and opportunity aggregator that automatically collects and organizes listings from multiple sources across Africa and beyond, making it easy to discover roles that match your ambitions.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="updated">
+              <AccordionTrigger>How often are jobs updated?</AccordionTrigger>
+              <AccordionContent>
+                Our system fetches new listings every hour and uses AI to clean and categorize them, so you always see fresh, well-organized opportunities.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="verified">
+              <AccordionTrigger>Are these jobs verified?</AccordionTrigger>
+              <AccordionContent>
+                We aggregate listings from reputable sources and use AI to improve their quality. However, we recommend verifying details directly with the hiring company before applying.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="apply">
+              <AccordionTrigger>How do I apply for a job?</AccordionTrigger>
+              <AccordionContent>
+                Click on any listing to view its details, then use the "Apply" button to be redirected to the original application page where you can submit your application.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="difference">
+              <AccordionTrigger>What's the difference between Jobs and Opportunities?</AccordionTrigger>
+              <AccordionContent>
+                Jobs are traditional employment listings (full-time, part-time, contract). Opportunities include fellowships, scholarships, grants, conferences, and other career-development programs.
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </section>
 
       <footer className="border-t bg-card">
         <div className="container py-6 text-center text-sm text-muted-foreground">
