@@ -158,7 +158,7 @@ const Index = () => {
             <AccordionItem value="verified">
               <AccordionTrigger>Are these jobs verified?</AccordionTrigger>
               <AccordionContent>
-                We aggregate listings from reputable sources and use AI to improve their quality. However, we recommend verifying details directly with the hiring company before applying.
+                We verify our Job listings from reputable sources and use AI to improve their quality.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="apply">
