@@ -1,65 +1,51 @@
 
 
-## Plan: Multiple Improvements
+## Plan: Fix LinkedIn Automation, Add Share Buttons, WhatsApp Banner, and FAQ
 
-### 1. Add Logo as Website Logo and Favicon
-- Copy the uploaded logo (`Screenshot_2026-03-03_at_11.06.02.png`) to `public/logo.png`
-- Update `index.html` to use it as favicon
-- Update `Header.tsx` to show the logo image instead of the Briefcase icon
+### 1. Fix LinkedIn Posting (Root Cause Found)
 
-### 2. AI: Extract Company Names Properly
-- Update the AI prompt in `clean-job-descriptions/index.ts` to also extract `company_name` from the listing content
-- Add `company_name` to the `save_cleaned_job` tool parameters
-- Update the DB write to set the `company` column with the AI-detected company name
+The database trigger (`notify_new_job_to_socials`) tries to read `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from `vault.decrypted_secrets`, but **neither exists in the vault**. The trigger silently returns without calling the edge function.
 
-### 3. AI: Extract Country-Only Locations
-- Update the AI prompt to instruct it to return **country only** (e.g., "Nigeria", "Kenya", "USA", "Global") instead of city+country
-- This makes the Location filter cleaner and country-based
-- The `useFilterOptions` hook already pulls distinct locations, so no frontend change needed
+**Fix**: Replace the current trigger approach. Instead of using `pg_net` from a DB trigger (which requires vault secrets), use a **database webhook** (pg_net directly with hardcoded project URL) or simpler: store the required URL/key in vault via a migration.
 
-### 4. Separate Opportunity Filters from Job Filters
-- Create a new `OpportunityFilters` component with category options: Fellowships, Scholarships, Grants, Conferences, Internships (instead of Work Mode: Remote/Hybrid/Physical)
-- Update `Opportunities.tsx` to use `OpportunityFilters` instead of `JobFilters`
-- Add an `opportunity_category` or reuse `category` column — the AI already classifies these, so update the AI prompt to also extract a sub-category for opportunities
-- Update `useJobs` to support an `opportunityCategory` filter parameter
+**Migration**: Insert `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` into `vault.secrets` so the existing trigger can find them.
 
-### 5. Fix Zapier Webhook Configuration
-- Looking at the screenshots: the Zap is using `Object.to_json(1. Raw Output)` for all fields, which sends the entire raw JSON blob
-- The `post-to-socials` Edge Function sends specific named fields: `message`, `title`, `company`, `location`, `job_type`, `listing_type`, `apply_url`
-- **Zapier guidance**: In the LinkedIn action step, map fields individually:
-  - **Comment** → select `message` (not Raw Output)
-  - **Content - Title** → select `title`
-  - **Content - Description** → select `message`
-  - **Content - URL** → select `apply_url`
-- The user needs to first **test the trigger** by sending a sample webhook, then Zapier will show the individual fields to map
+Your Zapier configuration (screenshot) looks correct — `message`, `title`, `apply_url` mapped properly. The issue is purely that the edge function never gets called.
 
-### Technical Details
+### 2. Add Social Share Buttons on Job Detail Page
 
-**AI prompt changes** (`clean-job-descriptions/index.ts`):
-- Add `company_name` extraction: "Extract the actual hiring company name. Look for 'at [Company]', 'by [Company]', or company mentioned in the description. Do not use the blog/source site name."
-- Change location instruction to: "Return ONLY the country name (e.g., 'Nigeria', 'Kenya', 'USA', 'Global'). Do not include cities."
-- Add `opportunity_category` extraction with enum: `["fellowship", "scholarship", "grant", "conference", "internship", "other"]`
+Add share buttons below the Apply button on `JobDetail.tsx`:
+- **WhatsApp**: `https://wa.me/?text=...`
+- **LinkedIn**: `https://www.linkedin.com/sharing/share-offsite/?url=...`
+- **Twitter/X**: `https://twitter.com/intent/tweet?text=...&url=...`
+- **Copy Link**: Copy job URL to clipboard
 
-**New `OpportunityFilters` component**:
-- Category dropdown: Fellowship, Scholarship, Grant, Conference, Internship
-- Location dropdown (countries, same as jobs)
-- Date posted dropdown (same as jobs)
-- No "Work mode" filter (irrelevant for opportunities)
+Use lucide icons + simple anchor buttons in a row.
 
-**`useJobs` hook update**:
-- Add `opportunityCategory` parameter that filters on the `category` column
+### 3. WhatsApp Channel Floating Banner
 
-**Zapier fix — user instructions to provide after implementation**:
-- Send a test webhook first so Zapier can see the individual fields
-- Then re-map the LinkedIn fields to use `message`, `title`, `apply_url` individually instead of `Raw Output`
+Create a `WhatsAppBanner` component — a fixed-position bar at the bottom of the screen (or a floating button) visible on all pages:
+- Text: "Join Us on WhatsApp"
+- Link: `https://whatsapp.com/channel/0029VbBrMe45a23vftujJO22`
+- Green WhatsApp-themed styling
+- Add it to `App.tsx` so it shows on every page
+
+### 4. FAQ Section on Homepage
+
+Add an FAQ accordion section to `Index.tsx` above the footer using the existing `Accordion` component. Questions like:
+- "What is Eplicant?"
+- "How often are jobs updated?"
+- "Are these jobs verified?"
+- "How do I apply?"
+- "What's the difference between Jobs and Opportunities?"
 
 ### Files to Change
-- `public/logo.png` — copy uploaded logo
-- `index.html` — favicon reference
-- `src/components/Header.tsx` — use logo image
-- `supabase/functions/clean-job-descriptions/index.ts` — AI prompt updates (company, country-only location, opportunity category)
-- `src/components/OpportunityFilters.tsx` — new component
-- `src/pages/Opportunities.tsx` — use new filters
-- `src/hooks/useJobs.ts` — add opportunity category filter
-- `src/components/JobFilters.tsx` — minor: ensure it's Jobs-only context
+
+| File | Change |
+|------|--------|
+| New migration | Insert `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` into vault |
+| `src/pages/JobDetail.tsx` | Add share buttons (WhatsApp, LinkedIn, Twitter, Copy) |
+| `src/components/WhatsAppBanner.tsx` | New floating "Join us on WhatsApp" banner |
+| `src/App.tsx` | Include `WhatsAppBanner` globally |
+| `src/pages/Index.tsx` | Add FAQ accordion section before footer |
 
