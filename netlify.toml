@@ -5,6 +5,13 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Dynamic sitemap — proxy to edge function (must be before SPA fallback)
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "https://wmfwpviizgvohgadumgp.supabase.co/functions/v1/sitemap"
+  status = 200
+  force = true
+
 # SPA fallback — serve index.html for all routes
 [[redirects]]
   from = "/*"

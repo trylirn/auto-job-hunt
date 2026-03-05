@@ -7,12 +7,6 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
-const COUNTRIES = [
-  "Nigeria", "Kenya", "South Africa", "Ghana", "Egypt", "Tanzania",
-  "Uganda", "Rwanda", "Ethiopia", "Cameroon", "Senegal",
-  "USA", "United Kingdom", "Canada", "Germany", "France",
-  "Netherlands", "Australia", "India", "UAE", "Global",
-];
 
 interface OpportunityFiltersProps {
   category: string;
@@ -23,6 +17,7 @@ interface OpportunityFiltersProps {
   onDateRangeChange: (value: string) => void;
   onClearFilters: () => void;
   hasActiveFilters: boolean;
+  availableLocations?: string[];
 }
 
 export function OpportunityFilters({
@@ -34,6 +29,7 @@ export function OpportunityFilters({
   onDateRangeChange,
   onClearFilters,
   hasActiveFilters,
+  availableLocations = [],
 }: OpportunityFiltersProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
@@ -52,10 +48,10 @@ export function OpportunityFilters({
 
       <Select value={location} onValueChange={onLocationChange}>
         <SelectTrigger className="w-full sm:w-[180px] text-sm">
-          <SelectValue placeholder="Country" />
+          <SelectValue placeholder="Location" />
         </SelectTrigger>
         <SelectContent>
-          {COUNTRIES.map((c) => (
+          {availableLocations.map((c) => (
             <SelectItem key={c} value={c}>
               {c}
             </SelectItem>
