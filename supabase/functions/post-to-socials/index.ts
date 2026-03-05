@@ -24,7 +24,7 @@ function formatPostMessage(job: {
   if (job.job_type) details.push(`💼 ${job.job_type}`);
   if (details.length > 0) message += `\n${details.join(" | ")}`;
 
-  message += `\n\nApply now: https://auto-job-hunt.lovable.app/job/${job.id}`;
+  message += `\n\nApply now: https://eplicant.com/job/${job.id}`;
   message += `\n\n#Jobs #Opportunities #Careers #Hiring`;
 
   return message;
@@ -47,7 +47,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Accept job data from request body (sent by DB trigger via pg_net)
     const body = await req.json();
     const record = body.record || body;
 
@@ -74,12 +73,11 @@ Deno.serve(async (req) => {
       location: record.location || "Not specified",
       job_type: record.job_type || "Not specified",
       listing_type: record.listing_type || "job",
-      apply_url: `https://auto-job-hunt.lovable.app/job/${record.id}`,
+      apply_url: `https://eplicant.com/job/${record.id}`,
     };
 
     const results: { platform: string; status: string }[] = [];
 
-    // Send to LinkedIn webhook
     if (linkedinWebhook) {
       try {
         const res = await fetch(linkedinWebhook, {
@@ -95,7 +93,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Send to Twitter webhook
     if (twitterWebhook) {
       try {
         const res = await fetch(twitterWebhook, {

@@ -1,56 +1,51 @@
 
 
-## Plan: 5 Changes
+## Plan: Fix LinkedIn Automation, Add Share Buttons, WhatsApp Banner, and FAQ
 
-### 1. Enhanced Share Text
-Update `ShareButtons` to accept `location`, `jobType`, `salary` props and build a richer message:
-- **Format**: `🚀 Hiring: {title} at {company} | {location} | {jobType}\n\nApply here: https://eplicant.com/job/{id}`
-- Copy link copies the full summary text + URL
-- Pass extra props from `JobDetail.tsx`
+### 1. Fix LinkedIn Posting (Root Cause Found)
 
-### 2. Replace All `auto-job-hunt.lovable.app` with `eplicant.com`
-Global find-and-replace across all files:
-- `src/pages/Index.tsx` — canonical, og:url
-- `src/pages/Opportunities.tsx` — canonical, og:url
-- `src/pages/JobDetail.tsx` — canonical, og:url, JSON-LD, ShareButtons URL
-- `supabase/functions/sitemap/index.ts` — SITE_URL
-- `supabase/functions/post-to-socials/index.ts` — apply URLs
-- `public/robots.txt` — sitemap URL
-- `public/sitemap.xml` — static URLs
+The database trigger (`notify_new_job_to_socials`) tries to read `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from `vault.decrypted_secrets`, but **neither exists in the vault**. The trigger silently returns without calling the edge function.
 
-### 3. Dynamic Country Filter from DB
-- Update `useFilterOptions` to fetch distinct locations split by `listing_type` (jobs vs opportunities), returning `{ jobLocations, opportunityLocations }`
-- Update `JobFilters` and `OpportunityFilters` to accept `availableLocations` as a prop instead of hardcoded `COUNTRIES`
-- Pass from `Index.tsx` and `Opportunities.tsx`
+**Fix**: Replace the current trigger approach. Instead of using `pg_net` from a DB trigger (which requires vault secrets), use a **database webhook** (pg_net directly with hardcoded project URL) or simpler: store the required URL/key in vault via a migration.
 
-### 4. WhatsApp Floating Button
-Replace the full-width bottom banner in `WhatsAppBanner.tsx` with a circular floating button at the bottom-right:
-- Green circle with WhatsApp icon
-- Tooltip: "Join us on WhatsApp for instant job alerts"
-- Small X to dismiss
+**Migration**: Insert `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` into `vault.secrets` so the existing trigger can find them.
 
-### 5. Dynamic Sitemap via Netlify Proxy
-The edge function already generates all job URLs dynamically. To make it work at `/sitemap.xml`:
-- Update `SITE_URL` to `https://eplicant.com` in the edge function
-- Add a Netlify redirect in `netlify.toml`: `/sitemap.xml` → edge function URL (200 proxy), placed **before** the SPA catch-all
-- Update `robots.txt` to `Sitemap: https://eplicant.com/sitemap.xml`
-- Update static `public/sitemap.xml` as fallback
+Your Zapier configuration (screenshot) looks correct — `message`, `title`, `apply_url` mapped properly. The issue is purely that the edge function never gets called.
+
+### 2. Add Social Share Buttons on Job Detail Page
+
+Add share buttons below the Apply button on `JobDetail.tsx`:
+- **WhatsApp**: `https://wa.me/?text=...`
+- **LinkedIn**: `https://www.linkedin.com/sharing/share-offsite/?url=...`
+- **Twitter/X**: `https://twitter.com/intent/tweet?text=...&url=...`
+- **Copy Link**: Copy job URL to clipboard
+
+Use lucide icons + simple anchor buttons in a row.
+
+### 3. WhatsApp Channel Floating Banner
+
+Create a `WhatsAppBanner` component — a fixed-position bar at the bottom of the screen (or a floating button) visible on all pages:
+- Text: "Join Us on WhatsApp"
+- Link: `https://whatsapp.com/channel/0029VbBrMe45a23vftujJO22`
+- Green WhatsApp-themed styling
+- Add it to `App.tsx` so it shows on every page
+
+### 4. FAQ Section on Homepage
+
+Add an FAQ accordion section to `Index.tsx` above the footer using the existing `Accordion` component. Questions like:
+- "What is Eplicant?"
+- "How often are jobs updated?"
+- "Are these jobs verified?"
+- "How do I apply?"
+- "What's the difference between Jobs and Opportunities?"
 
 ### Files to Change
 
 | File | Change |
 |------|--------|
-| `src/components/ShareButtons.tsx` | Add location/jobType/salary props, richer share text |
-| `src/pages/JobDetail.tsx` | Pass extra props to ShareButtons, all URLs → eplicant.com |
-| `src/pages/Index.tsx` | URLs → eplicant.com, pass dynamic locations |
-| `src/pages/Opportunities.tsx` | URLs → eplicant.com, pass dynamic locations |
-| `src/components/WhatsAppBanner.tsx` | Convert to floating circle button |
-| `src/components/JobFilters.tsx` | Accept `availableLocations` prop |
-| `src/components/OpportunityFilters.tsx` | Accept `availableLocations` prop |
-| `src/hooks/useFilterOptions.ts` | Split locations by listing_type |
-| `supabase/functions/sitemap/index.ts` | SITE_URL → eplicant.com |
-| `supabase/functions/post-to-socials/index.ts` | URLs → eplicant.com |
-| `public/robots.txt` | Sitemap URL → eplicant.com |
-| `public/sitemap.xml` | URLs → eplicant.com |
-| `netlify.toml` | Add `/sitemap.xml` proxy redirect before SPA fallback |
+| New migration | Insert `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` into vault |
+| `src/pages/JobDetail.tsx` | Add share buttons (WhatsApp, LinkedIn, Twitter, Copy) |
+| `src/components/WhatsAppBanner.tsx` | New floating "Join us on WhatsApp" banner |
+| `src/App.tsx` | Include `WhatsAppBanner` globally |
+| `src/pages/Index.tsx` | Add FAQ accordion section before footer |
 

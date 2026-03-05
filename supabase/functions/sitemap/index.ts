@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const SITE_URL = "https://auto-job-hunt.lovable.app";
+const SITE_URL = "https://eplicant.com";
 
 Deno.serve(async () => {
   const supabase = createClient(

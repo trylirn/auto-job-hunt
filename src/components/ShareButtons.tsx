@@ -7,16 +7,29 @@ interface ShareButtonsProps {
   title: string;
   company: string;
   jobUrl: string;
+  location?: string | null;
+  jobType?: string | null;
+  salary?: string | null;
 }
 
-export const ShareButtons = ({ title, company, jobUrl }: ShareButtonsProps) => {
+function buildShareText({ title, company, location, jobType, salary }: Omit<ShareButtonsProps, "jobUrl">) {
+  let text = `🚀 Hiring: ${title} at ${company}`;
+  const details: string[] = [];
+  if (location) details.push(location);
+  if (jobType) details.push(jobType);
+  if (salary) details.push(salary);
+  if (details.length) text += ` | ${details.join(" | ")}`;
+  return text;
+}
+
+export const ShareButtons = ({ title, company, jobUrl, location, jobType, salary }: ShareButtonsProps) => {
   const [copied, setCopied] = useState(false);
-  const text = `${title} at ${company}`;
-  const encodedText = encodeURIComponent(text);
+  const shareText = buildShareText({ title, company, location, jobType, salary });
+  const encodedText = encodeURIComponent(shareText);
   const encodedUrl = encodeURIComponent(jobUrl);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(jobUrl);
+    await navigator.clipboard.writeText(`${shareText}\n\nApply here: ${jobUrl}`);
     setCopied(true);
     toast({ title: "Link copied!" });
     setTimeout(() => setCopied(false), 2000);
@@ -30,7 +43,7 @@ export const ShareButtons = ({ title, company, jobUrl }: ShareButtonsProps) => {
 
       <Button variant="outline" size="sm" asChild>
         <a
-          href={`https://wa.me/?text=${encodedText}%20${encodedUrl}`}
+          href={`https://wa.me/?text=${encodedText}%0A%0AApply%20here%3A%20${encodedUrl}`}
           target="_blank"
           rel="noopener noreferrer"
         >

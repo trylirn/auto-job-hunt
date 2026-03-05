@@ -65,7 +65,7 @@ function buildJobPostingJsonLd(job: {
       name: job.company,
     },
     datePosted: job.posted_at || new Date().toISOString(),
-    url: `https://auto-job-hunt.lovable.app/job/${job.id}`,
+    url: `https://eplicant.com/job/${job.id}`,
   };
 
   if (job.location) {
@@ -157,11 +157,11 @@ const JobDetail = () => {
       <Helmet>
         <title>{`${job.title} at ${job.company} — Eplicant`}</title>
         <meta name="description" content={`${job.title} at ${job.company}${job.location ? ` in ${job.location}` : ""}. Apply now on Eplicant.`} />
-        <link rel="canonical" href={`https://auto-job-hunt.lovable.app/job/${job.id}`} />
+        <link rel="canonical" href={`https://eplicant.com/job/${job.id}`} />
         <meta property="og:title" content={`${job.title} at ${job.company}`} />
         <meta property="og:description" content={`${job.title} at ${job.company}${job.location ? ` in ${job.location}` : ""}${job.salary ? ` — ${job.salary}` : ""}`} />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content={`https://auto-job-hunt.lovable.app/job/${job.id}`} />
+        <meta property="og:url" content={`https://eplicant.com/job/${job.id}`} />
         <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/efd56ee5-8a5e-49bb-89ba-4f7e8643961a/id-preview-92a29c77--87d973e3-d02d-4b67-b29b-996d6d79bb82.lovable.app-1772372990864.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${job.title} at ${job.company}`} />
@@ -264,7 +264,10 @@ const JobDetail = () => {
               <ShareButtons
                 title={job.title}
                 company={job.company}
-                jobUrl={`https://auto-job-hunt.lovable.app/job/${job.id}`}
+                jobUrl={`https://eplicant.com/job/${job.id}`}
+                location={job.location}
+                jobType={job.job_type}
+                salary={job.salary}
               />
             </div>
           </CardContent>
