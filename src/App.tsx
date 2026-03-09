@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import Index from "./pages/Index";
-import JobDetail from "./pages/JobDetail";
+import JobDetail, { JobIdRedirect } from "./pages/JobDetail";
 import Opportunities from "./pages/Opportunities";
 import NotFound from "./pages/NotFound";
 import { WhatsAppBanner } from "./components/WhatsAppBanner";
@@ -22,7 +22,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/opportunities" element={<Opportunities />} />
-            <Route path="/job/:id" element={<JobDetail />} />
+            <Route path="/job/:slug" element={<JobDetail />} />
+            <Route path="/job/id/:id" element={<JobIdRedirect />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -18,5 +18,6 @@ export interface Job {
   is_remote: boolean;
   created_at: string;
   listing_type: string | null;
+  slug: string | null;
   updated_at: string;
 }

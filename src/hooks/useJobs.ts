@@ -97,3 +97,20 @@ export function useJob(id: string) {
     enabled: !!id,
   });
 }
+
+export function useJobBySlug(slug: string) {
+  return useQuery({
+    queryKey: ["job-slug", slug],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("*")
+        .eq("slug", slug)
+        .single();
+
+      if (error) throw error;
+      return data as Job;
+    },
+    enabled: !!slug,
+  });
+}

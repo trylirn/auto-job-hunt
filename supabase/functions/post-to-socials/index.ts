@@ -12,6 +12,7 @@ function formatPostMessage(job: {
   location: string | null;
   job_type: string | null;
   listing_type: string | null;
+  slug?: string | null;
   id: string;
 }): string {
   const emoji = job.listing_type === "opportunity" ? "🌟" : "🚀";
@@ -24,7 +25,8 @@ function formatPostMessage(job: {
   if (job.job_type) details.push(`💼 ${job.job_type}`);
   if (details.length > 0) message += `\n${details.join(" | ")}`;
 
-  message += `\n\nApply now: https://eplicant.com/job/${job.id}`;
+  const jobPath = job.slug || job.id;
+  message += `\n\nApply now: https://eplicant.com/job/${jobPath}`;
   message += `\n\n#Jobs #Opportunities #Careers #Hiring`;
 
   return message;
@@ -63,6 +65,7 @@ Deno.serve(async (req) => {
       location: record.location,
       job_type: record.job_type,
       listing_type: record.listing_type,
+      slug: record.slug,
       id: record.id,
     });
 
@@ -73,7 +76,7 @@ Deno.serve(async (req) => {
       location: record.location || "Not specified",
       job_type: record.job_type || "Not specified",
       listing_type: record.listing_type || "job",
-      apply_url: `https://eplicant.com/job/${record.id}`,
+      apply_url: `https://eplicant.com/job/${record.slug || record.id}`,
     };
 
     const results: { platform: string; status: string }[] = [];
