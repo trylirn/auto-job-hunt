@@ -12,6 +12,7 @@ function formatPostMessage(job: {
   location: string | null;
   job_type: string | null;
   listing_type: string | null;
+  slug?: string | null;
   id: string;
 }): string {
   const emoji = job.listing_type === "opportunity" ? "🌟" : "🚀";
