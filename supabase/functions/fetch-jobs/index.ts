@@ -208,6 +208,78 @@ async function fetchYuthAxisJobs(): Promise<NormalizedJob[]> {
   }
 }
 
+const NGOJOBS_EXCLUDE_CATEGORIES = new Set([7, 6, 8, 9]);
+const NGOJOBS_CATEGORY_MAP: Record<number, string> = {
+  159: "scholarship",
+  1: "opportunity",
+};
+
+async function fetchNgoJobsInAfricaJobs(): Promise<NormalizedJob[]> {
+  try {
+    const catRes = await fetch("https://ngojobsinafrica.com/wp-json/wp/v2/categories?per_page=100");
+    const categories: Record<number, string> = {};
+    if (catRes.ok) {
+      const cats = await catRes.json();
+      for (const c of cats) {
+        categories[c.id] = (c.name || "").toLowerCase();
+      }
+    }
+
+    const allPosts: any[] = [];
+    for (let page = 1; page <= 2; page++) {
+      const res = await fetch(
+        `https://ngojobsinafrica.com/wp-json/wp/v2/posts?per_page=50&page=${page}&_embed`
+      );
+      if (!res.ok) break;
+      const posts = await res.json();
+      allPosts.push(...posts);
+    }
+
+    return allPosts
+      .filter((p: any) => {
+        const catIds: number[] = p.categories || [];
+        return !catIds.some((id: number) => NGOJOBS_EXCLUDE_CATEGORIES.has(id));
+      })
+      .map((p: any) => {
+        const catIds: number[] = p.categories || [];
+        let catName: string | null = null;
+        for (const id of catIds) {
+          if (NGOJOBS_CATEGORY_MAP[id]) {
+            catName = NGOJOBS_CATEGORY_MAP[id];
+            break;
+          }
+        }
+        if (!catName && catIds.length > 0) {
+          catName = categories[catIds[0]] || "opportunity";
+        }
+
+        const featuredMedia = p._embedded?.["wp:featuredmedia"]?.[0]?.source_url || null;
+        const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
+        const description = (p.content?.rendered || "").trim();
+
+        return {
+          title,
+          company: extractCompany(title),
+          location: "Africa",
+          job_type: catName || "opportunity",
+          category: catName,
+          description,
+          url: p.link,
+          source: "ngojobsinafrica",
+          external_id: String(p.id),
+          posted_at: p.date || null,
+          salary: null,
+          tags: catIds.map((id: number) => categories[id]).filter(Boolean),
+          company_logo: featuredMedia,
+          is_remote: false,
+        };
+      });
+  } catch (e) {
+    console.error("NGO Jobs in Africa fetch error:", e);
+    return [];
+  }
+}
+
 async function fetchGlobalSouthJobs(): Promise<NormalizedJob[]> {
   try {
     // Fetch categories for tag mapping
@@ -303,7 +375,11 @@ Deno.serve(async (req) => {
     const yuthAxisJobs = await fetchYuthAxisJobs();
     console.log(`Fetched ${yuthAxisJobs.length} jobs from YuthAxis`);
 
-    const allJobs = [...yeshubJobs, ...globalSouthJobs, ...ofy4Jobs, ...yuthAxisJobs];
+    console.log("Fetching jobs from NGO Jobs in Africa...");
+    const ngoJobsAfrica = await fetchNgoJobsInAfricaJobs();
+    console.log(`Fetched ${ngoJobsAfrica.length} jobs from NGO Jobs in Africa`);
+
+    const allJobs = [...yeshubJobs, ...globalSouthJobs, ...ofy4Jobs, ...yuthAxisJobs, ...ngoJobsAfrica];
     let inserted = 0;
     let skipped = 0;
 
@@ -340,7 +416,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        fetched: { yeshub: yeshubJobs.length, globalsouth: globalSouthJobs.length, opportunitiesforyouth: ofy4Jobs.length, yuthaxis: yuthAxisJobs.length, total: allJobs.length },
+        fetched: { yeshub: yeshubJobs.length, globalsouth: globalSouthJobs.length, opportunitiesforyouth: ofy4Jobs.length, yuthaxis: yuthAxisJobs.length, ngojobsinafrica: ngoJobsAfrica.length, total: allJobs.length },
         inserted,
         skipped,
       }),
