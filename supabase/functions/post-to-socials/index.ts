@@ -65,6 +65,7 @@ Deno.serve(async (req) => {
       location: record.location,
       job_type: record.job_type,
       listing_type: record.listing_type,
+      slug: record.slug,
       id: record.id,
     });
 
