@@ -1,7 +1,7 @@
 import { useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, Navigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { useJob } from "@/hooks/useJobs";
+import { useJobBySlug, useJob } from "@/hooks/useJobs";
 import { Header } from "@/components/Header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,11 +49,14 @@ function buildJobPostingJsonLd(job: {
   clean_description?: string | null;
   description?: string | null;
   apply_url?: string | null;
+  slug?: string | null;
   id: string;
 }) {
   const plainDescription = (job.clean_description || job.description || "")
     .replace(/<[^>]+>/g, "")
     .slice(0, 500);
+
+  const jobPath = job.slug || job.id;
 
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -65,7 +68,7 @@ function buildJobPostingJsonLd(job: {
       name: job.company,
     },
     datePosted: job.posted_at || new Date().toISOString(),
-    url: `https://eplicant.com/job/${job.id}`,
+    url: `https://eplicant.com/job/${jobPath}`,
   };
 
   if (job.location) {
@@ -97,9 +100,33 @@ function buildJobPostingJsonLd(job: {
   return jsonLd;
 }
 
-const JobDetail = () => {
+/** Redirect component for legacy /job/id/:id URLs */
+export const JobIdRedirect = () => {
   const { id } = useParams<{ id: string }>();
   const { data: job, isLoading } = useJob(id ?? "");
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container max-w-3xl py-6 md:py-8 space-y-4 md:space-y-6">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-10 w-3/4" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!job) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Navigate to={`/job/${job.slug || job.id}`} replace />;
+};
+
+const JobDetail = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const { data: job, isLoading } = useJobBySlug(slug ?? "");
   const descriptionRef = useRef<HTMLDivElement>(null);
 
   if (isLoading) {
@@ -132,6 +159,9 @@ const JobDetail = () => {
     );
   }
 
+  const jobPath = job.slug || job.id;
+  const jobUrl = `https://eplicant.com/job/${jobPath}`;
+
   const timeAgo = job.posted_at
     ? formatDistanceToNow(new Date(job.posted_at), { addSuffix: true })
     : null;
@@ -157,11 +187,11 @@ const JobDetail = () => {
       <Helmet>
         <title>{`${job.title} at ${job.company} — Eplicant`}</title>
         <meta name="description" content={`${job.title} at ${job.company}${job.location ? ` in ${job.location}` : ""}. Apply now on Eplicant.`} />
-        <link rel="canonical" href={`https://eplicant.com/job/${job.id}`} />
+        <link rel="canonical" href={jobUrl} />
         <meta property="og:title" content={`${job.title} at ${job.company}`} />
         <meta property="og:description" content={`${job.title} at ${job.company}${job.location ? ` in ${job.location}` : ""}${job.salary ? ` — ${job.salary}` : ""}`} />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content={`https://eplicant.com/job/${job.id}`} />
+        <meta property="og:url" content={jobUrl} />
         <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/efd56ee5-8a5e-49bb-89ba-4f7e8643961a/id-preview-92a29c77--87d973e3-d02d-4b67-b29b-996d6d79bb82.lovable.app-1772372990864.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${job.title} at ${job.company}`} />
@@ -180,7 +210,6 @@ const JobDetail = () => {
 
         <Card className="overflow-hidden">
           <CardContent className="p-4 md:p-8">
-            {/* Header: Logo + Title + Company */}
             <div className="flex items-start gap-3 md:gap-4">
               {job.company_logo ? (
                 <img
@@ -201,7 +230,6 @@ const JobDetail = () => {
               </div>
             </div>
 
-            {/* Meta info */}
             <div className="mt-3 md:mt-4 flex flex-wrap items-center gap-2 md:gap-3 text-sm text-muted-foreground">
               {job.location && (
                 <span className="flex items-center gap-1">
@@ -217,7 +245,6 @@ const JobDetail = () => {
               )}
             </div>
 
-            {/* Badges */}
             <div className="mt-3 md:mt-4 flex flex-wrap gap-1.5 md:gap-2">
               {job.is_remote && (
                 <Badge className="bg-accent/15 text-accent border-0">Remote</Badge>
@@ -236,7 +263,6 @@ const JobDetail = () => {
               ))}
             </div>
 
-            {/* Description */}
             {displayDescription && (
               <div ref={descriptionRef} className="mt-6 md:mt-8 border-t pt-4 md:pt-6">
                 <h2 className="font-display text-lg font-semibold mb-3">
@@ -255,7 +281,6 @@ const JobDetail = () => {
               </div>
             )}
 
-            {/* Apply button */}
             <div className="mt-6 md:mt-8 border-t pt-4 md:pt-6 space-y-4">
               <Button size="lg" className="gap-2 w-full sm:w-auto" onClick={handleApply}>
                 Apply
@@ -264,7 +289,7 @@ const JobDetail = () => {
               <ShareButtons
                 title={job.title}
                 company={job.company}
-                jobUrl={`https://eplicant.com/job/${job.id}`}
+                jobUrl={jobUrl}
                 location={job.location}
                 jobType={job.job_type}
                 salary={job.salary}

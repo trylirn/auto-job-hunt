@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
       location: record.location || "Not specified",
       job_type: record.job_type || "Not specified",
       listing_type: record.listing_type || "job",
-      apply_url: `https://eplicant.com/job/${record.id}`,
+      apply_url: `https://eplicant.com/job/${record.slug || record.id}`,
     };
 
     const results: { platform: string; status: string }[] = [];

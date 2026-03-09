@@ -20,7 +20,7 @@ export function JobCard({ job }: JobCardProps) {
     .trim();
 
   return (
-    <Link to={`/job/${job.id}`} className="block w-full overflow-hidden">
+    <Link to={`/job/${job.slug || job.id}`} className="block w-full overflow-hidden">
       <Card className="group cursor-pointer transition-all hover:shadow-md hover:border-primary/30 overflow-hidden max-w-full">
         <CardContent className="p-4 md:p-5">
           <div className="flex items-start gap-3 min-w-0">

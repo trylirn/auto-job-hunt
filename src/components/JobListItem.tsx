@@ -15,7 +15,7 @@ export function JobListItem({ job }: JobListItemProps) {
 
   return (
     <Link
-      to={`/job/${job.id}`}
+      to={`/job/${job.slug || job.id}`}
       className="group flex items-center gap-3 rounded-lg border bg-card p-3 transition-all hover:shadow-md hover:border-primary/30 overflow-hidden"
     >
       {job.company_logo ? (

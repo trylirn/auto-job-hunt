@@ -8,10 +8,9 @@ Deno.serve(async () => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // Fetch all job IDs and their updated_at timestamps
   const { data: jobs, error } = await supabase
     .from("jobs")
-    .select("id, updated_at")
+    .select("id, slug, updated_at")
     .order("updated_at", { ascending: false });
 
   if (error) {
@@ -24,7 +23,7 @@ Deno.serve(async () => {
   ];
 
   const jobEntries = (jobs || []).map((job) => ({
-    loc: `${SITE_URL}/job/${job.id}`,
+    loc: `${SITE_URL}/job/${job.slug || job.id}`,
     lastmod: job.updated_at ? job.updated_at.split("T")[0] : undefined,
     changefreq: "weekly",
     priority: "0.7",

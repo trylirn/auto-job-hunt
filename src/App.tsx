@@ -22,7 +22,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/opportunities" element={<Opportunities />} />
-            <Route path="/job/:id" element={<JobDetail />} />
+            <Route path="/job/:slug" element={<JobDetail />} />
+            <Route path="/job/id/:id" element={<JobIdRedirect />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
