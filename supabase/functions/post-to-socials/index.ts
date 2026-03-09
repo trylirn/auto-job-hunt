@@ -24,7 +24,8 @@ function formatPostMessage(job: {
   if (job.job_type) details.push(`💼 ${job.job_type}`);
   if (details.length > 0) message += `\n${details.join(" | ")}`;
 
-  message += `\n\nApply now: https://eplicant.com/job/${job.id}`;
+  const jobPath = job.slug || job.id;
+  message += `\n\nApply now: https://eplicant.com/job/${jobPath}`;
   message += `\n\n#Jobs #Opportunities #Careers #Hiring`;
 
   return message;
