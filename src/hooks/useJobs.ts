@@ -114,3 +114,32 @@ export function useJobBySlug(slug: string) {
     enabled: !!slug,
   });
 }
+
+export function useSimilarJobs(job: Job | undefined) {
+  return useQuery({
+    queryKey: ["similar-jobs", job?.id],
+    queryFn: async () => {
+      if (!job) return [];
+
+      let query = supabase
+        .from("jobs")
+        .select("*")
+        .neq("id", job.id)
+        .order("posted_at", { ascending: false, nullsFirst: false })
+        .limit(6);
+
+      if (job.job_type) {
+        query = query.eq("job_type", job.job_type);
+      }
+
+      if (job.listing_type) {
+        query = query.eq("listing_type", job.listing_type);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data as Job[]) ?? [];
+    },
+    enabled: !!job,
+  });
+}

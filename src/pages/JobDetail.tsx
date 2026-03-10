@@ -298,6 +298,8 @@ const JobDetail = () => {
             </div>
           </CardContent>
         </Card>
+
+        <SimilarJobs job={job} />
       </div>
     </div>
   );
