@@ -16,6 +16,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { ShareButtons } from "@/components/ShareButtons";
+import { SimilarJobs } from "@/components/SimilarJobs";
 import { formatDistanceToNow } from "date-fns";
 
 function extractApplyUrl(description: string | null): string | null {
