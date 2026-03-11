@@ -62,6 +62,15 @@ const Index = () => {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Eplicant — Find Your Next Opportunity" />
         <meta name="twitter:description" content="Thousands of jobs updated automatically. Search remote, full-time, and freelance opportunities worldwide." />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          "itemListElement": [
+            { "@type": "SiteNavigationElement", "position": 1, "name": "Jobs", "url": "https://eplicant.com/" },
+            { "@type": "SiteNavigationElement", "position": 2, "name": "Opportunities", "url": "https://eplicant.com/opportunities" },
+            { "@type": "SiteNavigationElement", "position": 3, "name": "Remote Jobs", "url": "https://eplicant.com/?location=Remote" }
+          ]
+        })}</script>
       </Helmet>
       <Header />
 
