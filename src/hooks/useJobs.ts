@@ -70,6 +70,12 @@ export function useJobs({
         query = query.ilike("category", `%${opportunityCategory}%`);
       }
 
+      if (region === "us") {
+        query = query.or("location.ilike.%United States%,location.ilike.%USA%,location.ilike.%U.S.A%");
+      } else if (region === "non-us") {
+        query = query.not("location", "ilike", "%United States%").not("location", "ilike", "%USA%").not("location", "ilike", "%U.S.A%");
+      }
+
       const { data, error, count } = await query;
 
       if (error) throw error;

@@ -100,6 +100,8 @@ const Index = () => {
             onLocationChange={(v) => {setLocation(v);setPage(1);}}
             dateRange={dateRange}
             onDateRangeChange={(v) => {setDateRange(v);setPage(1);}}
+            region={region}
+            onRegionChange={(v) => {setRegion(v);setPage(1);}}
             onClearFilters={clearFilters}
             hasActiveFilters={hasActiveFilters}
             availableLocations={filterOptions?.jobLocations ?? []}
