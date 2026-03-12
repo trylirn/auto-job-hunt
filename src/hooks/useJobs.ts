@@ -13,6 +13,7 @@ interface UseJobsParams {
   listingType?: "jobs" | "opportunities";
   dateRange?: "24h" | "week" | "month" | "";
   opportunityCategory?: string;
+  region?: "us" | "non-us" | "";
 }
 
 export function useJobs({
@@ -25,9 +26,10 @@ export function useJobs({
   listingType,
   dateRange = "",
   opportunityCategory = "",
+  region = "",
 }: UseJobsParams = {}) {
   return useQuery({
-    queryKey: ["jobs", search, jobType, location, page, sortBy, listingType, dateRange, opportunityCategory],
+    queryKey: ["jobs", search, jobType, location, page, sortBy, listingType, dateRange, opportunityCategory, region],
     queryFn: async () => {
       let query = supabase
         .from("jobs")
