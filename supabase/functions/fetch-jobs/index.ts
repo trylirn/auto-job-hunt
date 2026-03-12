@@ -214,6 +214,77 @@ const NGOJOBS_CATEGORY_MAP: Record<number, string> = {
   1: "opportunity",
 };
 
+async function fetchRemotiveUSJobs(): Promise<NormalizedJob[]> {
+  try {
+    const res = await fetch("https://remotive.com/api/remote-jobs?limit=50");
+    if (!res.ok) return [];
+    const json = await res.json();
+    const jobs: any[] = json.jobs || [];
+
+    return jobs
+      .filter((j: any) => {
+        const loc = (j.candidate_required_location || "").toLowerCase();
+        return loc.includes("usa") || loc.includes("united states") || loc.includes("u.s.a") || loc.includes("north america") || loc === "worldwide";
+      })
+      .map((j: any) => ({
+        title: j.title || "Untitled",
+        company: j.company_name || "Unknown",
+        location: "United States",
+        job_type: "Remote",
+        category: (j.category || "jobs").toLowerCase(),
+        description: j.description || null,
+        url: j.url,
+        source: "remotive",
+        external_id: String(j.id),
+        posted_at: j.publication_date || null,
+        salary: j.salary || null,
+        tags: j.tags || null,
+        company_logo: j.company_logo || null,
+        is_remote: true,
+      }));
+  } catch (e) {
+    console.error("Remotive fetch error:", e);
+    return [];
+  }
+}
+
+async function fetchArbeitnowUSJobs(): Promise<NormalizedJob[]> {
+  try {
+    const allJobs: any[] = [];
+    for (let page = 1; page <= 2; page++) {
+      const res = await fetch(`https://www.arbeitnow.com/api/job-board-api?page=${page}`);
+      if (!res.ok) break;
+      const json = await res.json();
+      allJobs.push(...(json.data || []));
+    }
+
+    return allJobs
+      .filter((j: any) => {
+        const loc = (j.location || "").toLowerCase();
+        return loc.includes("united states") || loc.includes("usa") || loc.includes("u.s.a") || loc.includes("us");
+      })
+      .map((j: any) => ({
+        title: j.title || "Untitled",
+        company: j.company_name || "Unknown",
+        location: "United States",
+        job_type: j.remote ? "Remote" : "Physical",
+        category: "jobs",
+        description: j.description || null,
+        url: j.url,
+        source: "arbeitnow",
+        external_id: j.slug || String(j.url),
+        posted_at: j.created_at ? new Date(j.created_at * 1000).toISOString() : null,
+        salary: null,
+        tags: j.tags || null,
+        company_logo: null,
+        is_remote: j.remote || false,
+      }));
+  } catch (e) {
+    console.error("Arbeitnow fetch error:", e);
+    return [];
+  }
+}
+
 async function fetchNgoJobsInAfricaJobs(): Promise<NormalizedJob[]> {
   try {
     const catRes = await fetch("https://ngojobsinafrica.com/wp-json/wp/v2/categories?per_page=100");
@@ -379,7 +450,15 @@ Deno.serve(async (req) => {
     const ngoJobsAfrica = await fetchNgoJobsInAfricaJobs();
     console.log(`Fetched ${ngoJobsAfrica.length} jobs from NGO Jobs in Africa`);
 
-    const allJobs = [...yeshubJobs, ...globalSouthJobs, ...ofy4Jobs, ...yuthAxisJobs, ...ngoJobsAfrica];
+    console.log("Fetching US jobs from Remotive...");
+    const remotiveJobs = await fetchRemotiveUSJobs();
+    console.log(`Fetched ${remotiveJobs.length} US jobs from Remotive`);
+
+    console.log("Fetching US jobs from Arbeitnow...");
+    const arbeitnowJobs = await fetchArbeitnowUSJobs();
+    console.log(`Fetched ${arbeitnowJobs.length} US jobs from Arbeitnow`);
+
+    const allJobs = [...yeshubJobs, ...globalSouthJobs, ...ofy4Jobs, ...yuthAxisJobs, ...ngoJobsAfrica, ...remotiveJobs, ...arbeitnowJobs];
     let inserted = 0;
     let skipped = 0;
 
@@ -416,7 +495,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        fetched: { yeshub: yeshubJobs.length, globalsouth: globalSouthJobs.length, opportunitiesforyouth: ofy4Jobs.length, yuthaxis: yuthAxisJobs.length, ngojobsinafrica: ngoJobsAfrica.length, total: allJobs.length },
+        fetched: { yeshub: yeshubJobs.length, globalsouth: globalSouthJobs.length, opportunitiesforyouth: ofy4Jobs.length, yuthaxis: yuthAxisJobs.length, ngojobsinafrica: ngoJobsAfrica.length, remotive: remotiveJobs.length, arbeitnow: arbeitnowJobs.length, total: allJobs.length },
         inserted,
         skipped,
       }),

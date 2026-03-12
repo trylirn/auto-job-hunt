@@ -24,19 +24,21 @@ const Index = () => {
   const [jobType, setJobType] = useState("");
   const [location, setLocation] = useState("");
   const [dateRange, setDateRange] = useState("");
+  const [region, setRegion] = useState("");
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const debouncedSearch = useDebounce(search, 300);
   const { data: filterOptions } = useFilterOptions();
 
-  const hasActiveFilters = !!jobType || !!location || !!dateRange;
+  const hasActiveFilters = !!jobType || !!location || !!dateRange || !!region;
 
   const { data, isLoading } = useJobs({
     search: debouncedSearch,
     jobType,
     location,
     dateRange: dateRange as "24h" | "week" | "month" | "",
+    region: region as "us" | "non-us" | "",
     page,
     listingType: "jobs"
   });
@@ -45,6 +47,7 @@ const Index = () => {
     setJobType("");
     setLocation("");
     setDateRange("");
+    setRegion("");
     setPage(1);
   }, []);
 
@@ -97,6 +100,8 @@ const Index = () => {
             onLocationChange={(v) => {setLocation(v);setPage(1);}}
             dateRange={dateRange}
             onDateRangeChange={(v) => {setDateRange(v);setPage(1);}}
+            region={region}
+            onRegionChange={(v) => {setRegion(v);setPage(1);}}
             onClearFilters={clearFilters}
             hasActiveFilters={hasActiveFilters}
             availableLocations={filterOptions?.jobLocations ?? []}

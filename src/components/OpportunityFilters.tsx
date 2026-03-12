@@ -15,6 +15,8 @@ interface OpportunityFiltersProps {
   onLocationChange: (value: string) => void;
   dateRange: string;
   onDateRangeChange: (value: string) => void;
+  region: string;
+  onRegionChange: (value: string) => void;
   onClearFilters: () => void;
   hasActiveFilters: boolean;
   availableLocations?: string[];
@@ -27,12 +29,24 @@ export function OpportunityFilters({
   onLocationChange,
   dateRange,
   onDateRangeChange,
+  region,
+  onRegionChange,
   onClearFilters,
   hasActiveFilters,
   availableLocations = [],
 }: OpportunityFiltersProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+      <Select value={region} onValueChange={onRegionChange}>
+        <SelectTrigger className="w-full sm:w-[140px] text-sm">
+          <SelectValue placeholder="Region" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="us">U.S. Jobs</SelectItem>
+          <SelectItem value="non-us">Non-U.S. Jobs</SelectItem>
+        </SelectContent>
+      </Select>
+
       <Select value={category} onValueChange={onCategoryChange}>
         <SelectTrigger className="w-full sm:w-[160px] text-sm">
           <SelectValue placeholder="Category" />

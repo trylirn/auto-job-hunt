@@ -13,6 +13,7 @@ interface UseJobsParams {
   listingType?: "jobs" | "opportunities";
   dateRange?: "24h" | "week" | "month" | "";
   opportunityCategory?: string;
+  region?: "us" | "non-us" | "";
 }
 
 export function useJobs({
@@ -25,9 +26,10 @@ export function useJobs({
   listingType,
   dateRange = "",
   opportunityCategory = "",
+  region = "",
 }: UseJobsParams = {}) {
   return useQuery({
-    queryKey: ["jobs", search, jobType, location, page, sortBy, listingType, dateRange, opportunityCategory],
+    queryKey: ["jobs", search, jobType, location, page, sortBy, listingType, dateRange, opportunityCategory, region],
     queryFn: async () => {
       let query = supabase
         .from("jobs")
@@ -66,6 +68,12 @@ export function useJobs({
 
       if (opportunityCategory) {
         query = query.ilike("category", `%${opportunityCategory}%`);
+      }
+
+      if (region === "us") {
+        query = query.or("location.ilike.%United States%,location.ilike.%USA%,location.ilike.%U.S.A%");
+      } else if (region === "non-us") {
+        query = query.not("location", "ilike", "%United States%").not("location", "ilike", "%USA%").not("location", "ilike", "%U.S.A%");
       }
 
       const { data, error, count } = await query;
