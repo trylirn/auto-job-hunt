@@ -450,7 +450,15 @@ Deno.serve(async (req) => {
     const ngoJobsAfrica = await fetchNgoJobsInAfricaJobs();
     console.log(`Fetched ${ngoJobsAfrica.length} jobs from NGO Jobs in Africa`);
 
-    const allJobs = [...yeshubJobs, ...globalSouthJobs, ...ofy4Jobs, ...yuthAxisJobs, ...ngoJobsAfrica];
+    console.log("Fetching US jobs from Remotive...");
+    const remotiveJobs = await fetchRemotiveUSJobs();
+    console.log(`Fetched ${remotiveJobs.length} US jobs from Remotive`);
+
+    console.log("Fetching US jobs from Arbeitnow...");
+    const arbeitnowJobs = await fetchArbeitnowUSJobs();
+    console.log(`Fetched ${arbeitnowJobs.length} US jobs from Arbeitnow`);
+
+    const allJobs = [...yeshubJobs, ...globalSouthJobs, ...ofy4Jobs, ...yuthAxisJobs, ...ngoJobsAfrica, ...remotiveJobs, ...arbeitnowJobs];
     let inserted = 0;
     let skipped = 0;
 
