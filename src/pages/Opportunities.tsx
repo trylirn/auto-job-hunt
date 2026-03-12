@@ -18,18 +18,20 @@ const Opportunities = () => {
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
   const [dateRange, setDateRange] = useState("");
+  const [region, setRegion] = useState("");
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const debouncedSearch = useDebounce(search, 300);
   const { data: filterOptions } = useFilterOptions();
 
-  const hasActiveFilters = !!category || !!location || !!dateRange;
+  const hasActiveFilters = !!category || !!location || !!dateRange || !!region;
 
   const { data, isLoading } = useJobs({
     search: debouncedSearch,
     location,
     dateRange: dateRange as "24h" | "week" | "month" | "",
+    region: region as "us" | "non-us" | "",
     page,
     listingType: "opportunities",
     opportunityCategory: category,
@@ -39,6 +41,7 @@ const Opportunities = () => {
     setCategory("");
     setLocation("");
     setDateRange("");
+    setRegion("");
     setPage(1);
   }, []);
 
