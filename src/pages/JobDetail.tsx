@@ -14,6 +14,9 @@ import {
   Clock,
   Building2,
   DollarSign,
+  Briefcase,
+  Globe,
+  AlertTriangle,
 } from "lucide-react";
 import { ShareButtons } from "@/components/ShareButtons";
 import { SimilarJobs } from "@/components/SimilarJobs";
@@ -125,6 +128,123 @@ export const JobIdRedirect = () => {
   return <Navigate to={`/job/${job.slug || job.id}`} replace />;
 };
 
+const JobDetailSidebar = ({
+  job,
+  applyUrl,
+  timeAgo,
+  onApply,
+}: {
+  job: {
+    title: string;
+    company: string;
+    company_logo: string | null;
+    category: string | null;
+    salary: string | null;
+    location: string | null;
+    is_remote: boolean;
+    job_type: string | null;
+    tags: string[] | null;
+  };
+  applyUrl: string | null;
+  timeAgo: string | null;
+  onApply: () => void;
+}) => (
+  <div className="sticky top-6 space-y-4">
+    <Card>
+      <CardContent className="p-5 space-y-4">
+        {/* Company & Title */}
+        <div className="flex flex-col items-center text-center gap-3">
+          {job.company_logo ? (
+            <img
+              src={job.company_logo}
+              alt={job.company}
+              className="h-14 w-14 rounded-xl border object-contain bg-card"
+            />
+          ) : (
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl border bg-muted">
+              <Building2 className="h-7 w-7 text-muted-foreground" />
+            </div>
+          )}
+          <div>
+            <h2 className="font-display font-bold text-base">{job.title}</h2>
+            <p className="text-sm text-muted-foreground">@{job.company}</p>
+          </div>
+        </div>
+
+        {/* Category / Tags */}
+        {(job.category || (job.tags && job.tags.length > 0)) && (
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {job.category && (
+              <Badge variant="outline" className="text-xs">{job.category}</Badge>
+            )}
+            {job.tags?.slice(0, 3).map((tag) => (
+              <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Info Grid */}
+        <div className="grid grid-cols-2 gap-3 border-t border-b py-3">
+          {job.salary && (
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Salary</p>
+              <p className="text-sm font-medium mt-0.5 flex items-center gap-1">
+                <DollarSign className="h-3 w-3 text-muted-foreground" />
+                {job.salary}
+              </p>
+            </div>
+          )}
+          {(job.location || job.is_remote) && (
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                {job.is_remote ? "Remote Location" : "Location"}
+              </p>
+              <p className="text-sm font-medium mt-0.5 flex items-center gap-1">
+                <Globe className="h-3 w-3 text-muted-foreground" />
+                {job.location || "Remote"}
+              </p>
+            </div>
+          )}
+          {job.job_type && (
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Job Type</p>
+              <p className="text-sm font-medium mt-0.5 flex items-center gap-1">
+                <Briefcase className="h-3 w-3 text-muted-foreground" />
+                {job.job_type}
+              </p>
+            </div>
+          )}
+          {timeAgo && (
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Posted</p>
+              <p className="text-sm font-medium mt-0.5 flex items-center gap-1">
+                <Clock className="h-3 w-3 text-muted-foreground" />
+                {timeAgo}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Apply Button */}
+        <Button size="lg" className="gap-2 w-full" onClick={onApply}>
+          Apply for this position
+          {applyUrl && <ExternalLink className="h-4 w-4" />}
+        </Button>
+      </CardContent>
+    </Card>
+
+    {/* Scam Warning */}
+    <Card className="border-destructive/30 bg-destructive/5">
+      <CardContent className="p-4 flex gap-2 text-xs text-muted-foreground">
+        <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+        <p>
+          <span className="font-semibold text-foreground">Beware of scams!</span> When applying for jobs, you should NEVER have to pay anything. <a href="https://consumer.ftc.gov/articles/job-scams" target="_blank" rel="noopener noreferrer" className="text-primary underline">Learn more.</a>
+        </p>
+      </CardContent>
+    </Card>
+  </div>
+);
+
 const JobDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: job, isLoading } = useJobBySlug(slug ?? "");
@@ -134,11 +254,16 @@ const JobDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="container max-w-3xl py-6 md:py-8 space-y-4 md:space-y-6">
+        <div className="container max-w-5xl py-6 md:py-8 space-y-4 md:space-y-6">
           <Skeleton className="h-6 w-32" />
-          <Skeleton className="h-10 w-3/4" />
-          <Skeleton className="h-6 w-1/2" />
-          <Skeleton className="h-64 w-full" />
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-3/4" />
+              <Skeleton className="h-6 w-1/2" />
+              <Skeleton className="h-64 w-full" />
+            </div>
+            <Skeleton className="h-80 w-full hidden lg:block" />
+          </div>
         </div>
       </div>
     );
@@ -200,7 +325,7 @@ const JobDetail = () => {
         <script type="application/ld+json">{JSON.stringify(jobJsonLd)}</script>
       </Helmet>
       <Header />
-      <div className="container max-w-3xl py-4 md:py-8 px-4">
+      <div className="container max-w-5xl py-4 md:py-8 px-4">
         <Link
           to="/"
           className="mb-4 md:mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -209,66 +334,42 @@ const JobDetail = () => {
           Back to jobs
         </Link>
 
-        <Card className="overflow-hidden">
-          <CardContent className="p-4 md:p-8">
-            <div className="flex items-start gap-3 md:gap-4">
-              {job.company_logo ? (
-                <img
-                  src={job.company_logo}
-                  alt={job.company}
-                  className="h-10 w-10 md:h-14 md:w-14 rounded-xl border object-contain bg-card shrink-0"
-                />
-              ) : (
-                <div className="flex h-10 w-10 md:h-14 md:w-14 items-center justify-center rounded-xl border bg-muted shrink-0">
-                  <Building2 className="h-5 w-5 md:h-7 md:w-7 text-muted-foreground" />
-                </div>
-              )}
-              <div className="min-w-0">
-                <h1 className="font-display text-xl font-bold md:text-3xl break-words">
-                  {job.title}
-                </h1>
-                <p className="mt-1 text-base md:text-lg text-muted-foreground">{job.company}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+          {/* Main Content - Left Side */}
+          <div>
+            {/* Title Header */}
+            <div className="mb-6">
+              <h1 className="font-display text-2xl font-bold md:text-3xl break-words">
+                {job.title} @{job.company}
+              </h1>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                {timeAgo && (
+                  <span>{timeAgo}</span>
+                )}
+                {job.company && (
+                  <>
+                    <span>·</span>
+                    <span>{job.company} is hiring a {job.is_remote ? "remote " : ""}{job.title}</span>
+                  </>
+                )}
+                {job.salary && (
+                  <>
+                    <span>·</span>
+                    <span>💸 Salary: {job.salary}</span>
+                  </>
+                )}
+                {job.location && (
+                  <>
+                    <span>·</span>
+                    <span>📍 Location: {job.location}</span>
+                  </>
+                )}
               </div>
             </div>
 
-            <div className="mt-3 md:mt-4 flex flex-wrap items-center gap-2 md:gap-3 text-sm text-muted-foreground">
-              {job.location && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  {job.location}
-                </span>
-              )}
-              {timeAgo && (
-                <span className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  {timeAgo}
-                </span>
-              )}
-            </div>
-
-            <div className="mt-3 md:mt-4 flex flex-wrap gap-1.5 md:gap-2">
-              {job.is_remote && (
-                <Badge className="bg-accent/15 text-accent border-0">Remote</Badge>
-              )}
-              {job.job_type && <Badge variant="outline">{job.job_type}</Badge>}
-              {job.salary && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <DollarSign className="h-3 w-3" />
-                  {job.salary}
-                </Badge>
-              )}
-              {job.tags?.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-
+            {/* Description */}
             {displayDescription && (
-              <div ref={descriptionRef} className="mt-6 md:mt-8 border-t pt-4 md:pt-6">
-                <h2 className="font-display text-lg font-semibold mb-3">
-                  Job Description
-                </h2>
+              <div ref={descriptionRef}>
                 <div
                   className="prose prose-sm max-w-none text-muted-foreground leading-relaxed
                     prose-headings:text-foreground prose-headings:font-display
@@ -282,9 +383,10 @@ const JobDetail = () => {
               </div>
             )}
 
-            <div className="mt-6 md:mt-8 border-t pt-4 md:pt-6 space-y-4">
-              <Button size="lg" className="gap-2 w-full sm:w-auto" onClick={handleApply}>
-                Apply
+            {/* Share & Apply (mobile) */}
+            <div className="mt-6 border-t pt-4 space-y-4 lg:hidden">
+              <Button size="lg" className="gap-2 w-full" onClick={handleApply}>
+                Apply for this position
                 {applyUrl && <ExternalLink className="h-4 w-4" />}
               </Button>
               <ShareButtons
@@ -296,8 +398,30 @@ const JobDetail = () => {
                 salary={job.salary}
               />
             </div>
-          </CardContent>
-        </Card>
+
+            {/* Share (desktop) */}
+            <div className="mt-6 border-t pt-4 hidden lg:block">
+              <ShareButtons
+                title={job.title}
+                company={job.company}
+                jobUrl={jobUrl}
+                location={job.location}
+                jobType={job.job_type}
+                salary={job.salary}
+              />
+            </div>
+          </div>
+
+          {/* Sidebar - Right Side (desktop) */}
+          <div className="hidden lg:block">
+            <JobDetailSidebar
+              job={job}
+              applyUrl={applyUrl}
+              timeAgo={timeAgo}
+              onApply={handleApply}
+            />
+          </div>
+        </div>
 
         <SimilarJobs job={job} />
       </div>
