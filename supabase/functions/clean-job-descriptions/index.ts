@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { mirrorUpdate } from "../_shared/eplicant-client.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,52 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Fetch jobs that haven't been cleaned yet
-    const { data: jobs, error } = await supabase
-      .from("jobs")
-      .select("id, title, description, location, job_type, category")
-      .is("clean_description", null)
-      .not("description", "is", null)
-      .limit(5);
-
-    if (error) throw error;
-    if (!jobs || jobs.length === 0) {
-      return new Response(
-        JSON.stringify({ success: true, processed: 0 }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log(`Processing ${jobs.length} jobs for AI cleanup`);
-    let processed = 0;
-
-    for (const job of jobs) {
-      try {
-        const response = await fetch(
-          "https://ai.gateway.lovable.dev/v1/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${lovableApiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "google/gemini-2.5-flash-lite",
-              messages: [
-                {
-                  role: "system",
-                  content: `You clean and structure job/opportunity descriptions. You will be given raw HTML from a WordPress blog. Your task is to extract and return clean, well-structured HTML with only the essential information.
+const SYSTEM_PROMPT = `You clean and structure job/opportunity descriptions. You will be given raw HTML from a WordPress blog. Your task is to extract and return clean, well-structured HTML with only the essential information.
 
 RULES:
 - Remove ALL SEO spam, chatgpt:// links, YesHub branding, social share buttons, and irrelevant content
@@ -81,79 +37,133 @@ Also extract:
 - LOCATION (COUNTRY ONLY): Return ONLY the country name (e.g., "Nigeria", "Kenya", "USA", "United Kingdom", "Global"). Do NOT include city names. If the listing mentions a specific country anywhere, use that. Only use "Global" if truly open worldwide.
 - The work mode: determine if this is "Remote", "Hybrid", or "Physical" based on the description. Default to "Physical" if unclear.
 - The listing type: classify as "job" or "opportunity". Use "job" for standard employment positions. Use "opportunity" for fellowships, scholarships, grants, conferences, training programs, awards, PhD positions, short courses, competitions.
-- OPPORTUNITY CATEGORY: If the listing is an "opportunity", also classify its sub-category as one of: "fellowship", "scholarship", "grant", "conference", "internship". Use "fellowship" as default for opportunities that don't fit other categories.`,
-                },
-                {
-                  role: "user",
-                  content: `Clean this listing and extract details:\n\nTitle: ${job.title}\nCurrent location: ${job.location || "Unknown"}\nCurrent job_type: ${job.job_type || "Unknown"}\nCurrent category: ${job.category || "Unknown"}\n\nHTML:\n${job.description}`,
-                },
-              ],
-              tools: [
-                {
-                  type: "function",
-                  function: {
-                    name: "save_cleaned_job",
-                    description:
-                      "Save the cleaned job description, apply URL, detected location, work mode, and listing type",
-                    parameters: {
-                      type: "object",
-                      properties: {
-                        clean_description: {
-                          type: "string",
-                          description:
-                            "Clean HTML description with only essential job information. Well-formatted with proper paragraphs, lists, and headings.",
-                        },
-                        apply_url: {
-                          type: "string",
-                          description:
-                            "The actual application URL (Google Forms, mailto, company career page). null if not found. Must start with https:// or mailto:",
-                        },
-                        company_name: {
-                          type: "string",
-                          description:
-                            "The actual hiring company/organization name extracted from the listing. null if not identifiable.",
-                        },
-                        detected_location: {
-                          type: "string",
-                          description:
-                            "Country name ONLY, e.g. 'Nigeria', 'Kenya', 'USA', 'Global'. No cities.",
-                        },
-                        work_mode: {
-                          type: "string",
-                          enum: ["Remote", "Hybrid", "Physical"],
-                          description:
-                            "The work mode: Remote, Hybrid, or Physical.",
-                        },
-                        listing_type: {
-                          type: "string",
-                          enum: ["job", "opportunity"],
-                          description:
-                            "Whether this is a 'job' or 'opportunity'.",
-                        },
-                        opportunity_category: {
-                          type: "string",
-                          enum: ["fellowship", "scholarship", "grant", "conference", "internship"],
-                          description:
-                            "Sub-category for opportunities. Only required when listing_type is 'opportunity'.",
-                        },
-                      },
-                      required: ["clean_description", "detected_location", "work_mode", "listing_type"],
-                      additionalProperties: false,
-                    },
-                  },
-                },
-              ],
-              tool_choice: {
-                type: "function",
-                function: { name: "save_cleaned_job" },
+- OPPORTUNITY CATEGORY: If the listing is an "opportunity", also classify its sub-category as one of: "fellowship", "scholarship", "grant", "conference", "internship". Use "fellowship" as default for opportunities that don't fit other categories.`;
+
+const TOOL_DEFINITION = {
+  type: "function" as const,
+  function: {
+    name: "save_cleaned_job",
+    description:
+      "Save the cleaned job description, apply URL, detected location, work mode, and listing type",
+    parameters: {
+      type: "object",
+      properties: {
+        clean_description: {
+          type: "string",
+          description:
+            "Clean HTML description with only essential job information. Well-formatted with proper paragraphs, lists, and headings.",
+        },
+        apply_url: {
+          type: "string",
+          description:
+            "The actual application URL (Google Forms, mailto, company career page). null if not found. Must start with https:// or mailto:",
+        },
+        company_name: {
+          type: "string",
+          description:
+            "The actual hiring company/organization name extracted from the listing. null if not identifiable.",
+        },
+        detected_location: {
+          type: "string",
+          description:
+            "Country name ONLY, e.g. 'Nigeria', 'Kenya', 'USA', 'Global'. No cities.",
+        },
+        work_mode: {
+          type: "string",
+          enum: ["Remote", "Hybrid", "Physical"],
+          description: "The work mode: Remote, Hybrid, or Physical.",
+        },
+        listing_type: {
+          type: "string",
+          enum: ["job", "opportunity"],
+          description: "Whether this is a 'job' or 'opportunity'.",
+        },
+        opportunity_category: {
+          type: "string",
+          enum: ["fellowship", "scholarship", "grant", "conference", "internship"],
+          description:
+            "Sub-category for opportunities. Only required when listing_type is 'opportunity'.",
+        },
+      },
+      required: ["clean_description", "detected_location", "work_mode", "listing_type"],
+      additionalProperties: false,
+    },
+  },
+};
+
+function buildUpdateData(args: Record<string, string | null>) {
+  const updateData: Record<string, unknown> = {
+    clean_description: args.clean_description || null,
+    apply_url:
+      args.apply_url &&
+      (args.apply_url.startsWith("https://") || args.apply_url.startsWith("mailto:"))
+        ? args.apply_url
+        : null,
+  };
+  if (args.company_name) updateData.company = args.company_name;
+  if (args.detected_location) updateData.location = args.detected_location;
+  if (args.work_mode && ["Remote", "Hybrid", "Physical"].includes(args.work_mode))
+    updateData.job_type = args.work_mode;
+  if (args.listing_type && ["job", "opportunity"].includes(args.listing_type))
+    updateData.listing_type = args.listing_type;
+  if (args.opportunity_category) updateData.category = args.opportunity_category;
+  return updateData;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const openaiKey = Deno.env.get("OPENAI_API_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { data: jobs, error } = await supabase
+      .from("jobs")
+      .select("id, title, description, location, job_type, category")
+      .is("clean_description", null)
+      .not("description", "is", null)
+      .limit(5);
+
+    if (error) throw error;
+    if (!jobs || jobs.length === 0) {
+      return new Response(
+        JSON.stringify({ success: true, processed: 0 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Processing ${jobs.length} jobs for AI cleanup (OpenAI)`);
+    let processed = 0;
+
+    for (const job of jobs) {
+      try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${openaiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              {
+                role: "user",
+                content: `Clean this listing and extract details:\n\nTitle: ${job.title}\nCurrent location: ${job.location || "Unknown"}\nCurrent job_type: ${job.job_type || "Unknown"}\nCurrent category: ${job.category || "Unknown"}\n\nHTML:\n${job.description}`,
               },
-            }),
-          }
-        );
+            ],
+            tools: [TOOL_DEFINITION],
+            tool_choice: { type: "function", function: { name: "save_cleaned_job" } },
+          }),
+        });
 
         if (!response.ok) {
           const errText = await response.text();
-          console.error(`AI error for job ${job.id}:`, response.status, errText);
+          console.error(`OpenAI error for job ${job.id}:`, response.status, errText);
           continue;
         }
 
@@ -165,38 +175,7 @@ Also extract:
         }
 
         const args = JSON.parse(toolCall.function.arguments);
-        const cleanDesc = args.clean_description || null;
-        const applyUrl = args.apply_url || null;
-        const companyName = args.company_name || null;
-        const detectedLocation = args.detected_location || null;
-        const workMode = args.work_mode || null;
-        const listingType = args.listing_type || null;
-        const opportunityCategory = args.opportunity_category || null;
-
-        const updateData: Record<string, unknown> = {
-          clean_description: cleanDesc,
-          apply_url: applyUrl && (applyUrl.startsWith("https://") || applyUrl.startsWith("mailto:")) ? applyUrl : null,
-        };
-
-        if (companyName) {
-          updateData.company = companyName;
-        }
-
-        if (detectedLocation) {
-          updateData.location = detectedLocation;
-        }
-
-        if (workMode && ["Remote", "Hybrid", "Physical"].includes(workMode)) {
-          updateData.job_type = workMode;
-        }
-
-        if (listingType && ["job", "opportunity"].includes(listingType)) {
-          updateData.listing_type = listingType;
-        }
-
-        if (opportunityCategory) {
-          updateData.category = opportunityCategory;
-        }
+        const updateData = buildUpdateData(args);
 
         const { error: updateError } = await supabase
           .from("jobs")
@@ -207,6 +186,10 @@ Also extract:
           console.error(`Update error for job ${job.id}:`, updateError);
         } else {
           processed++;
+          // Mirror update to Eplicant
+          mirrorUpdate("jobs", job.id, updateData).catch(e =>
+            console.error(`Eplicant mirror error for ${job.id}:`, e)
+          );
         }
       } catch (e) {
         console.error(`Error processing job ${job.id}:`, e);

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { mirrorUpsert } from "../_shared/eplicant-client.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -474,6 +475,10 @@ Deno.serve(async (req) => {
         skipped += batch.length;
       } else {
         inserted += batch.length;
+        // Mirror to Eplicant (fire-and-forget, non-blocking)
+        mirrorUpsert("jobs", batch, "source,external_id").catch(e =>
+          console.error("Eplicant mirror error:", e)
+        );
       }
     }
 
