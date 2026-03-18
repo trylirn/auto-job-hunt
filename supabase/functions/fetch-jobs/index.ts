@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { mirrorUpsert } from "../_shared/eplicant-client.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
