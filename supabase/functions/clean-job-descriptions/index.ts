@@ -33,7 +33,7 @@ For non-job opportunities (scholarships, fellowships, grants, programs):
 
 Also extract:
 - The actual application URL if present (Google Forms, email mailto links, company career page URLs). Ignore chatgpt:// URLs, yeshub.ng URLs, and social media share links.
-- COMPANY NAME: Extract the actual hiring organization/company name. Look for patterns like "at [Company]", "by [Company]", "[Company] is hiring", or company names mentioned in the description. Do NOT use the blog/source site name (e.g., not "YesHub"). If no company can be identified, return null.
+- COMPANY NAME: Extract the actual hiring organization/company name. PRIORITIZE extracting from the TITLE first — look for patterns like "[Company] is recruiting", "[Company] is hiring", "[Company] seeks", "at [Company]", "by [Company]", "Join [Company]", or any organization name embedded in the title. Then check the description body. Do NOT use the blog/source site name (e.g., not "YesHub"). If no company can be identified, return null.
 - LOCATION (COUNTRY ONLY): Return ONLY the country name (e.g., "Nigeria", "Kenya", "USA", "United Kingdom", "Global"). Do NOT include city names. If the listing mentions a specific country anywhere, use that. Only use "Global" if truly open worldwide.
 - The work mode: determine if this is "Remote", "Hybrid", or "Physical" based on the description. Default to "Physical" if unclear.
 - The listing type: classify as "job" or "opportunity". Use "job" for standard employment positions. Use "opportunity" for fellowships, scholarships, grants, conferences, training programs, awards, PhD positions, short courses, competitions.
