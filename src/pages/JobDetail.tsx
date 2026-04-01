@@ -409,6 +409,7 @@ const JobDetail = () => {
                 location={job.location}
                 jobType={job.job_type}
                 salary={job.salary}
+                cleanDescription={job.clean_description}
               />
             </div>
           </div>
