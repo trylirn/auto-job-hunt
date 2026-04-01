@@ -196,8 +196,12 @@ const Index = () => {
       </section>
 
       <footer className="border-t bg-card">
-        <div className="container py-6 text-center text-sm text-muted-foreground">
+        <div className="container py-6 text-center text-sm text-muted-foreground space-y-2">
           <p>Eplicant — Discover opportunities that match your ambitions.</p>
+          <nav className="flex justify-center gap-4">
+            <a href="/" className="hover:text-foreground transition-colors">Jobs</a>
+            <a href="/opportunities" className="hover:text-foreground transition-colors">Opportunities</a>
+          </nav>
         </div>
       </footer>
     </div>);
