@@ -1,51 +1,78 @@
 
 
-## Plan: Fix LinkedIn Automation, Add Share Buttons, WhatsApp Banner, and FAQ
+## Plan: Fix Company Names, Enrich Share Content, Improve SEO Indexing
 
-### 1. Fix LinkedIn Posting (Root Cause Found)
+### Issue 1: Fix "Unknown" Company Names
 
-The database trigger (`notify_new_job_to_socials`) tries to read `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from `vault.decrypted_secrets`, but **neither exists in the vault**. The trigger silently returns without calling the edge function.
+The AI cleanup function (`clean-job-descriptions`) already extracts company names from titles/descriptions via OpenAI tool calling. The problem is that many existing jobs were imported with `company: "Unknown"` and the AI cleanup either didn't extract the company name or hasn't processed them yet.
 
-**Fix**: Replace the current trigger approach. Instead of using `pg_net` from a DB trigger (which requires vault secrets), use a **database webhook** (pg_net directly with hardcoded project URL) or simpler: store the required URL/key in vault via a migration.
+**Fix**: Create a new edge function `fix-company-names` that:
+- Queries jobs where `company = 'Unknown'` (or similar like "unknown", empty)
+- Sends the title + description to OpenAI to extract the company name
+- Updates the company field in both databases
 
-**Migration**: Insert `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` into `vault.secrets` so the existing trigger can find them.
+Also update the `clean-job-descriptions` system prompt to be more aggressive about extracting company names from the title itself (e.g., "Alliance Francaise de Lagos is recruiting..." → company is "Alliance Francaise de Lagos").
 
-Your Zapier configuration (screenshot) looks correct — `message`, `title`, `apply_url` mapped properly. The issue is purely that the edge function never gets called.
+**Files:**
+- `supabase/functions/fix-company-names/index.ts` — New edge function
+- `supabase/functions/clean-job-descriptions/index.ts` — Strengthen company extraction prompt
 
-### 2. Add Social Share Buttons on Job Detail Page
+### Issue 2: Enrich "Copy Link" Share Content
 
-Add share buttons below the Apply button on `JobDetail.tsx`:
-- **WhatsApp**: `https://wa.me/?text=...`
-- **LinkedIn**: `https://www.linkedin.com/sharing/share-offsite/?url=...`
-- **Twitter/X**: `https://twitter.com/intent/tweet?text=...&url=...`
-- **Copy Link**: Copy job URL to clipboard
+Looking at the reference images (LinkedIn-style posts), the copied content should be formatted like:
 
-Use lucide icons + simple anchor buttons in a row.
+```
+{Company} is on the lookout for a {Title}. Apply now!
 
-### 3. WhatsApp Channel Floating Banner
+🔗Link: {jobUrl}
+💰Salary: {salary}
+📍Location: {location}
+⏰Deadline: {deadline}
 
-Create a `WhatsAppBanner` component — a fixed-position bar at the bottom of the screen (or a floating button) visible on all pages:
-- Text: "Join Us on WhatsApp"
-- Link: `https://whatsapp.com/channel/0029VbBrMe45a23vftujJO22`
-- Green WhatsApp-themed styling
-- Add it to `App.tsx` so it shows on every page
+Summary of Key Responsibilities:
+→ {responsibility1}
+→ {responsibility2}
+...
 
-### 4. FAQ Section on Homepage
+🧑‍💼Share this with your network or tag someone who might benefit.
 
-Add an FAQ accordion section to `Index.tsx` above the footer using the existing `Accordion` component. Questions like:
-- "What is Eplicant?"
-- "How often are jobs updated?"
-- "Are these jobs verified?"
-- "How do I apply?"
-- "What's the difference between Jobs and Opportunities?"
+Follow Eplicant for verified opportunities.
+```
 
-### Files to Change
+**Fix**: Update `buildShareText` in `ShareButtons.tsx` to produce a richer, LinkedIn-ready format with emoji-formatted details, a brief responsibilities excerpt extracted from the clean_description, and Eplicant branding.
+
+Pass `cleanDescription` as a new prop to `ShareButtons` so it can extract key responsibilities.
+
+**Files:**
+- `src/components/ShareButtons.tsx` — Richer copy content
+- `src/pages/JobDetail.tsx` — Pass `cleanDescription` prop
+
+### Issue 3: Fix "Discovered - Currently Not Indexed"
+
+The site is a client-side SPA. Google discovers URLs from the sitemap but can't render JavaScript content efficiently, leading to "Discovered - currently not indexed." Key fixes:
+
+1. **Add `<meta name="fragment" content="!">` to `index.html`** — signals to crawlers that the page has dynamic content
+2. **Improve `<noscript>` content** with actual links and structured content so crawlers see real text
+3. **Add server-side rendering hints** — since Netlify already has the Prerender extension, ensure the config is correct
+4. **Add a Netlify `_headers` or update `netlify.toml`** to set `X-Robots-Tag: all` to encourage indexing
+5. **Ensure each page has unique, descriptive meta tags** (already done via Helmet)
+6. **Add internal linking** — ensure the homepage has crawlable `<a href>` links to key pages (jobs, opportunities) so Google can discover them through HTML links, not just sitemap
+
+The most impactful fix: configure Netlify's prerendering properly for bot user-agents by adding the `netlify-plugin-prerender` or using Netlify's built-in prerender support with proper `_redirects` for bot detection.
+
+**Files:**
+- `index.html` — Add fragment meta, improve noscript
+- `netlify.toml` — Add bot prerender redirects and X-Robots-Tag header
+- `src/pages/Index.tsx` — Ensure crawlable anchor links exist in noscript/footer area
+
+### Summary
 
 | File | Change |
 |------|--------|
-| New migration | Insert `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` into vault |
-| `src/pages/JobDetail.tsx` | Add share buttons (WhatsApp, LinkedIn, Twitter, Copy) |
-| `src/components/WhatsAppBanner.tsx` | New floating "Join us on WhatsApp" banner |
-| `src/App.tsx` | Include `WhatsAppBanner` globally |
-| `src/pages/Index.tsx` | Add FAQ accordion section before footer |
+| `supabase/functions/fix-company-names/index.ts` | New — batch fix "Unknown" companies via OpenAI |
+| `supabase/functions/clean-job-descriptions/index.ts` | Strengthen company name extraction in prompt |
+| `src/components/ShareButtons.tsx` | Rich LinkedIn-style copy content |
+| `src/pages/JobDetail.tsx` | Pass `cleanDescription` to ShareButtons |
+| `index.html` | Add fragment meta, improve noscript content |
+| `netlify.toml` | Add X-Robots-Tag, prerender config for bots |
 
