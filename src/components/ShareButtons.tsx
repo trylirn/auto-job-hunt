@@ -73,9 +73,19 @@ function buildRichCopyText({ title, company, jobUrl, location, salary, cleanDesc
 
 export const ShareButtons = ({ title, company, jobUrl, location, jobType, salary, cleanDescription }: ShareButtonsProps) => {
   const [copied, setCopied] = useState(false);
-  const shareText = buildShareText({ title, company, location, jobType, salary });
-  const encodedText = encodeURIComponent(shareText);
+  const richText = buildRichCopyText({ title, company, jobUrl, location, jobType, salary, cleanDescription });
+  const encodedRichText = encodeURIComponent(richText);
   const encodedUrl = encodeURIComponent(jobUrl);
+
+  // Condensed version for X/Twitter (280 char limit)
+  const twitterText = (() => {
+    let t = `🚀 Hiring: ${title} at ${company}`;
+    if (location) t += ` | 📍 ${location}`;
+    if (salary) t += ` | 💰 ${salary}`;
+    t += `\n\nApply now 👇`;
+    return t.slice(0, 250); // leave room for URL
+  })();
+  const encodedTwitterText = encodeURIComponent(twitterText);
 
   const handleCopy = async () => {
     const richText = buildRichCopyText({ title, company, jobUrl, location, jobType, salary, cleanDescription });
@@ -93,7 +103,7 @@ export const ShareButtons = ({ title, company, jobUrl, location, jobType, salary
 
       <Button variant="outline" size="sm" asChild>
         <a
-          href={`https://wa.me/?text=${encodedText}%0A%0AApply%20here%3A%20${encodedUrl}`}
+          href={`https://wa.me/?text=${encodedRichText}`}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -113,7 +123,7 @@ export const ShareButtons = ({ title, company, jobUrl, location, jobType, salary
 
       <Button variant="outline" size="sm" asChild>
         <a
-          href={`https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`}
+          href={`https://twitter.com/intent/tweet?text=${encodedTwitterText}&url=${encodedUrl}`}
           target="_blank"
           rel="noopener noreferrer"
         >
