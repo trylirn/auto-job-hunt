@@ -164,31 +164,31 @@ const Index = () => {
             <AccordionItem value="what">
               <AccordionTrigger>What is Eplicant?</AccordionTrigger>
               <AccordionContent>
-                Eplicant is a job and opportunity Job site that automatically collects and organizes listings from verified sources across Africa and beyond, making it easy to discover roles that match your ambitions.
+                Eplicant is a career platform built to help job seekers discover verified jobs and opportunities across Africa and beyond. We make it simple to find roles that match your skills, experience, and ambitions — all in one place.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="updated">
               <AccordionTrigger>How often are jobs updated?</AccordionTrigger>
               <AccordionContent>
-                Our system fetches new listings every hour and uses AI to clean and categorize them, so you always see fresh, well-organized opportunities.
+                New jobs and opportunities are added every day. Our team ensures listings are current, well-organized, and easy to browse so you never miss a relevant opening.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="verified">
               <AccordionTrigger>Are these jobs verified?</AccordionTrigger>
               <AccordionContent>
-                We verify our Job listings from reputable sources and use AI to improve their quality.
+                Yes. Every listing on Eplicant goes through a quality check to ensure it comes from a legitimate employer or organization. We remove outdated or suspicious postings to keep the platform trustworthy and reliable.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="apply">
               <AccordionTrigger>How do I apply for a job?</AccordionTrigger>
               <AccordionContent>
-                Click on any listing to view its details, then use the "Apply" button to be redirected to the original application page where you can submit your application.
+                Click on any listing to view its full details, then hit the "Apply" button to go directly to the application page. From there, you can submit your application to the employer or organization.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="difference">
               <AccordionTrigger>What's the difference between Jobs and Opportunities?</AccordionTrigger>
               <AccordionContent>
-                Jobs are traditional employment listings (full-time, part-time, contract). Opportunities include fellowships, scholarships, grants, conferences, and other career-development programs.
+                Jobs are traditional employment roles — full-time, part-time, or contract positions. Opportunities cover fellowships, scholarships, grants, conferences, and other programs designed to advance your career.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
