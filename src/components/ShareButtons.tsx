@@ -123,7 +123,7 @@ export const ShareButtons = ({ title, company, jobUrl, location, jobType, salary
 
       <Button variant="outline" size="sm" asChild>
         <a
-          href={`https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`}
+          href={`https://twitter.com/intent/tweet?text=${encodedTwitterText}&url=${encodedUrl}`}
           target="_blank"
           rel="noopener noreferrer"
         >
