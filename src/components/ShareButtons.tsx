@@ -103,7 +103,7 @@ export const ShareButtons = ({ title, company, jobUrl, location, jobType, salary
 
       <Button variant="outline" size="sm" asChild>
         <a
-          href={`https://wa.me/?text=${encodedText}%0A%0AApply%20here%3A%20${encodedUrl}`}
+          href={`https://wa.me/?text=${encodedRichText}`}
           target="_blank"
           rel="noopener noreferrer"
         >
