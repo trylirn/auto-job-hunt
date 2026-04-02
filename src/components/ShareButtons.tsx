@@ -73,9 +73,19 @@ function buildRichCopyText({ title, company, jobUrl, location, salary, cleanDesc
 
 export const ShareButtons = ({ title, company, jobUrl, location, jobType, salary, cleanDescription }: ShareButtonsProps) => {
   const [copied, setCopied] = useState(false);
-  const shareText = buildShareText({ title, company, location, jobType, salary });
-  const encodedText = encodeURIComponent(shareText);
+  const richText = buildRichCopyText({ title, company, jobUrl, location, jobType, salary, cleanDescription });
+  const encodedRichText = encodeURIComponent(richText);
   const encodedUrl = encodeURIComponent(jobUrl);
+
+  // Condensed version for X/Twitter (280 char limit)
+  const twitterText = (() => {
+    let t = `🚀 Hiring: ${title} at ${company}`;
+    if (location) t += ` | 📍 ${location}`;
+    if (salary) t += ` | 💰 ${salary}`;
+    t += `\n\nApply now 👇`;
+    return t.slice(0, 250); // leave room for URL
+  })();
+  const encodedTwitterText = encodeURIComponent(twitterText);
 
   const handleCopy = async () => {
     const richText = buildRichCopyText({ title, company, jobUrl, location, jobType, salary, cleanDescription });
