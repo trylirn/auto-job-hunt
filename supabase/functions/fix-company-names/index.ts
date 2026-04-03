@@ -58,16 +58,29 @@ Deno.serve(async (req) => {
     const openaiKey = Deno.env.get("OPENAI_API_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch jobs that need title/company fixing
-    const { data: jobs, error } = await supabase
+    // Parse optional query params
+    const url = new URL(req.url);
+    const mode = url.searchParams.get("mode") || "dirty"; // "dirty" or "all"
+    const batchSize = Math.min(parseInt(url.searchParams.get("batch") || "10"), 25);
+    const offset = parseInt(url.searchParams.get("offset") || "0");
+
+    let query = supabase
       .from("jobs")
-      .select("id, title, description, clean_description, company")
-      .or(
+      .select("id, title, description, clean_description, company");
+
+    if (mode === "all") {
+      // Process ALL jobs from newest to oldest
+      query = query.order("created_at", { ascending: false }).range(offset, offset + batchSize - 1);
+    } else {
+      // Only dirty jobs (Unknown company or fluff titles)
+      query = query.or(
         "company.eq.Unknown,company.eq.unknown,company.eq.,company.is.null," +
         "title.ilike.%Apply Now%,title.ilike.%Apply Here%,title.ilike.%is hiring%," +
         "title.ilike.%is recruiting%,title.ilike.%Vacancy%"
-      )
-      .limit(10);
+      ).order("created_at", { ascending: false }).limit(batchSize);
+    }
+
+    const { data: jobs, error } = await query;
 
     if (error) throw error;
     if (!jobs || jobs.length === 0) {
