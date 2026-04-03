@@ -249,42 +249,6 @@ async function fetchRemotiveUSJobs(): Promise<NormalizedJob[]> {
   }
 }
 
-async function fetchArbeitnowUSJobs(): Promise<NormalizedJob[]> {
-  try {
-    const allJobs: any[] = [];
-    for (let page = 1; page <= 2; page++) {
-      const res = await fetch(`https://www.arbeitnow.com/api/job-board-api?page=${page}`);
-      if (!res.ok) break;
-      const json = await res.json();
-      allJobs.push(...(json.data || []));
-    }
-
-    return allJobs
-      .filter((j: any) => {
-        const loc = (j.location || "").toLowerCase();
-        return loc.includes("united states") || loc.includes("usa") || loc.includes("u.s.a") || loc.includes("us");
-      })
-      .map((j: any) => ({
-        title: j.title || "Untitled",
-        company: j.company_name || "Unknown",
-        location: "United States",
-        job_type: j.remote ? "Remote" : "Physical",
-        category: "jobs",
-        description: j.description || null,
-        url: j.url,
-        source: "arbeitnow",
-        external_id: j.slug || String(j.url),
-        posted_at: j.created_at ? new Date(j.created_at * 1000).toISOString() : null,
-        salary: null,
-        tags: j.tags || null,
-        company_logo: null,
-        is_remote: j.remote || false,
-      }));
-  } catch (e) {
-    console.error("Arbeitnow fetch error:", e);
-    return [];
-  }
-}
 
 async function fetchNgoJobsInAfricaJobs(): Promise<NormalizedJob[]> {
   try {

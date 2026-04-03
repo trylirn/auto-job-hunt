@@ -7,30 +7,41 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `You extract company/organization names from job listing titles and descriptions.
+const SYSTEM_PROMPT = `You extract clean job titles and company/organization names from raw job listing titles and descriptions.
 
-RULES:
+TITLE CLEANING RULES:
+- Remove phrases like "Apply Now", "Apply Here", "Hiring", "is recruiting", "is hiring", "Vacancy", "Job Opening"
+- Remove source site names (e.g., "YesHub", "Eplicant", "NGO Jobs in Africa")
+- Remove excessive punctuation, emojis, and decorative formatting
+- Keep the core job role and seniority (e.g., "Senior Data Analyst", "Program Manager")
+- If there's a location in the title, keep it only if it adds value
+- Return a clean, professional job title suitable for LinkedIn
+
+COMPANY NAME RULES:
 - Look for patterns like "at [Company]", "by [Company]", "[Company] is hiring", "[Company] is recruiting", "[Company] seeks", "Join [Company]"
-- The company name is the ACTUAL hiring organization, NOT the blog/aggregator site (e.g., not "YesHub", not "Eplicant")
+- The company name is the ACTUAL hiring organization, NOT the blog/aggregator site
 - If the title contains the company name directly (e.g., "Alliance Francaise de Lagos is recruiting..."), extract it
 - For government/institutional roles, use the department or agency name
-- If you truly cannot identify a company, return "Unknown"
-- Return ONLY the company name, nothing else`;
+- If you truly cannot identify a company, return "Unknown"`;
 
 const TOOL_DEFINITION = {
   type: "function" as const,
   function: {
-    name: "save_company_name",
-    description: "Save the extracted company name",
+    name: "save_job_metadata",
+    description: "Save the extracted clean job title and company name",
     parameters: {
       type: "object",
       properties: {
+        clean_title: {
+          type: "string",
+          description: "The cleaned, professional job title without fluff words like 'Apply Now', site names, etc.",
+        },
         company_name: {
           type: "string",
           description: "The extracted company/organization name. Use 'Unknown' only if truly unidentifiable.",
         },
       },
-      required: ["company_name"],
+      required: ["clean_title", "company_name"],
       additionalProperties: false,
     },
   },
@@ -47,21 +58,26 @@ Deno.serve(async (req) => {
     const openaiKey = Deno.env.get("OPENAI_API_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Fetch jobs that need title/company fixing
     const { data: jobs, error } = await supabase
       .from("jobs")
-      .select("id, title, description, clean_description")
-      .or("company.eq.Unknown,company.eq.unknown,company.eq.,company.is.null")
+      .select("id, title, description, clean_description, company")
+      .or(
+        "company.eq.Unknown,company.eq.unknown,company.eq.,company.is.null," +
+        "title.ilike.%Apply Now%,title.ilike.%Apply Here%,title.ilike.%is hiring%," +
+        "title.ilike.%is recruiting%,title.ilike.%Vacancy%"
+      )
       .limit(10);
 
     if (error) throw error;
     if (!jobs || jobs.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, processed: 0, message: "No jobs with Unknown company" }),
+        JSON.stringify({ success: true, processed: 0, message: "No jobs need fixing" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Processing ${jobs.length} jobs for company name extraction`);
+    console.log(`Processing ${jobs.length} jobs for title/company extraction`);
     let processed = 0;
 
     for (const job of jobs) {
@@ -79,11 +95,11 @@ Deno.serve(async (req) => {
               { role: "system", content: SYSTEM_PROMPT },
               {
                 role: "user",
-                content: `Extract the company/organization name from this job listing:\n\nTitle: ${job.title}\n\nDescription excerpt:\n${desc}`,
+                content: `Extract the clean job title and company name from this job listing:\n\nRaw Title: ${job.title}\n\nDescription excerpt:\n${desc}`,
               },
             ],
             tools: [TOOL_DEFINITION],
-            tool_choice: { type: "function", function: { name: "save_company_name" } },
+            tool_choice: { type: "function", function: { name: "save_job_metadata" } },
           }),
         });
 
@@ -97,19 +113,39 @@ Deno.serve(async (req) => {
         if (!toolCall) continue;
 
         const args = JSON.parse(toolCall.function.arguments);
+        const cleanTitle = args.clean_title?.trim();
         const companyName = args.company_name?.trim();
 
-        if (companyName && companyName !== "Unknown" && companyName !== "unknown") {
+        const updates: Record<string, string> = {};
+        if (cleanTitle && cleanTitle !== job.title) {
+          updates.title = cleanTitle;
+        }
+        if (companyName && companyName !== "Unknown" && companyName !== "unknown" &&
+            (job.company === "Unknown" || job.company === "unknown" || !job.company)) {
+          updates.company = companyName;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          // Also regenerate slug if title changed
+          if (updates.title) {
+            const baseSlug = updates.title
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/-+/g, "-")
+              .replace(/^-|-$/g, "");
+            updates.slug = `${baseSlug}-${job.id.slice(0, 8)}`;
+          }
+
           const { error: updateError } = await supabase
             .from("jobs")
-            .update({ company: companyName })
+            .update(updates)
             .eq("id", job.id);
 
           if (updateError) {
             console.error(`Update error for ${job.id}:`, updateError);
           } else {
             processed++;
-            mirrorUpdate("jobs", job.id, { company: companyName }).catch(e =>
+            mirrorUpdate("jobs", job.id, updates).catch(e =>
               console.error(`Mirror error for ${job.id}:`, e)
             );
           }
@@ -119,7 +155,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Fixed ${processed}/${jobs.length} company names`);
+    console.log(`Fixed ${processed}/${jobs.length} job titles/companies`);
     return new Response(
       JSON.stringify({ success: true, processed, total: jobs.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
