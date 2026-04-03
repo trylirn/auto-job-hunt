@@ -7,6 +7,7 @@ import { HelmetProvider } from "react-helmet-async";
 import Index from "./pages/Index";
 import JobDetail, { JobIdRedirect } from "./pages/JobDetail";
 import Opportunities from "./pages/Opportunities";
+import Newsletter from "./pages/Newsletter";
 import NotFound from "./pages/NotFound";
 import { WhatsAppBanner } from "./components/WhatsAppBanner";
 
