@@ -29,8 +29,15 @@ export function Header() {
               "transition-colors hover:text-foreground",
               location.pathname === "/opportunities" ? "text-foreground" : "text-muted-foreground"
             )}>
-
             Opportunities
+          </Link>
+          <Link
+            to="/newsletter"
+            className={cn(
+              "transition-colors hover:text-foreground",
+              location.pathname === "/newsletter" ? "text-foreground" : "text-muted-foreground"
+            )}>
+            Newsletter
           </Link>
         </nav>
       </div>
