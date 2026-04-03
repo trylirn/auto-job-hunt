@@ -86,6 +86,30 @@ export type Database = {
         }
         Relationships: []
       }
+      newsletters: {
+        Row: {
+          content: string
+          created_at: string
+          expires_at: string
+          id: string
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
