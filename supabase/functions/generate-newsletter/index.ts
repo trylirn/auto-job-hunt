@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     }
 
     const jobsList = jobs.map((j, i) => 
-      `${i + 1}. ${j.title} at ${j.company} | ${j.location || "Remote"} | ${j.job_type || "Full-time"} | Type: ${j.listing_type || "job"} | Link: https://auto-job-hunt.lovable.app/job/${j.slug}`
+      `${i + 1}. ${j.title} at ${j.company} | ${j.location || "Remote"} | ${j.job_type || "Full-time"} | Type: ${j.listing_type || "job"} | Link: https://eplicant.com/job/${j.slug}`
     ).join("\n");
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
