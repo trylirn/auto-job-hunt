@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
       .select("title, company, location, job_type, slug, listing_type, posted_at")
       .gte("created_at", oneWeekAgo)
       .order("created_at", { ascending: false })
-      .limit(25);
+      .limit(30);
 
     if (error) throw error;
     if (!jobs || jobs.length === 0) {
@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     }
 
     const jobsList = jobs.map((j, i) => 
-      `${i + 1}. ${j.title} at ${j.company} | ${j.location || "Remote"} | ${j.job_type || "Full-time"} | Type: ${j.listing_type || "job"} | Link: https://auto-job-hunt.lovable.app/job/${j.slug}`
+      `${i + 1}. ${j.title} at ${j.company} | ${j.location || "Remote"} | ${j.job_type || "Full-time"} | Type: ${j.listing_type || "job"} | Link: https://eplicant.com/job/${j.slug}`
     ).join("\n");
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a career newsletter writer for Eplicant, a platform helping job seekers find verified jobs and opportunities. Generate a weekly newsletter in clean HTML format. Use a warm, professional tone. Group listings by type (Jobs vs Opportunities) if applicable. Each listing should include the job title as a link, company name, location, and job type. Add a brief intro paragraph and a closing call-to-action encouraging readers to visit https://auto-job-hunt.lovable.app for more. Do NOT include <html>, <head>, or <body> tags — only the inner content HTML. Use simple, clean styling with inline CSS.`,
+            content: `You are a career newsletter writer for Eplicant, a platform helping job seekers find verified jobs and opportunities. Generate a weekly newsletter in clean HTML format. Use a warm, professional tone. Group listings by type (Jobs vs Opportunities) if applicable. Include at least 20 listings. Each listing should include the job title as a link, company name, location, and job type. Add a brief intro paragraph and a closing call-to-action encouraging readers to visit https://eplicant.com for more. Do NOT include <html>, <head>, or <body> tags — only the inner content HTML. Use simple, clean styling with inline CSS.`,
           },
           {
             role: "user",
