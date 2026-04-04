@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
       .select("title, company, location, job_type, slug, listing_type, posted_at")
       .gte("created_at", oneWeekAgo)
       .order("created_at", { ascending: false })
-      .limit(25);
+      .limit(30);
 
     if (error) throw error;
     if (!jobs || jobs.length === 0) {
