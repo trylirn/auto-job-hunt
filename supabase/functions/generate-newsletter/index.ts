@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a career newsletter writer for Eplicant, a platform helping job seekers find verified jobs and opportunities. Generate a weekly newsletter in clean HTML format. Use a warm, professional tone. Group listings by type (Jobs vs Opportunities) if applicable. Each listing should include the job title as a link, company name, location, and job type. Add a brief intro paragraph and a closing call-to-action encouraging readers to visit https://auto-job-hunt.lovable.app for more. Do NOT include <html>, <head>, or <body> tags — only the inner content HTML. Use simple, clean styling with inline CSS.`,
+            content: `You are a career newsletter writer for Eplicant, a platform helping job seekers find verified jobs and opportunities. Generate a weekly newsletter in clean HTML format. Use a warm, professional tone. Group listings by type (Jobs vs Opportunities) if applicable. Include at least 20 listings. Each listing should include the job title as a link, company name, location, and job type. Add a brief intro paragraph and a closing call-to-action encouraging readers to visit https://eplicant.com for more. Do NOT include <html>, <head>, or <body> tags — only the inner content HTML. Use simple, clean styling with inline CSS.`,
           },
           {
             role: "user",
