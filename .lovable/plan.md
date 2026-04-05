@@ -1,38 +1,26 @@
 
 
-## Plan: Run AI Extraction, Fix Newsletter Links/Count/Schedule
+## Root Cause
 
-### 1. Run fix-company-names on all jobs (newest first)
+The `fetch-jobs` function runs hourly and uses `upsert` with `ignoreDuplicates: false` on the `jobs` table (conflict key: `source,external_id`). This means **every hour, it overwrites the `title` and `company` fields** with the raw, uncleaned data from the source websites (e.g., "Senior Data Analyst at UNICEF — Apply Now | YesHub").
 
-There are 589 jobs with Unknown/missing company names and potentially more with dirty titles. I will:
+The `fix-company-names` function then cleans them up via OpenAI, but the **next hourly fetch overwrites them again** with the dirty originals. This is why the cleanup appears temporary.
 
-- Deploy the existing `fix-company-names` function (already uses OpenAI `gpt-4o-mini`)
-- Call it repeatedly with `mode=all` in batches of 25, working from newest to oldest, covering as many as possible in this session
-- This extracts clean titles AND company names from job descriptions using OpenAI
+## Fix
 
-### 2. Fix newsletter links → eplicant.com
+**`supabase/functions/fetch-jobs/index.ts`** — Change the upsert strategy so it does NOT overwrite `title`, `company`, or `slug` for existing records. Two changes:
 
-**`supabase/functions/generate-newsletter/index.ts`** — Two changes:
-- Line 41: Change `https://auto-job-hunt.lovable.app/job/` → `https://eplicant.com/job/`
-- Line 55: Change CTA URL from `https://auto-job-hunt.lovable.app` → `https://eplicant.com`
+1. Before upserting, check if jobs already exist in the DB. For existing jobs, only update `description`, `posted_at`, and other non-title fields — skip `title`, `company`, and `slug`.
 
-### 3. Increase newsletter job count to 20+
+2. Simplest approach: switch to `ignoreDuplicates: true` so existing jobs are never overwritten at all. New jobs get inserted with raw titles, then the AI cleanup processes them. This is the cleanest fix since the source data for existing jobs doesn't meaningfully change.
 
-**`supabase/functions/generate-newsletter/index.ts`** — Line 30:
-- Change `.limit(25)` → `.limit(30)` (fetch more to ensure at least 20 after filtering)
-- Update the system prompt to mention including at least 20 listings
-
-### 4. Change newsletter schedule to Monday 7 AM UTC
-
-Update the `pg_cron` schedule for `generate-newsletter` from Saturday 8 AM to Monday 7 AM:
-- Delete the existing cron job
-- Insert new cron job: `'0 7 * * 1'` (Monday 7 AM UTC)
+**`supabase/functions/fetch-jobs/index.ts`** — Also trigger `fix-company-names` after job ingestion (alongside the existing `clean-job-descriptions` trigger), so new jobs get their titles/companies cleaned immediately.
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| `supabase/functions/generate-newsletter/index.ts` | Fix eplicant.com links, increase limit to 30 |
-| Database (SQL) | Update pg_cron schedule to Monday 7 AM |
-| Runtime | Call fix-company-names in batches to process all jobs |
+| `supabase/functions/fetch-jobs/index.ts` | Change `ignoreDuplicates: false` → `true`; add fire-and-forget call to `fix-company-names` after ingestion |
+
+This ensures AI-cleaned titles and company names are permanent, and new jobs automatically get cleaned shortly after import.
 
