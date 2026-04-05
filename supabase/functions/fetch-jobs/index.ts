@@ -428,7 +428,7 @@ Deno.serve(async (req) => {
       const batch = allJobs.slice(i, i + batchSize);
       const { error } = await supabase
         .from("jobs")
-        .upsert(batch, { onConflict: "source,external_id", ignoreDuplicates: false });
+        .upsert(batch, { onConflict: "source,external_id", ignoreDuplicates: true });
 
       if (error) {
         console.error("Upsert error:", error);
@@ -456,6 +456,20 @@ Deno.serve(async (req) => {
       }
     ).then(r => r.json().then(d => console.log("AI cleanup result:", d)))
      .catch(e => console.error("AI cleanup trigger error:", e));
+
+    // Fire-and-forget: trigger AI title + company extraction for new jobs
+    fetch(
+      `${supabaseUrl}/functions/v1/fix-company-names`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${supabaseKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ mode: "all" }),
+      }
+    ).then(r => r.json().then(d => console.log("AI title/company fix result:", d)))
+     .catch(e => console.error("AI title/company fix trigger error:", e));
 
     return new Response(
       JSON.stringify({
