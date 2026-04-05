@@ -428,7 +428,7 @@ Deno.serve(async (req) => {
       const batch = allJobs.slice(i, i + batchSize);
       const { error } = await supabase
         .from("jobs")
-        .upsert(batch, { onConflict: "source,external_id", ignoreDuplicates: false });
+        .upsert(batch, { onConflict: "source,external_id", ignoreDuplicates: true });
 
       if (error) {
         console.error("Upsert error:", error);
