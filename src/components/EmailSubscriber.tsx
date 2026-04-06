@@ -15,15 +15,15 @@ export function EmailSubscriber() {
 
     setStatus("loading");
     try {
-      const res = await fetch("https://api.useplunk.com/v1/track", {
+      const res = await fetch("https://api.useplunk.com/v1/subscribe", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${PLUNK_PUBLIC_KEY}`,
         },
         body: JSON.stringify({
-          event: "newsletter-subscribe",
           email,
+          subscribed: true,
         }),
       });
 
