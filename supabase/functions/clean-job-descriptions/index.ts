@@ -37,14 +37,17 @@ Also extract:
 - LOCATION (COUNTRY ONLY): Return ONLY the country name (e.g., "Nigeria", "Kenya", "USA", "United Kingdom", "Global"). Do NOT include city names. If the listing mentions a specific country anywhere, use that. Only use "Global" if truly open worldwide.
 - The work mode: determine if this is "Remote", "Hybrid", or "Physical" based on the description. Default to "Physical" if unclear.
 - The listing type: classify as "job" or "opportunity". Use "job" for standard employment positions. Use "opportunity" for fellowships, scholarships, grants, conferences, training programs, awards, PhD positions, short courses, competitions.
-- OPPORTUNITY CATEGORY: If the listing is an "opportunity", also classify its sub-category as one of: "fellowship", "scholarship", "grant", "conference", "internship". Use "fellowship" as default for opportunities that don't fit other categories.`;
+- OPPORTUNITY CATEGORY: If the listing is an "opportunity", also classify its sub-category as one of: "fellowship", "scholarship", "grant", "conference", "internship". Use "fellowship" as default for opportunities that don't fit other categories.
+- EMPLOYMENT TYPE: Classify as "Full-time", "Part-time", "Contract", or "Internship". Default to "Full-time" for standard jobs if unclear.
+- APPLY BEFORE: Extract the application deadline date if mentioned. Return in a human-readable format like "April 30, 2026" or "May 15, 2026". Return null if no deadline is mentioned.
+- SKILLS: Extract up to 8 key skills or technologies mentioned as requirements (e.g. "Python", "Project Management", "Excel", "Communication"). Return as an array of strings. Return empty array if none found.`;
 
 const TOOL_DEFINITION = {
   type: "function" as const,
   function: {
     name: "save_cleaned_job",
     description:
-      "Save the cleaned job description, apply URL, detected location, work mode, and listing type",
+      "Save the cleaned job description, apply URL, detected location, work mode, listing type, employment type, deadline, and skills",
     parameters: {
       type: "object",
       properties: {
@@ -84,6 +87,20 @@ const TOOL_DEFINITION = {
           description:
             "Sub-category for opportunities. Only required when listing_type is 'opportunity'.",
         },
+        employment_type: {
+          type: "string",
+          enum: ["Full-time", "Part-time", "Contract", "Internship"],
+          description: "Employment type: Full-time, Part-time, Contract, or Internship.",
+        },
+        apply_before: {
+          type: "string",
+          description: "Application deadline in human-readable format, e.g. 'April 30, 2026'. null if not mentioned.",
+        },
+        skills: {
+          type: "array",
+          items: { type: "string" },
+          description: "Up to 8 key skills or technologies required. Empty array if none found.",
+        },
       },
       required: ["clean_description", "detected_location", "work_mode", "listing_type"],
       additionalProperties: false,
@@ -91,22 +108,39 @@ const TOOL_DEFINITION = {
   },
 };
 
-function buildUpdateData(args: Record<string, string | null>) {
+function buildUpdateData(args: Record<string, unknown>) {
   const updateData: Record<string, unknown> = {
     clean_description: args.clean_description || null,
     apply_url:
       args.apply_url &&
+      typeof args.apply_url === "string" &&
       (args.apply_url.startsWith("https://") || args.apply_url.startsWith("mailto:"))
         ? args.apply_url
         : null,
   };
   if (args.company_name) updateData.company = args.company_name;
   if (args.detected_location) updateData.location = args.detected_location;
-  if (args.work_mode && ["Remote", "Hybrid", "Physical"].includes(args.work_mode))
-    updateData.job_type = args.work_mode;
-  if (args.listing_type && ["job", "opportunity"].includes(args.listing_type))
+  
+  // Save work mode to is_remote flag instead of overwriting job_type
+  if (args.work_mode) {
+    updateData.is_remote = args.work_mode === "Remote";
+  }
+  
+  // Save employment type to new column
+  if (args.employment_type) {
+    updateData.employment_type = args.employment_type;
+  }
+
+  if (args.listing_type && ["job", "opportunity"].includes(args.listing_type as string))
     updateData.listing_type = args.listing_type;
   if (args.opportunity_category) updateData.category = args.opportunity_category;
+  
+  // New fields
+  if (args.apply_before) updateData.apply_before = args.apply_before;
+  if (args.skills && Array.isArray(args.skills) && args.skills.length > 0) {
+    updateData.skills = args.skills;
+  }
+  
   return updateData;
 }
 
