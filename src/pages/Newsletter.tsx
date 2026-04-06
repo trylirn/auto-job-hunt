@@ -1,10 +1,15 @@
+import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/Header";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Newspaper } from "lucide-react";
+import { Newspaper, Copy, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 const Newsletter = () => {
+  const [copied, setCopied] = useState(false);
+
   const { data: newsletter, isLoading } = useQuery({
     queryKey: ["newsletter"],
     queryFn: async () => {
@@ -19,6 +24,22 @@ const Newsletter = () => {
       return data;
     },
   });
+
+  const handleCopy = async () => {
+    if (!newsletter) return;
+    try {
+      // Strip HTML tags for plain-text copy
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = newsletter.content;
+      const plainText = tempDiv.textContent || tempDiv.innerText || "";
+      await navigator.clipboard.writeText(`${newsletter.title}\n\n${plainText}`);
+      setCopied(true);
+      toast({ title: "Newsletter copied to clipboard!" });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({ title: "Failed to copy", variant: "destructive" });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -36,7 +57,7 @@ const Newsletter = () => {
             Weekly Newsletter
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Curated jobs and opportunities delivered every Saturday.
+            Curated jobs and opportunities delivered every Monday.
           </p>
         </div>
 
@@ -54,16 +75,22 @@ const Newsletter = () => {
               className="prose prose-sm max-w-none dark:prose-invert"
               dangerouslySetInnerHTML={{ __html: newsletter.content }}
             />
-            <p className="mt-6 text-xs text-muted-foreground">
-              Published {new Date(newsletter.created_at).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
-            </p>
+            <div className="mt-6 flex items-center justify-between border-t pt-4">
+              <p className="text-xs text-muted-foreground">
+                Published {new Date(newsletter.created_at).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+              </p>
+              <Button variant="outline" size="sm" className="gap-2" onClick={handleCopy}>
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? "Copied!" : "Copy Newsletter"}
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="mx-auto max-w-md rounded-lg border bg-card p-8 text-center">
             <Newspaper className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
             <h3 className="font-medium">No newsletter available yet</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Check back on Saturday for the latest curated jobs and opportunities.
+              Check back on Monday for the latest curated jobs and opportunities.
             </p>
           </div>
         )}

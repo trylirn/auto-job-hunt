@@ -436,7 +436,7 @@ Deno.serve(async (req) => {
       } else {
         inserted += batch.length;
         // Mirror to Eplicant (fire-and-forget, non-blocking)
-        mirrorUpsert("jobs", batch, "source,external_id").catch(e =>
+        mirrorUpsert("jobs", batch as unknown as Record<string, unknown>[], "source,external_id").catch(e =>
           console.error("Eplicant mirror error:", e)
         );
       }
