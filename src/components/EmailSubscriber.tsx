@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Mail, CheckCircle2 } from "lucide-react";
 
-const PLUNK_PUBLIC_KEY = "PASTE_YOUR_PLUNK_PUBLIC_KEY_HERE";
+const PLUNK_PUBLIC_KEY = "pk_32dcf4d0169291df2ebea645ea4adb7b5dab54e0bc43797930a0e2c20b3e3bf4";
 
 export function EmailSubscriber() {
   const [email, setEmail] = useState("");
