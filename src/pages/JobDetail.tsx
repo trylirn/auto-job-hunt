@@ -463,6 +463,10 @@ const JobDetail = () => {
           </div>
         </div>
 
+        <div className="mt-8">
+          <EmailSubscriber />
+        </div>
+
         <SimilarJobs job={job} />
       </div>
     </div>

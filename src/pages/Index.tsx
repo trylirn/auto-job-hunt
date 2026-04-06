@@ -91,6 +91,11 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Email Subscriber */}
+      <section className="container py-4 md:py-6 max-w-2xl">
+        <EmailSubscriber />
+      </section>
+
       {/* Main */}
       <main className="container py-6 md:py-8">
         <div className="mb-4 md:mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
