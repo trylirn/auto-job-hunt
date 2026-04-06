@@ -17,9 +17,12 @@ import {
   Briefcase,
   Globe,
   AlertTriangle,
+  CalendarClock,
+  Tag,
 } from "lucide-react";
 import { ShareButtons } from "@/components/ShareButtons";
 import { SimilarJobs } from "@/components/SimilarJobs";
+import { EmailSubscriber } from "@/components/EmailSubscriber";
 import { formatDistanceToNow } from "date-fns";
 
 function extractApplyUrl(description: string | null): string | null {
