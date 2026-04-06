@@ -20,4 +20,7 @@ export interface Job {
   listing_type: string | null;
   slug: string | null;
   updated_at: string;
+  apply_before: string | null;
+  skills: string[] | null;
+  employment_type: string | null;
 }

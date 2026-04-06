@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { SearchBar } from "@/components/SearchBar";
 import { JobFilters } from "@/components/JobFilters";
 import { JobCard } from "@/components/JobCard";
+import { EmailSubscriber } from "@/components/EmailSubscriber";
 import { JobListItem } from "@/components/JobListItem";
 import { JobCardSkeleton } from "@/components/JobCardSkeleton";
 import { JobPagination } from "@/components/JobPagination";
@@ -88,6 +89,11 @@ const Index = () => {
             <SearchBar value={search} onChange={(v) => {setSearch(v);setPage(1);}} />
           </div>
         </div>
+      </section>
+
+      {/* Email Subscriber */}
+      <section className="container py-4 md:py-6 max-w-2xl">
+        <EmailSubscriber />
       </section>
 
       {/* Main */}

@@ -17,12 +17,19 @@ Deno.serve(async () => {
     return new Response(`Error fetching jobs: ${error.message}`, { status: 500 });
   }
 
-  const staticPages = [
+  interface SitemapEntry {
+    loc: string;
+    lastmod?: string;
+    changefreq: string;
+    priority: string;
+  }
+
+  const staticPages: SitemapEntry[] = [
     { loc: `${SITE_URL}/`, changefreq: "daily", priority: "1.0" },
     { loc: `${SITE_URL}/opportunities`, changefreq: "daily", priority: "0.9" },
   ];
 
-  const jobEntries = (jobs || []).map((job) => ({
+  const jobEntries: SitemapEntry[] = (jobs || []).map((job) => ({
     loc: `${SITE_URL}/job/${job.slug || job.id}`,
     lastmod: job.updated_at ? job.updated_at.split("T")[0] : undefined,
     changefreq: "weekly",
