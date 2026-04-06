@@ -147,6 +147,9 @@ const JobDetailSidebar = ({
     is_remote: boolean;
     job_type: string | null;
     tags: string[] | null;
+    apply_before: string | null;
+    skills: string[] | null;
+    employment_type: string | null;
   };
   applyUrl: string | null;
   timeAgo: string | null;
@@ -188,6 +191,24 @@ const JobDetailSidebar = ({
 
         {/* Info Grid */}
         <div className="grid grid-cols-2 gap-3 border-t border-b py-3">
+          {job.apply_before && (
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Apply Before</p>
+              <p className="text-sm font-medium mt-0.5 flex items-center gap-1">
+                <CalendarClock className="h-3 w-3 text-muted-foreground" />
+                {job.apply_before}
+              </p>
+            </div>
+          )}
+          {job.employment_type && (
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Job Type</p>
+              <p className="text-sm font-medium mt-0.5 flex items-center gap-1">
+                <Briefcase className="h-3 w-3 text-muted-foreground" />
+                {job.employment_type}
+              </p>
+            </div>
+          )}
           {job.salary && (
             <div>
               <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Salary</p>
@@ -208,9 +229,9 @@ const JobDetailSidebar = ({
               </p>
             </div>
           )}
-          {job.job_type && (
+          {job.job_type && !job.employment_type && (
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Job Type</p>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Work Mode</p>
               <p className="text-sm font-medium mt-0.5 flex items-center gap-1">
                 <Briefcase className="h-3 w-3 text-muted-foreground" />
                 {job.job_type}
@@ -227,6 +248,20 @@ const JobDetailSidebar = ({
             </div>
           )}
         </div>
+
+        {/* Skills */}
+        {job.skills && job.skills.length > 0 && (
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1">
+              <Tag className="h-3 w-3" /> Skills
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {job.skills.map((skill) => (
+                <Badge key={skill} variant="secondary" className="text-xs">{skill}</Badge>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Apply Button */}
         <Button size="lg" className="gap-2 w-full" onClick={onApply}>
