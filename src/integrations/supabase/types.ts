@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       jobs: {
         Row: {
+          apply_before: string | null
           apply_url: string | null
           category: string | null
           clean_description: string | null
@@ -23,6 +24,7 @@ export type Database = {
           company_logo: string | null
           created_at: string
           description: string | null
+          employment_type: string | null
           external_id: string | null
           id: string
           is_remote: boolean | null
@@ -31,6 +33,7 @@ export type Database = {
           location: string | null
           posted_at: string | null
           salary: string | null
+          skills: string[] | null
           slug: string | null
           source: string | null
           tags: string[] | null
@@ -39,6 +42,7 @@ export type Database = {
           url: string
         }
         Insert: {
+          apply_before?: string | null
           apply_url?: string | null
           category?: string | null
           clean_description?: string | null
@@ -46,6 +50,7 @@ export type Database = {
           company_logo?: string | null
           created_at?: string
           description?: string | null
+          employment_type?: string | null
           external_id?: string | null
           id?: string
           is_remote?: boolean | null
@@ -54,6 +59,7 @@ export type Database = {
           location?: string | null
           posted_at?: string | null
           salary?: string | null
+          skills?: string[] | null
           slug?: string | null
           source?: string | null
           tags?: string[] | null
@@ -62,6 +68,7 @@ export type Database = {
           url: string
         }
         Update: {
+          apply_before?: string | null
           apply_url?: string | null
           category?: string | null
           clean_description?: string | null
@@ -69,6 +76,7 @@ export type Database = {
           company_logo?: string | null
           created_at?: string
           description?: string | null
+          employment_type?: string | null
           external_id?: string | null
           id?: string
           is_remote?: boolean | null
@@ -77,6 +85,7 @@ export type Database = {
           location?: string | null
           posted_at?: string | null
           salary?: string | null
+          skills?: string[] | null
           slug?: string | null
           source?: string | null
           tags?: string[] | null
