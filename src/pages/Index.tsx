@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { SearchBar } from "@/components/SearchBar";
 import { JobFilters } from "@/components/JobFilters";
 import { JobCard } from "@/components/JobCard";
+import { EmailSubscriber } from "@/components/EmailSubscriber";
 import { JobListItem } from "@/components/JobListItem";
 import { JobCardSkeleton } from "@/components/JobCardSkeleton";
 import { JobPagination } from "@/components/JobPagination";
