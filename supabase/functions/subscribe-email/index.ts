@@ -1,6 +1,7 @@
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 Deno.serve(async (req) => {
@@ -18,21 +19,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    const PLUNK_SECRET_KEY = Deno.env.get("PLUNK_SECRET_KEY")!;
-
-    const res = await fetch("https://api.useplunk.com/v1/contacts", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${PLUNK_SECRET_KEY}`,
-      },
-      body: JSON.stringify({ email, subscribed: true }),
-    });
+    // ✅ Send subscriber to Substack
+    const res = await fetch(
+      "https://eplicant.substack.com/api/v1/free",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          email,
+          hp: "",
+        }),
+      }
+    );
 
     if (!res.ok) {
-      const err = await res.json();
-      console.error("Plunk error:", err);
-      throw new Error("Plunk API failed");
+      const text = await res.text();
+      console.error("Substack error:", text);
+      throw new Error("Substack subscription failed");
     }
 
     return new Response(JSON.stringify({ success: true }), {
@@ -40,9 +45,12 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: (error as Error).message }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   }
 });
