@@ -10,6 +10,7 @@ export function EmailSubscriber() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!email || status === "loading") return;
 
     setStatus("loading");
@@ -20,24 +21,31 @@ export function EmailSubscriber() {
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded",
           },
-          body: JSON.stringify({
+          body: new URLSearchParams({
             email: email,
           }),
         }
       );
 
-      if (!response.ok) throw new Error("Failed");
+      if (!response.ok) {
+        throw new Error("Request failed");
+      }
 
       setStatus("success");
       setEmail("");
-    } catch {
+    } catch (error) {
+      console.error(error);
       setStatus("error");
-      setTimeout(() => setStatus("idle"), 3000);
+
+      setTimeout(() => {
+        setStatus("idle");
+      }, 3000);
     }
   };
 
+  // ✅ SUCCESS STATE
   if (status === "success") {
     return (
       <div className="rounded-xl bg-primary/5 border border-primary/20 p-6 md:p-8 text-center">
@@ -46,7 +54,7 @@ export function EmailSubscriber() {
           You're subscribed!
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Check your email to confirm your subscription.
+          Thanks! You're now on the list.
         </p>
       </div>
     );
