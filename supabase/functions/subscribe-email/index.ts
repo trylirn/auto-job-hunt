@@ -26,6 +26,9 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": "Mozilla/5.0",
+          "Origin": "https://eplicant.substack.com",
+          "Referer": "https://eplicant.substack.com/",
         },
         body: new URLSearchParams({
           email,
