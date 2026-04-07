@@ -16,15 +16,14 @@ export function EmailSubscriber() {
 
     try {
       const response = await fetch(
-        "https://eplicant.substack.com/api/v1/free",
+        "https://script.google.com/macros/s/AKfycbyxzjUf39kr60KSdjEr2kwOYk21G2MCgx_2syvTc7QV2udoISSUyVKVPLrUFCWQjoBF/exec",
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Type": "application/json",
           },
-          body: new URLSearchParams({
+          body: JSON.stringify({
             email: email,
-            hp: "", // honeypot anti-spam field
           }),
         }
       );
