@@ -17,7 +17,7 @@ export function EmailSubscriber() {
 
     try {
       const response = await fetch(
-        "https://script.google.com/macros/s/AKfycbyxzjUf39kr60KSdjEr2kwOYk21G2MCgx_2syvTc7QV2udoISSUyVKVPLrUFCWQjoBF/exec",
+        "https://script.google.com/macros/s/AKfycbxX2sGsTeq3Dxliq0duBvWq2gluYuEjEdotLID_u-obgzSAuXI_ByQX8zisMCCrNL6a/exec",
         {
           method: "POST",
           headers: {
