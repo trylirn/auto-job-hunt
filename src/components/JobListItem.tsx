@@ -1,8 +1,9 @@
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Clock, Building2 } from "lucide-react";
+import { MapPin, Clock, Building2, Sparkles, AlarmClock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Link } from "react-router-dom";
 import type { Job } from "@/types/job";
+import { getDeadlineInfo } from "@/lib/deadline";
 
 interface JobListItemProps {
   job: Job;
@@ -12,11 +13,13 @@ export function JobListItem({ job }: JobListItemProps) {
   const timeAgo = job.posted_at
     ? formatDistanceToNow(new Date(job.posted_at), { addSuffix: true })
     : "Recently";
+  const deadline = getDeadlineInfo(job.apply_before_date);
+  const isFeaturedActive = job.is_featured && (!job.featured_until || new Date(job.featured_until) > new Date());
 
   return (
     <Link
       to={`/job/${job.slug || job.id}`}
-      className="group flex items-center gap-3 rounded-lg border bg-card p-3 transition-all hover:shadow-md hover:border-primary/30 overflow-hidden"
+      className={`group flex items-center gap-3 rounded-lg border bg-card p-3 transition-all hover:shadow-md hover:border-primary/30 overflow-hidden ${isFeaturedActive ? "ring-1 ring-amber-400/40" : ""}`}
     >
       {job.company_logo ? (
         <img
@@ -38,6 +41,16 @@ export function JobListItem({ job }: JobListItemProps) {
       </div>
 
       <div className="hidden sm:flex items-center gap-2 shrink-0">
+        {isFeaturedActive && (
+          <Badge className="text-[10px] bg-amber-500 hover:bg-amber-500 text-white border-0 gap-1">
+            <Sparkles className="h-2.5 w-2.5" /> Featured
+          </Badge>
+        )}
+        {deadline?.urgent && (
+          <Badge variant="destructive" className="text-[10px] gap-1">
+            <AlarmClock className="h-2.5 w-2.5" /> {deadline.label}
+          </Badge>
+        )}
         {job.is_remote && (
           <Badge variant="secondary" className="text-xs bg-accent/15 text-accent border-0">
             Remote

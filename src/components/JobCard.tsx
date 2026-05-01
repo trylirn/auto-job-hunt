@@ -1,9 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Clock, Building2 } from "lucide-react";
+import { MapPin, Clock, Building2, Sparkles, AlarmClock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Link } from "react-router-dom";
 import type { Job } from "@/types/job";
+import { getDeadlineInfo } from "@/lib/deadline";
 
 interface JobCardProps {
   job: Job;
@@ -19,10 +20,27 @@ export function JobCard({ job }: JobCardProps) {
     .replace(/\s+/g, " ")
     .trim();
 
+  const deadline = getDeadlineInfo(job.apply_before_date);
+  const isFeaturedActive = job.is_featured && (!job.featured_until || new Date(job.featured_until) > new Date());
+
   return (
     <Link to={`/job/${job.slug || job.id}`} className="block w-full overflow-hidden">
-      <Card className="group cursor-pointer transition-all hover:shadow-md hover:border-primary/30 overflow-hidden max-w-full">
+      <Card className={`group cursor-pointer transition-all hover:shadow-md hover:border-primary/30 overflow-hidden max-w-full ${isFeaturedActive ? "ring-1 ring-amber-400/40 bg-amber-50/30 dark:bg-amber-950/10" : ""}`}>
         <CardContent className="p-4 md:p-5">
+          {(isFeaturedActive || deadline?.urgent) && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {isFeaturedActive && (
+                <Badge className="text-[10px] bg-amber-500 hover:bg-amber-500 text-white border-0 gap-1">
+                  <Sparkles className="h-2.5 w-2.5" /> Featured
+                </Badge>
+              )}
+              {deadline?.urgent && (
+                <Badge variant="destructive" className="text-[10px] gap-1">
+                  <AlarmClock className="h-2.5 w-2.5" /> {deadline.label}
+                </Badge>
+              )}
+            </div>
+          )}
           <div className="flex items-start gap-3 min-w-0">
             {job.company_logo ? (
               <img
