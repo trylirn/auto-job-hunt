@@ -143,6 +143,9 @@ function buildUpdateData(args: Record<string, unknown>) {
   
   // New fields
   if (args.apply_before) updateData.apply_before = args.apply_before;
+  if (args.apply_before_iso && typeof args.apply_before_iso === "string" && /^\d{4}-\d{2}-\d{2}$/.test(args.apply_before_iso)) {
+    updateData.apply_before_date = args.apply_before_iso;
+  }
   if (args.skills && Array.isArray(args.skills) && args.skills.length > 0) {
     updateData.skills = args.skills;
   }
