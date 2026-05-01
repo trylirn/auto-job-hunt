@@ -1,103 +1,126 @@
-## Plan: Newsletter Enhancements, SEO Fix, Job Detail Card Enrichment, Email Subscriber Form
+## Plan: Navigation, Deadlines, Opportunities Tone, Footer/Newsletter, Submissions
 
-### 1. Newsletter: Add "Copy Newsletter" button + generate fresh newsletter now
+### 1. Smart "Back" navigation
 
-`**src/pages/Newsletter.tsx`:**
+Replace the hard-coded `<Link to="/">` "Back to jobs" in `JobDetail.tsx` with a button that calls `navigate(-1)` when there is browser history (check `window.history.length > 1` and `document.referrer` is same-origin); otherwise fall back to `/` (jobs) or `/opportunities` based on `job.listing_type`. Label updates to "Back".
 
-- Add a "Copy Newsletter" button below the newsletter content that copies the HTML content to clipboard as plain text
-- Change the subtitle from "every Saturday" to "every Monday"
-- Change the empty state text from "Check back on Saturday" to "Check back on Monday"
+### 2. Application deadlines (notice + auto-archive + smart delete)
 
-**Runtime:** Invoke the `generate-newsletter` edge function now to create a fresh newsletter for this week (today is Monday April 6, the cron ran at 7 AM but let's verify it worked — there's already a newsletter from today in the DB, so this may already be resolved).
+**Schema migration (`jobs` table):**
 
-### 2. Fix Google search showing Lovable logo instead of Eplicant logo
+- Add `apply_before_date` (date, nullable) — parsed structured date for sorting/comparison
+- Add `archived_at` (timestamp, nullable) — non-null = hidden from listings
 
-The `index.html` had its `<meta name="description">`, OG tags, and Twitter tags removed in the last diff. These need to be restored so Google uses the correct metadata and logo.
+**Backfill / parsing:**
 
-`**index.html`:**
+- Update `clean-job-descriptions/index.ts` so that when `apply_before` is extracted, the model also returns an ISO date (`apply_before_iso`) which we save to `apply_before_date`.
+- Add a one-off helper invocation path inside `fix-company-names` (or new function) to parse existing `apply_before` strings into `apply_before_date` using a quick AI call.
 
-- Re-add the `<meta name="description">` tag
-- Do not Re-add `<link rel="canonical" href="https://eplicant.com/" />`
-- Re-add all Open Graph tags (`og:type`, `og:url`, `og:title`, `og:description`, `og:image`)
-- Re-add Twitter card tags (`twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`)
+**Filtering:**
 
-The Organization structured data already has the correct logo URL. The missing OG/meta tags are the likely cause of Google using the wrong logo.
+- Update `useJobs` and `useSimilarJobs` to add `.is("archived_at", null)` to every listing query so archived items disappear instantly.
 
-### 3. Enrich Job Detail sidebar card with AI-extracted fields
+**UI deadline notice:**
 
-The reference image shows: Apply Before, Job Type (Full-time/Part-time), Salary Range, Category, Skills. Currently the DB only has `salary`, `job_type`, `category`, `tags` columns. Missing: `apply_before` (deadline), `skills`. Also `job_type` is being overwritten with work mode (Remote/Hybrid/Physical) by the `clean-job-descriptions` function instead of actual employment type.
+- In `JobCard`, `JobListItem`, and `JobDetail` sidebar, when `apply_before_date` is within 7 days, show a red "Closes in N days" badge. When ≤ 1 day → "Closes today/tomorrow".
 
-**Database migration — add new columns:**
+**Cron jobs (pg_cron, via insert tool):**
 
-- `apply_before` (text, nullable) — application deadline
-- `skills` (text[], nullable) — extracted skills
-- `employment_type` (text, nullable) — Full-time/Part-time/Contract/Internship (separate from `job_type` which stores work mode)
+- New function `archive-expired-listings`: runs hourly, sets `archived_at = now()` where `apply_before_date < now() AND archived_at IS NULL`.
+- Update `cleanup-old-listings`: change the 45-day delete predicate to:
+`(apply_before_date IS NULL AND created_at < now() - interval '45 days') OR (apply_before_date IS NOT NULL AND apply_before_date < now()::date)`.
+→ Jobs with deadlines are kept until the deadline has passed (even beyond 45 days), then deleted on the next daily run. Jobs without deadlines keep current 45-day behavior.
 
-`**supabase/functions/clean-job-descriptions/index.ts`:**
+### 3. Opportunities tone (not "hiring")
 
-- Add `apply_before`, `skills`, and `employment_type` to the OpenAI tool definition
-- Update the system prompt to extract these fields
-- Update `buildUpdateData` to save these fields
-- Stop overwriting `job_type` with work mode — save work mode to `is_remote` (true if Remote) and employment type to `employment_type`
+Update the `clean-job-descriptions` system prompt's opportunity branch to use applicant-centric language ("This opportunity offers…", "Applicants should…") rather than employer/hiring tone. Add a re-clean trigger: a new edge function `reclean-opportunities` that nulls `clean_description` for `listing_type='opportunity'` rows so the existing cleaner re-processes them with the new prompt. In the JobDetail header, when `listing_type === 'opportunity'`, replace the auto-generated "{company} is hiring a {title}" sentence with "Open application: {title} via {company}".
 
-`**src/pages/JobDetail.tsx` (JobDetailSidebar):**
+### 4. Footer + Newsletter relocation + Legal pages
 
-- Add "Apply Before" field showing the deadline
-- Show `employment_type` as "Job Type" (Full-time, Part-time, etc.)
-- Show salary range (already exists)
-- Show category (already exists)
-- Add skills badges section
+**New pages** (added to App routes):
 
-`**src/types/job.ts`:**
+- `/terms` — Terms of Service
+- `/privacy` — Privacy Policy
+- `/contact` — Contact
+- `/about` — About Eplicant
 
-- Add `apply_before`, `skills`, `employment_type` fields
+**New `Footer` component** (replaces the inline footers in `Index.tsx` and `Opportunities.tsx`):
 
-### 4. Email subscriber form using Plunk
+- Move the newsletter at the header to the footer, make it very tiny in the footer.
+- 4 columns: Browse (Jobs, Opportunities, Newsletter), Company (About, Contact, Submit a Job), Legal (Terms, Privacy), Connect (social links)
+- Copyright row at bottom
+- Put a Submit a Job in the Header
 
-Will need the user's Plunk public key (for client-side) and secret key (for server-side if needed).
+**Do not Remove** the hero `EmailSubscriber` block from `Index.tsx`
 
-`**src/components/EmailSubscriber.tsx**` — New component:
+### 5. Hero content beside search bar
 
-- Dark banner style (matching the reference image)
-- Email input + "Subscribe" button
-- Uses Plunk's client-side API to subscribe emails
-- Shows success/error feedback
+On `Index.tsx` hero, change layout to a two-column grid on `md+`: left column keeps headline + search; right column shows a small stats card: "🟢 X live jobs · Y opportunities · Updated daily" plus quick category chips (Remote, US-based, This week) that wire into existing filters.
 
-`**src/pages/Index.tsx`:**
+### 6. AI location enrichment (country-only)
 
-- Add `EmailSubscriber` banner below the hero section
+The `clean-job-descriptions` prompt already extracts country. Add a one-off edge function `fix-locations` (mirrors `fix-company-names` pattern) that re-runs the AI country extractor on rows where `location` contains commas, city names, or is "Unknown"/null, using description text. Wire it into the same 30-min pg_cron schedule.
 
-`**src/pages/JobDetail.tsx`:**
+### 7. Paid submissions ($195, featured for 30 days, no account)
 
-- Add `EmailSubscriber` banner after the job description / similar jobs section
+**Schema migration:**
 
-**Secrets needed:**
+- Add to `jobs`: `is_featured` (bool default false), `featured_until` (timestamptz), `submitter_email` (text), `payment_status` (text: 'pending'|'paid'), `payment_id` (text)
+- Add `submission_logo_url` (text) for uploaded logos
+- Public can INSERT into `jobs` only when `payment_status='pending'` (RLS) — but to keep the existing public read model safe, we instead use a separate `job_submissions` staging table that gets promoted to `jobs` after Stripe webhook confirms payment.
 
-- `PLUNK_PUBLIC_KEY` — stored in codebase (public/publishable key)
-- `PLUNK_SECRET_KEY` — stored as edge function secret (if server-side tracking needed)
+**Recommended approach:** new `job_submissions` table with same fields, public INSERT allowed, public SELECT only own row by submission token. After payment webhook fires, edge function copies row into `jobs` with `is_featured=true`, `featured_until=now()+30 days`, `listing_type` user-selected.
 
-### 5. Fix build errors
+**Storage:** new `company-logos` public bucket for logo uploads.
 
-`**supabase/functions/fetch-jobs/index.ts` (line 439):**
+**Payments:** Recommend Stripe (digital service, no shipping). Will run `payments--recommend_payment_provider` then `enable_stripe_payments`. Create a $195 one-time product. Implement:
 
-- Cast `batch` to `Record<string, unknown>[]` for `mirrorUpsert`
+- `create-submission-checkout` edge function → creates Stripe Checkout Session
+- `submission-webhook` edge function → on `checkout.session.completed`, marks submission paid + promotes to `jobs`
+- Featured listings: sort `is_featured desc, posted_at desc` in `useJobs` and add a "Featured" badge.
 
-`**supabase/functions/sitemap/index.ts` (line 25-30):**
+**New page `/submit**` with the requested form fields:
 
-- Fix the type definition to include `lastmod` as optional property
+- Company Name, Job Title, Tags (multi-input), Location, Work Arrangement (On-site/Hybrid/Remote), Salary range with currency + period, Logo upload (optional), Job Description (rich text or markdown), Apply method (URL or email), Company invoice email, listing type (Job/Opportunity).
+- All fields validated with zod (lengths, email format, URL format).
+- Submit → call `create-submission-checkout` → redirect to Stripe → return URL `/submit/success`.
 
-### Files Changed
+**Header link:** add "Post a Job — $195" CTA button.
+
+**Featured display:** `JobCard`/`JobListItem` show a "Featured" gold badge when `is_featured && featured_until > now()`.
+
+**Featured expiry:** the existing `archive-expired-listings` cron also clears `is_featured=false` when `featured_until < now()` (listing stays alive as a normal post if still within 45 days / pre-deadline).
+
+### Files changed
 
 
-| File                                                 | Change                                                   |
-| ---------------------------------------------------- | -------------------------------------------------------- |
-| `index.html`                                         | Restore OG, Twitter, canonical, description meta tags    |
-| `src/pages/Newsletter.tsx`                           | Add copy button, fix "Saturday" → "Monday" text          |
-| `src/pages/JobDetail.tsx`                            | Add apply_before, employment_type, skills to sidebar     |
-| `src/pages/Index.tsx`                                | Add EmailSubscriber component                            |
-| `src/components/EmailSubscriber.tsx`                 | New — Plunk email subscriber form                        |
-| `src/types/job.ts`                                   | Add new fields                                           |
-| `supabase/functions/clean-job-descriptions/index.ts` | Extract apply_before, skills, employment_type via OpenAI |
-| `supabase/functions/fetch-jobs/index.ts`             | Fix type cast for mirrorUpsert                           |
-| `supabase/functions/sitemap/index.ts`                | Fix lastmod type                                         |
-| Database migration                                   | Add `apply_before`, `skills`, `employment_type` columns  |
+| File                                                                   | Change                                                                      |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `src/pages/JobDetail.tsx`                                              | Smart back nav, deadline badge, opportunity tone heading, conditional copy  |
+| `src/pages/Index.tsx`                                                  | Two-col hero with stats, remove inline footer + email block, use new Footer |
+| `src/pages/Opportunities.tsx`                                          | Use new Footer, opportunity-centric copy                                    |
+| `src/components/Header.tsx`                                            | Add "Post a Job — $195" CTA                                                 |
+| `src/components/Footer.tsx` (new)                                      | Newsletter signup + nav columns + legal links                               |
+| `src/components/JobCard.tsx`, `JobListItem.tsx`                        | Deadline badge, Featured badge                                              |
+| `src/pages/Terms.tsx`, `Privacy.tsx`, `Contact.tsx`, `About.tsx` (new) | Static legal/info pages                                                     |
+| `src/pages/Submit.tsx`, `SubmitSuccess.tsx` (new)                      | Paid submission form                                                        |
+| `src/hooks/useJobs.ts`                                                 | Filter `archived_at IS NULL`, sort featured first                           |
+| `src/types/job.ts`                                                     | Add new fields                                                              |
+| `src/App.tsx`                                                          | Register new routes                                                         |
+| `supabase/functions/clean-job-descriptions/index.ts`                   | Extract `apply_before_iso`, opportunity tone prompt                         |
+| `supabase/functions/archive-expired-listings/` (new)                   | Hourly archive cron target                                                  |
+| `supabase/functions/cleanup-old-listings/index.ts`                     | Deadline-aware delete logic                                                 |
+| `supabase/functions/fix-locations/` (new)                              | AI country backfill                                                         |
+| `supabase/functions/reclean-opportunities/` (new)                      | Null clean_description for opportunities                                    |
+| `supabase/functions/create-submission-checkout/` (new)                 | Stripe checkout                                                             |
+| `supabase/functions/submission-webhook/` (new)                         | Promote paid submissions                                                    |
+| Migration                                                              | Add new columns, `job_submissions` table + RLS, `company-logos` bucket      |
+| pg_cron (insert tool)                                                  | Schedule archive-expired hourly, fix-locations every 30 min                 |
+
+
+### Open questions before implementation
+
+1. **Payments provider** — I'll run `recommend_payment_provider`. If the job board qualifies for Paddle, do you prefer Paddle (handles taxes/MOR globally) or Stripe (more control)? Default: I'll suggest based on the eligibility check.
+2. **Logo upload** — OK to create a public `company-logos` storage bucket (≤ 2 MB, png/jpg/webp/svg)?
+3. **Featured duration** — Confirm 30 days featured + post stays live until deadline or 45 days, whichever is later?
+4. **Legal pages content** — I'll draft generic Terms/Privacy templates referencing Eplicant; you can edit copy after. OK?
