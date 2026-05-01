@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { useParams, Link, Navigate } from "react-router-dom";
+import { useParams, Link, Navigate, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useJobBySlug, useJob } from "@/hooks/useJobs";
 import { Header } from "@/components/Header";
@@ -19,7 +19,11 @@ import {
   AlertTriangle,
   CalendarClock,
   Tag,
+  Sparkles,
+  AlarmClock,
 } from "lucide-react";
+import { getDeadlineInfo } from "@/lib/deadline";
+import { Footer } from "@/components/Footer";
 import { ShareButtons } from "@/components/ShareButtons";
 import { SimilarJobs } from "@/components/SimilarJobs";
 import { EmailSubscriber } from "@/components/EmailSubscriber";
@@ -285,8 +289,18 @@ const JobDetailSidebar = ({
 
 const JobDetail = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const { data: job, isLoading } = useJobBySlug(slug ?? "");
   const descriptionRef = useRef<HTMLDivElement>(null);
+
+  const goBack = () => {
+    // If user navigated from within the app, go back; else fall back to listing
+    if (window.history.length > 1 && document.referrer && new URL(document.referrer, window.location.origin).origin === window.location.origin) {
+      navigate(-1);
+    } else {
+      navigate(job?.listing_type === "opportunity" ? "/opportunities" : "/");
+    }
+  };
 
   if (isLoading) {
     return (
