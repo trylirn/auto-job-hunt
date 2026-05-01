@@ -98,6 +98,10 @@ const TOOL_DEFINITION = {
           type: "string",
           description: "Application deadline in human-readable format, e.g. 'April 30, 2026'. null if not mentioned.",
         },
+        apply_before_iso: {
+          type: "string",
+          description: "Same deadline in ISO YYYY-MM-DD format. null if not mentioned or ambiguous.",
+        },
         skills: {
           type: "array",
           items: { type: "string" },
