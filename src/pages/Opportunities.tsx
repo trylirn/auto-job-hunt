@@ -12,6 +12,7 @@ import { useJobs } from "@/hooks/useJobs";
 import { useFilterOptions } from "@/hooks/useFilterOptions";
 import { GraduationCap } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { Footer } from "@/components/Footer";
 
 const Opportunities = () => {
   const [search, setSearch] = useState("");
@@ -66,10 +67,10 @@ const Opportunities = () => {
       <section className="border-b bg-card">
         <div className="container py-12 md:py-16">
           <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
-            Opportunities
+            Apply for opportunities
           </h1>
           <p className="mt-3 max-w-xl text-lg text-muted-foreground">
-            Fellowships, scholarships, grants, conferences & internships.
+            Fellowships, scholarships, grants, conferences and internships open to applicants.
           </p>
           <div className="mt-6 max-w-2xl">
             <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} />
@@ -145,11 +146,7 @@ const Opportunities = () => {
         )}
       </main>
 
-      <footer className="border-t bg-card">
-        <div className="container py-6 text-center text-sm text-muted-foreground">
-          <p>Eplicant — Discover opportunities that match your ambitions.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

@@ -11,8 +11,11 @@ import { JobPagination } from "@/components/JobPagination";
 import { ViewToggle } from "@/components/ViewToggle";
 import { useJobs } from "@/hooks/useJobs";
 import { useFilterOptions } from "@/hooks/useFilterOptions";
-import { Briefcase } from "lucide-react";
+import { useListingStats } from "@/hooks/useListingStats";
+import { Briefcase, TrendingUp, Globe, Calendar } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { Footer } from "@/components/Footer";
+import { Button } from "@/components/ui/button";
 import {
   Accordion,
   AccordionContent,
@@ -31,6 +34,7 @@ const Index = () => {
 
   const debouncedSearch = useDebounce(search, 300);
   const { data: filterOptions } = useFilterOptions();
+  const { data: stats } = useListingStats();
 
   const hasActiveFilters = !!jobType || !!location || !!dateRange || !!region;
 
@@ -80,13 +84,49 @@ const Index = () => {
 
       {/* Hero */}
       <section className="border-b bg-card">
-        <div className="container py-8 md:py-16">
-          <h1 className="font-display text-2xl font-bold tracking-tight md:text-4xl lg:text-5xl">
-            Find your next opportunity
-          </h1>
-          <p className="mt-2 max-w-xl text-base text-muted-foreground md:text-lg">Thousands of jobs available to be taken.</p>
-          <div className="mt-4 md:mt-6 max-w-2xl">
-            <SearchBar value={search} onChange={(v) => {setSearch(v);setPage(1);}} />
+        <div className="container py-8 md:py-14">
+          <div className="grid md:grid-cols-[1fr_320px] gap-8 items-center">
+            <div>
+              <h1 className="font-display text-2xl font-bold tracking-tight md:text-4xl lg:text-5xl">
+                Find your next opportunity
+              </h1>
+              <p className="mt-2 max-w-xl text-base text-muted-foreground md:text-lg">
+                Thousands of jobs and opportunities — updated daily.
+              </p>
+              <div className="mt-4 md:mt-6 max-w-2xl">
+                <SearchBar value={search} onChange={(v) => {setSearch(v);setPage(1);}} />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { setLocation("Remote"); setPage(1); }}>
+                  <Globe className="h-3 w-3" /> Remote
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { setRegion("us"); setPage(1); }}>
+                  US-based
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { setDateRange("week"); setPage(1); }}>
+                  <Calendar className="h-3 w-3" /> This week
+                </Button>
+              </div>
+            </div>
+            <aside className="rounded-2xl border bg-background p-5 hidden md:block">
+              <div className="flex items-center gap-2 mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                Live now
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="font-display text-2xl font-bold">{stats?.jobs ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground">Active jobs</p>
+                </div>
+                <div>
+                  <p className="font-display text-2xl font-bold">{stats?.opportunities ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground">Active opportunities</p>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-2 border-t">
+                  <TrendingUp className="h-3 w-3" /> Updated hourly
+                </div>
+              </div>
+            </aside>
           </div>
         </div>
       </section>
@@ -201,15 +241,7 @@ const Index = () => {
         </div>
       </section>
 
-      <footer className="border-t bg-card">
-        <div className="container py-6 text-center text-sm text-muted-foreground space-y-2">
-          <p>Eplicant — Discover opportunities that match your ambitions.</p>
-          <nav className="flex justify-center gap-4">
-            <a href="/" className="hover:text-foreground transition-colors">Jobs</a>
-            <a href="/opportunities" className="hover:text-foreground transition-colors">Opportunities</a>
-          </nav>
-        </div>
-      </footer>
+      <Footer />
     </div>);
 };
 
