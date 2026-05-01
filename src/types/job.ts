@@ -21,6 +21,10 @@ export interface Job {
   slug: string | null;
   updated_at: string;
   apply_before: string | null;
+  apply_before_date: string | null;
+  archived_at: string | null;
   skills: string[] | null;
   employment_type: string | null;
+  is_featured: boolean;
+  featured_until: string | null;
 }

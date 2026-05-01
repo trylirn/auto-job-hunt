@@ -11,14 +11,19 @@ Deno.serve(async () => {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - 45);
   const cutoffISO = cutoff.toISOString();
+  const todayISO = new Date().toISOString().slice(0, 10);
 
-  console.log(`Deleting listings older than ${cutoffISO}`);
+  console.log(`Deleting expired listings (cutoff ${cutoffISO}, today ${todayISO})`);
 
-  // Delete from primary DB
+  // Delete:
+  //  - listings with NO deadline that are older than 45 days, OR
+  //  - listings with a deadline that has already passed
   const { data: deleted, error } = await supabase
     .from("jobs")
     .delete()
-    .lt("created_at", cutoffISO)
+    .or(
+      `and(apply_before_date.is.null,created_at.lt.${cutoffISO}),apply_before_date.lt.${todayISO}`
+    )
     .select("id");
 
   if (error) {

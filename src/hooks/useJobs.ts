@@ -34,6 +34,8 @@ export function useJobs({
       let query = supabase
         .from("jobs")
         .select("*", { count: "exact" })
+        .is("archived_at", null)
+        .order("is_featured", { ascending: false })
         .order(sortBy, { ascending: false, nullsFirst: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
 
@@ -133,6 +135,7 @@ export function useSimilarJobs(job: Job | undefined) {
         .from("jobs")
         .select("*")
         .neq("id", job.id)
+        .is("archived_at", null)
         .order("posted_at", { ascending: false, nullsFirst: false })
         .limit(6);
 

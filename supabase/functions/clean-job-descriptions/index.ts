@@ -14,33 +14,35 @@ RULES:
 - Do NOT rewrite or fabricate content — only reorganize what exists
 - Use <h3> for section headings, <ul>/<li> for lists, <p> for paragraphs
 - Keep it concise and scannable
+- For OPPORTUNITIES (fellowships, scholarships, grants, conferences, internships): use applicant-centric language — "This program offers...", "Applicants will receive...", "You can apply for...". DO NOT say "is hiring", "is recruiting", "join the team". Frame everything from the applicant's perspective.
 
-STRUCTURE the output into these sections (skip any section if info is not available):
-1. <h3>Overview</h3> — Brief role/opportunity summary (1-2 sentences)
-2. <h3>Key Responsibilities</h3> — Bulleted list of duties
-3. <h3>Requirements</h3> — Qualifications, skills, experience needed
-4. <h3>Benefits</h3> — Salary, perks, benefits if mentioned
-5. <h3>Location</h3> — Where the role is based
-6. <h3>How to Apply</h3> — Application instructions and deadline
-7. <h3>Deadline</h3> — Application deadline if mentioned
+STRUCTURE (jobs):
+1. <h3>Overview</h3> — Brief role summary (1-2 sentences)
+2. <h3>Key Responsibilities</h3>
+3. <h3>Requirements</h3>
+4. <h3>Benefits</h3>
+5. <h3>Location</h3>
+6. <h3>How to Apply</h3>
+7. <h3>Deadline</h3>
 
-For non-job opportunities (scholarships, fellowships, grants, programs):
-1. <h3>Overview</h3> — What the opportunity is about
+STRUCTURE (opportunities — applicant tone):
+1. <h3>Overview</h3> — What the opportunity offers applicants
 2. <h3>Eligibility</h3> — Who can apply
-3. <h3>Benefits</h3> — What's offered (funding, training, etc.)
-4. <h3>How to Apply</h3> — Steps to apply
-5. <h3>Deadline</h3> — When to apply by
+3. <h3>Benefits</h3> — What applicants will receive (funding, training, mentorship, etc.)
+4. <h3>How to Apply</h3>
+5. <h3>Deadline</h3>
 
 Also extract:
-- The actual application URL if present (Google Forms, email mailto links, company career page URLs). Ignore chatgpt:// URLs, yeshub.ng URLs, and social media share links.
-- COMPANY NAME: Extract the actual hiring organization/company name. PRIORITIZE extracting from the TITLE first — look for patterns like "[Company] is recruiting", "[Company] is hiring", "[Company] seeks", "at [Company]", "by [Company]", "Join [Company]", or any organization name embedded in the title. Then check the description body. Do NOT use the blog/source site name (e.g., not "YesHub"). If no company can be identified, return null.
-- LOCATION (COUNTRY ONLY): Return ONLY the country name (e.g., "Nigeria", "Kenya", "USA", "United Kingdom", "Global"). Do NOT include city names. If the listing mentions a specific country anywhere, use that. Only use "Global" if truly open worldwide.
-- The work mode: determine if this is "Remote", "Hybrid", or "Physical" based on the description. Default to "Physical" if unclear.
-- The listing type: classify as "job" or "opportunity". Use "job" for standard employment positions. Use "opportunity" for fellowships, scholarships, grants, conferences, training programs, awards, PhD positions, short courses, competitions.
-- OPPORTUNITY CATEGORY: If the listing is an "opportunity", also classify its sub-category as one of: "fellowship", "scholarship", "grant", "conference", "internship". Use "fellowship" as default for opportunities that don't fit other categories.
-- EMPLOYMENT TYPE: Classify as "Full-time", "Part-time", "Contract", or "Internship". Default to "Full-time" for standard jobs if unclear.
-- APPLY BEFORE: Extract the application deadline date if mentioned. Return in a human-readable format like "April 30, 2026" or "May 15, 2026". Return null if no deadline is mentioned.
-- SKILLS: Extract up to 8 key skills or technologies mentioned as requirements (e.g. "Python", "Project Management", "Excel", "Communication"). Return as an array of strings. Return empty array if none found.`;
+- apply_url: actual application URL (Google Forms, mailto, company career page). Ignore chatgpt:// / yeshub.ng / share links.
+- company_name: actual hiring organization. PRIORITIZE the title. Don't use blog/source name. Null if unknown.
+- detected_location: COUNTRY ONLY (e.g., "Nigeria", "USA", "Global"). No cities. Read the FULL description text and find the most specific country mentioned. Use "Global" only if truly worldwide.
+- work_mode: "Remote", "Hybrid", or "Physical".
+- listing_type: "job" or "opportunity". Fellowships, scholarships, grants, conferences, training, awards, PhD positions, short courses, competitions are opportunities.
+- opportunity_category: when listing_type='opportunity', one of: "fellowship", "scholarship", "grant", "conference", "internship".
+- employment_type: "Full-time", "Part-time", "Contract", or "Internship".
+- apply_before: human-readable deadline (e.g., "April 30, 2026"). null if not stated.
+- apply_before_iso: SAME deadline in ISO format YYYY-MM-DD (e.g., "2026-04-30"). null if not stated or ambiguous.
+- skills: up to 8 key skills/technologies as an array. [] if none.`;
 
 const TOOL_DEFINITION = {
   type: "function" as const,
@@ -96,6 +98,10 @@ const TOOL_DEFINITION = {
           type: "string",
           description: "Application deadline in human-readable format, e.g. 'April 30, 2026'. null if not mentioned.",
         },
+        apply_before_iso: {
+          type: "string",
+          description: "Same deadline in ISO YYYY-MM-DD format. null if not mentioned or ambiguous.",
+        },
         skills: {
           type: "array",
           items: { type: "string" },
@@ -137,6 +143,9 @@ function buildUpdateData(args: Record<string, unknown>) {
   
   // New fields
   if (args.apply_before) updateData.apply_before = args.apply_before;
+  if (args.apply_before_iso && typeof args.apply_before_iso === "string" && /^\d{4}-\d{2}-\d{2}$/.test(args.apply_before_iso)) {
+    updateData.apply_before_date = args.apply_before_iso;
+  }
   if (args.skills && Array.isArray(args.skills) && args.skills.length > 0) {
     updateData.skills = args.skills;
   }

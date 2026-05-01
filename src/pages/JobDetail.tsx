@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { useParams, Link, Navigate } from "react-router-dom";
+import { useParams, Link, Navigate, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useJobBySlug, useJob } from "@/hooks/useJobs";
 import { Header } from "@/components/Header";
@@ -19,7 +19,11 @@ import {
   AlertTriangle,
   CalendarClock,
   Tag,
+  Sparkles,
+  AlarmClock,
 } from "lucide-react";
+import { getDeadlineInfo } from "@/lib/deadline";
+import { Footer } from "@/components/Footer";
 import { ShareButtons } from "@/components/ShareButtons";
 import { SimilarJobs } from "@/components/SimilarJobs";
 import { EmailSubscriber } from "@/components/EmailSubscriber";
@@ -265,7 +269,7 @@ const JobDetailSidebar = ({
 
         {/* Apply Button */}
         <Button size="lg" className="gap-2 w-full" onClick={onApply}>
-          Apply for this position
+          Apply now
           {applyUrl && <ExternalLink className="h-4 w-4" />}
         </Button>
       </CardContent>
@@ -285,8 +289,18 @@ const JobDetailSidebar = ({
 
 const JobDetail = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const { data: job, isLoading } = useJobBySlug(slug ?? "");
   const descriptionRef = useRef<HTMLDivElement>(null);
+
+  const goBack = () => {
+    // If user navigated from within the app, go back; else fall back to listing
+    if (window.history.length > 1 && document.referrer && new URL(document.referrer, window.location.origin).origin === window.location.origin) {
+      navigate(-1);
+    } else {
+      navigate(job?.listing_type === "opportunity" ? "/opportunities" : "/");
+    }
+  };
 
   if (isLoading) {
     return (
@@ -364,42 +378,64 @@ const JobDetail = () => {
       </Helmet>
       <Header />
       <div className="container max-w-5xl py-4 md:py-8 px-4">
-        <Link
-          to="/"
+        <button
+          type="button"
+          onClick={goBack}
           className="mb-4 md:mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to jobs
-        </Link>
+          Back
+        </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* Main Content - Left Side */}
           <div>
             {/* Title Header */}
             <div className="mb-6">
+              {(() => {
+                const dl = getDeadlineInfo(job.apply_before_date);
+                const featuredActive = job.is_featured && (!job.featured_until || new Date(job.featured_until) > new Date());
+                if (!featuredActive && !dl?.urgent) return null;
+                return (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {featuredActive && (
+                      <Badge className="bg-amber-500 hover:bg-amber-500 text-white border-0 gap-1">
+                        <Sparkles className="h-3 w-3" /> Featured
+                      </Badge>
+                    )}
+                    {dl?.urgent && (
+                      <Badge variant="destructive" className="gap-1">
+                        <AlarmClock className="h-3 w-3" /> {dl.label}
+                      </Badge>
+                    )}
+                  </div>
+                );
+              })()}
               <h1 className="font-display text-2xl font-bold md:text-3xl break-words">
-                {job.title} @{job.company}
+                {job.title} {job.listing_type === "opportunity" ? "·" : "@"}{job.company}
               </h1>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                {timeAgo && (
-                  <span>{timeAgo}</span>
-                )}
+                {timeAgo && <span>{timeAgo}</span>}
                 {job.company && (
                   <>
                     <span>·</span>
-                    <span>{job.company} is hiring a {job.is_remote ? "remote " : ""}{job.title}</span>
+                    <span>
+                      {job.listing_type === "opportunity"
+                        ? `Open application: ${job.title} via ${job.company}`
+                        : `${job.company} is hiring a ${job.is_remote ? "remote " : ""}${job.title}`}
+                    </span>
                   </>
                 )}
                 {job.salary && (
                   <>
                     <span>·</span>
-                    <span>💸 Salary: {job.salary}</span>
+                    <span>💸 {job.salary}</span>
                   </>
                 )}
                 {job.location && (
                   <>
                     <span>·</span>
-                    <span>📍 Location: {job.location}</span>
+                    <span>📍 {job.location}</span>
                   </>
                 )}
               </div>
@@ -424,7 +460,7 @@ const JobDetail = () => {
             {/* Share & Apply (mobile) */}
             <div className="mt-6 border-t pt-4 space-y-4 lg:hidden">
               <Button size="lg" className="gap-2 w-full" onClick={handleApply}>
-                Apply for this position
+                {job.listing_type === "opportunity" ? "Apply now" : "Apply for this position"}
                 {applyUrl && <ExternalLink className="h-4 w-4" />}
               </Button>
               <ShareButtons
@@ -469,6 +505,7 @@ const JobDetail = () => {
 
         <SimilarJobs job={job} />
       </div>
+      <Footer />
     </div>
   );
 };
