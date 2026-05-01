@@ -269,7 +269,7 @@ const JobDetailSidebar = ({
 
         {/* Apply Button */}
         <Button size="lg" className="gap-2 w-full" onClick={onApply}>
-          Apply for this position
+          Apply now
           {applyUrl && <ExternalLink className="h-4 w-4" />}
         </Button>
       </CardContent>
