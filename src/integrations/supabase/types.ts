@@ -14,10 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      job_submissions: {
+        Row: {
+          apply_email: string | null
+          apply_method: string
+          apply_url: string | null
+          company: string
+          company_logo: string | null
+          created_at: string
+          description: string
+          id: string
+          listing_type: string
+          location: string
+          payment_id: string | null
+          payment_status: string
+          promoted_job_id: string | null
+          salary_currency: string | null
+          salary_max: number | null
+          salary_min: number | null
+          salary_period: string | null
+          submitter_email: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          work_arrangement: string | null
+        }
+        Insert: {
+          apply_email?: string | null
+          apply_method: string
+          apply_url?: string | null
+          company: string
+          company_logo?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          listing_type?: string
+          location: string
+          payment_id?: string | null
+          payment_status?: string
+          promoted_job_id?: string | null
+          salary_currency?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          salary_period?: string | null
+          submitter_email: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          work_arrangement?: string | null
+        }
+        Update: {
+          apply_email?: string | null
+          apply_method?: string
+          apply_url?: string | null
+          company?: string
+          company_logo?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          listing_type?: string
+          location?: string
+          payment_id?: string | null
+          payment_status?: string
+          promoted_job_id?: string | null
+          salary_currency?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          salary_period?: string | null
+          submitter_email?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          work_arrangement?: string | null
+        }
+        Relationships: []
+      }
       jobs: {
         Row: {
           apply_before: string | null
+          apply_before_date: string | null
           apply_url: string | null
+          archived_at: string | null
           category: string | null
           clean_description: string | null
           company: string
@@ -26,16 +103,21 @@ export type Database = {
           description: string | null
           employment_type: string | null
           external_id: string | null
+          featured_until: string | null
           id: string
+          is_featured: boolean
           is_remote: boolean | null
           job_type: string | null
           listing_type: string | null
           location: string | null
+          payment_id: string | null
+          payment_status: string | null
           posted_at: string | null
           salary: string | null
           skills: string[] | null
           slug: string | null
           source: string | null
+          submitter_email: string | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -43,7 +125,9 @@ export type Database = {
         }
         Insert: {
           apply_before?: string | null
+          apply_before_date?: string | null
           apply_url?: string | null
+          archived_at?: string | null
           category?: string | null
           clean_description?: string | null
           company: string
@@ -52,16 +136,21 @@ export type Database = {
           description?: string | null
           employment_type?: string | null
           external_id?: string | null
+          featured_until?: string | null
           id?: string
+          is_featured?: boolean
           is_remote?: boolean | null
           job_type?: string | null
           listing_type?: string | null
           location?: string | null
+          payment_id?: string | null
+          payment_status?: string | null
           posted_at?: string | null
           salary?: string | null
           skills?: string[] | null
           slug?: string | null
           source?: string | null
+          submitter_email?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -69,7 +158,9 @@ export type Database = {
         }
         Update: {
           apply_before?: string | null
+          apply_before_date?: string | null
           apply_url?: string | null
+          archived_at?: string | null
           category?: string | null
           clean_description?: string | null
           company?: string
@@ -78,16 +169,21 @@ export type Database = {
           description?: string | null
           employment_type?: string | null
           external_id?: string | null
+          featured_until?: string | null
           id?: string
+          is_featured?: boolean
           is_remote?: boolean | null
           job_type?: string | null
           listing_type?: string | null
           location?: string | null
+          payment_id?: string | null
+          payment_status?: string | null
           posted_at?: string | null
           salary?: string | null
           skills?: string[] | null
           slug?: string | null
           source?: string | null
+          submitter_email?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
