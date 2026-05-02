@@ -32,15 +32,15 @@ export function Footer() {
 
   return (
     <footer className="border-t bg-card mt-12">
-      <div className="container py-10">
-        <div className="grid gap-8 md:grid-cols-4">
+      <div className="container py-8">
+        <div className="grid gap-8 md:grid-cols-3">
           <div>
             <Link to="/" className="flex items-center gap-2 mb-3">
               <img src="/logo.png" alt="Eplicant" className="h-8 w-8 rounded-lg" />
               <span className="font-display font-bold">Eplicant</span>
             </Link>
             <p className="text-xs text-muted-foreground">
-              Discover jobs and opportunities that match your ambitions.
+              Jobs and opportunities for the international development sector.
             </p>
           </div>
 
@@ -58,41 +58,36 @@ export function Footer() {
             <ul className="space-y-1.5 text-sm text-muted-foreground">
               <li><Link to="/about" className="hover:text-foreground">About</Link></li>
               <li><Link to="/contact" className="hover:text-foreground">Contact</Link></li>
-              <li><Link to="/submit" className="hover:text-foreground">Post a Job</Link></li>
               <li><Link to="/terms" className="hover:text-foreground">Terms</Link></li>
               <li><Link to="/privacy" className="hover:text-foreground">Privacy</Link></li>
             </ul>
           </div>
-
-          <div>
-            <h4 className="font-semibold text-sm mb-3 flex items-center gap-1.5">
-              <Mail className="h-3.5 w-3.5" /> Newsletter
-            </h4>
-            {status === "success" ? (
-              <p className="text-xs text-primary">You're subscribed!</p>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-2">
-                <Input
-                  type="email"
-                  required
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="h-8 text-xs"
-                />
-                <Button type="submit" size="sm" className="w-full h-8 text-xs" disabled={status === "loading"}>
-                  {status === "loading" ? "..." : "Subscribe"}
-                </Button>
-                {status === "error" && (
-                  <p className="text-xs text-destructive">Try again.</p>
-                )}
-              </form>
-            )}
-          </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Eplicant. All rights reserved.
+        <div className="mt-6 pt-5 border-t flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted-foreground">
+            © {new Date().getFullYear()} Eplicant. All rights reserved.
+          </p>
+          {status === "success" ? (
+            <p className="text-xs text-primary flex items-center gap-1.5">
+              <Mail className="h-3 w-3" /> Subscribed — thanks!
+            </p>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex items-center gap-1.5 max-w-xs w-full sm:w-auto">
+              <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <Input
+                type="email"
+                required
+                placeholder="Newsletter email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-7 text-xs flex-1"
+              />
+              <Button type="submit" size="sm" className="h-7 text-xs px-3" disabled={status === "loading"}>
+                {status === "loading" ? "..." : "Join"}
+              </Button>
+            </form>
+          )}
         </div>
       </div>
     </footer>
