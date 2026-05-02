@@ -12,8 +12,6 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
-import Submit from "./pages/Submit";
-import SubmitSuccess from "./pages/SubmitSuccess";
 import NotFound from "./pages/NotFound";
 import { WhatsAppBanner } from "./components/WhatsAppBanner";
 
@@ -36,8 +34,6 @@ const App = () => (
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/submit" element={<Submit />} />
-            <Route path="/submit/success" element={<SubmitSuccess />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

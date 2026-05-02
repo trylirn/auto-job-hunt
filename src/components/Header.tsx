@@ -1,6 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 
 export function Header() {
   const location = useLocation();
@@ -34,13 +33,10 @@ export function Header() {
           <Link
             to="/newsletter"
             className={cn(
-              "hidden md:inline transition-colors hover:text-foreground",
+              "transition-colors hover:text-foreground",
               location.pathname === "/newsletter" ? "text-foreground" : "text-muted-foreground"
             )}>
             Newsletter
-          </Link>
-          <Link to="/submit">
-            <Button size="sm" className="h-8 text-xs">Post a Job — $195</Button>
           </Link>
         </nav>
       </div>

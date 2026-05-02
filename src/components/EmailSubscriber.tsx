@@ -45,7 +45,6 @@ export function EmailSubscriber() {
     }
   };
 
-  // ✅ SUCCESS STATE
   if (status === "success") {
     return (
       <div className="rounded-xl bg-primary/5 border border-primary/20 p-6 md:p-8 text-center">
@@ -70,7 +69,7 @@ export function EmailSubscriber() {
       </div>
 
       <p className="text-sm text-muted-foreground mb-4">
-        Subscribe to receive curated jobs and opportunities every week. No spam.
+        Join over 10,000 subscribers receiving our weekly newsletter.
       </p>
 
       <form onSubmit={handleSubmit} className="flex gap-2">

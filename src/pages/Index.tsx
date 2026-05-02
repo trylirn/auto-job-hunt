@@ -59,17 +59,17 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Eplicant — Find Your Next Opportunity</title>
-        <meta name="description" content="Thousands of jobs updated automatically. Search remote, full-time, and freelance opportunities worldwide." />
+        <title>Eplicant — Jobs for International Development Professionals</title>
+        <meta name="description" content="Jobs and opportunities for international development professionals — roles, fellowships, scholarships, and grants in one place." />
         <link rel="canonical" href="https://eplicant.com/" />
-        <meta property="og:title" content="Eplicant — Find Your Next Opportunity" />
-        <meta property="og:description" content="Thousands of jobs updated automatically. Search remote, full-time, and freelance opportunities worldwide." />
+        <meta property="og:title" content="Eplicant — Jobs for International Development Professionals" />
+        <meta property="og:description" content="Jobs and opportunities for international development professionals — roles, fellowships, scholarships, and grants in one place." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://eplicant.com/" />
         <meta property="og:image" content="https://eplicant.com/logo.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Eplicant — Find Your Next Opportunity" />
-        <meta name="twitter:description" content="Thousands of jobs updated automatically. Search remote, full-time, and freelance opportunities worldwide." />
+        <meta name="twitter:title" content="Eplicant — Jobs for International Development Professionals" />
+        <meta name="twitter:description" content="Jobs and opportunities for international development professionals — roles, fellowships, scholarships, and grants in one place." />
         <script type="application/ld+json">{JSON.stringify({
           "@context": "https://schema.org",
           "@type": "ItemList",
@@ -123,7 +123,7 @@ const Index = () => {
                   <p className="text-xs text-muted-foreground">Active opportunities</p>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-2 border-t">
-                  <TrendingUp className="h-3 w-3" /> Updated hourly
+                  <TrendingUp className="h-3 w-3" /> Updated daily
                 </div>
               </div>
             </aside>
@@ -210,19 +210,19 @@ const Index = () => {
             <AccordionItem value="what">
               <AccordionTrigger>What is Eplicant?</AccordionTrigger>
               <AccordionContent>
-                Eplicant is a career platform built to help job seekers discover verified jobs and opportunities across Africa and beyond. We make it simple to find roles that match your skills, experience, and ambitions — all in one place.
+                Eplicant is a job board for international development professionals. We bring together roles, fellowships, scholarships, grants, and other opportunities from across the sector so you can find them all in one place.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="updated">
               <AccordionTrigger>How often are jobs updated?</AccordionTrigger>
               <AccordionContent>
-                New jobs and opportunities are added every day. Our team ensures listings are current, well-organized, and easy to browse so you never miss a relevant opening.
+                New jobs and opportunities are added every day, so it's worth checking back regularly or subscribing to our weekly newsletter.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="verified">
-              <AccordionTrigger>Are these jobs verified?</AccordionTrigger>
+              <AccordionTrigger>Are these jobs legitimate?</AccordionTrigger>
               <AccordionContent>
-                Yes. Every listing on Eplicant goes through a quality check to ensure it comes from a legitimate employer or organization. We remove outdated or suspicious postings to keep the platform trustworthy and reliable.
+                Yes. Listings come from established organisations working in international development. We remove outdated or suspicious postings to keep the board trustworthy.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="apply">
