@@ -45,6 +45,7 @@ function looksDirty(loc: string | null): boolean {
   if (!loc) return true;
   const v = loc.trim();
   if (!v || v.toLowerCase() === "unknown") return true;
+  if (v.toLowerCase() === "global") return true;
   if (v.includes(",")) return true;
   if (v.length > 30) return true;
   if (US_STATES.has(v.toLowerCase())) return true;
@@ -64,11 +65,23 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const batch = Math.min(Number(url.searchParams.get("batch") ?? "20"), 50);
 
-  const { data: rows, error } = await supabase
-    .from("jobs")
-    .select("id, title, location, description, clean_description")
-    .or("location.is.null,location.eq.Unknown,location.ilike.%,%")
-    .limit(batch);
+  // PostgREST .or() can't handle commas inside ilike values, so we run two queries and merge.
+  const [q1, q2] = await Promise.all([
+    supabase
+      .from("jobs")
+      .select("id, title, location, description, clean_description")
+      .or("location.is.null,location.eq.Unknown,location.eq.Global")
+      .limit(batch),
+    supabase
+      .from("jobs")
+      .select("id, title, location, description, clean_description")
+      .like("location", "%,%")
+      .limit(batch),
+  ]);
+  const error = q1.error || q2.error;
+  const merged = [...(q1.data ?? []), ...(q2.data ?? [])];
+  const seen = new Set<string>();
+  const rows = merged.filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true))).slice(0, batch);
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {
@@ -100,7 +113,7 @@ Deno.serve(async (req) => {
             {
               role: "system",
               content:
-                "Extract the country or region from the job/opportunity content. RULES: (1) Never return a city, US state, or province alone — always infer the country. (2) If the role spans multiple countries in the same region, return the region (e.g. 'Sub-Saharan Africa', 'Southeast Asia', 'Latin America', 'MENA', 'Europe'). (3) Return 'Global' ONLY if truly worldwide. (4) If unsure between countries, pick the most prominently mentioned.",
+                "Extract the COUNTRY (or region) where the job/opportunity is physically based. RULES: (1) Carefully scan the description AND title for any city, state, province, office location, or parenthetical hints like 'Hybrid - Ottawa', '(Remote, Nairobi)', 'based in Berlin'. Always infer the country from such hints (Ottawa → Canada, Nairobi → Kenya, Berlin → Germany). (2) Never return a city, US state, or province alone — always the country. (3) Only return a REGION ('Sub-Saharan Africa', 'Southeast Asia', 'Latin America', 'MENA', 'Europe', etc.) when the role explicitly spans multiple countries within that region. (4) Return 'Global' ONLY if the role is truly worldwide with NO city or country mentioned anywhere. A hybrid/remote role tied to one office city is NOT global — return that office's country. (5) If unsure between countries, pick the most prominently mentioned.",
             },
             {
               role: "user",
