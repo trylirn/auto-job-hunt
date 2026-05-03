@@ -45,6 +45,7 @@ function looksDirty(loc: string | null): boolean {
   if (!loc) return true;
   const v = loc.trim();
   if (!v || v.toLowerCase() === "unknown") return true;
+  if (v.toLowerCase() === "global") return true;
   if (v.includes(",")) return true;
   if (v.length > 30) return true;
   if (US_STATES.has(v.toLowerCase())) return true;
