@@ -6,18 +6,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const ALLOWED_REGIONS = new Set([
+  "Global",
+  "Sub-Saharan Africa", "East Africa", "West Africa", "Southern Africa", "North Africa",
+  "MENA", "Middle East",
+  "Europe", "Western Europe", "Eastern Europe",
+  "Latin America", "Caribbean",
+  "South Asia", "Southeast Asia", "East Asia", "Central Asia",
+  "Oceania", "North America",
+]);
+
 const TOOL = {
   type: "function" as const,
   function: {
     name: "save_country",
-    description: "Return the country only.",
+    description: "Return the country or region only.",
     parameters: {
       type: "object",
       properties: {
         country: {
           type: "string",
           description:
-            "Single country name only (e.g. 'Nigeria', 'USA', 'United Kingdom', 'Global'). No cities. 'Global' only if truly worldwide.",
+            "Country name OR a recognized region name. If only a city/state/province is given (e.g. 'Lagos', 'California', 'Bavaria'), infer and return the COUNTRY. If the role spans multiple countries in the same region, return the region instead. Allowed regions: 'Sub-Saharan Africa', 'East Africa', 'West Africa', 'Southern Africa', 'North Africa', 'MENA', 'Middle East', 'Europe', 'Western Europe', 'Eastern Europe', 'Latin America', 'Caribbean', 'South Asia', 'Southeast Asia', 'East Asia', 'Central Asia', 'Oceania', 'North America'. Use 'Global' only if truly worldwide. NEVER return a city or US state alone.",
         },
       },
       required: ["country"],
@@ -26,13 +36,19 @@ const TOOL = {
   },
 };
 
+// US states + common city/region keywords that signal "needs country inference"
+const US_STATES = new Set([
+  "alabama","alaska","arizona","arkansas","california","colorado","connecticut","delaware","florida","georgia","hawaii","idaho","illinois","indiana","iowa","kansas","kentucky","louisiana","maine","maryland","massachusetts","michigan","minnesota","mississippi","missouri","montana","nebraska","nevada","new hampshire","new jersey","new mexico","new york","north carolina","north dakota","ohio","oklahoma","oregon","pennsylvania","rhode island","south carolina","south dakota","tennessee","texas","utah","vermont","virginia","washington","west virginia","wisconsin","wyoming","dc","d.c."
+]);
+
 function looksDirty(loc: string | null): boolean {
   if (!loc) return true;
   const v = loc.trim();
   if (!v || v.toLowerCase() === "unknown") return true;
   if (v.includes(",")) return true;
-  // very long values likely include city/region
   if (v.length > 30) return true;
+  if (US_STATES.has(v.toLowerCase())) return true;
+  if (/\b(province|region|state|district|county|city)\b/i.test(v)) return true;
   return false;
 }
 
@@ -84,7 +100,7 @@ Deno.serve(async (req) => {
             {
               role: "system",
               content:
-                "Extract the country (one only) from the job/opportunity content. Return COUNTRY ONLY — never cities. Use 'Global' only if explicitly worldwide/remote-anywhere. If unsure between countries, pick the most prominently mentioned. If no clear country, return 'Global'.",
+                "Extract the country or region from the job/opportunity content. RULES: (1) Never return a city, US state, or province alone — always infer the country. (2) If the role spans multiple countries in the same region, return the region (e.g. 'Sub-Saharan Africa', 'Southeast Asia', 'Latin America', 'MENA', 'Europe'). (3) Return 'Global' ONLY if truly worldwide. (4) If unsure between countries, pick the most prominently mentioned.",
             },
             {
               role: "user",
@@ -104,8 +120,11 @@ Deno.serve(async (req) => {
       const tc = result.choices?.[0]?.message?.tool_calls?.[0];
       if (!tc) continue;
       const args = JSON.parse(tc.function.arguments);
-      const country = (args.country as string)?.trim();
+      let country = (args.country as string)?.trim();
       if (!country) continue;
+
+      // Reject obvious bad outputs (city/state alone)
+      if (US_STATES.has(country.toLowerCase())) country = "USA";
       if (country === job.location) continue;
 
       const update = { location: country };
