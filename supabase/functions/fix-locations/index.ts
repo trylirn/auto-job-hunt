@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
   const { data: rows, error } = await supabase
     .from("jobs")
     .select("id, title, location, description, clean_description")
-    .or("location.is.null,location.eq.Unknown,location.eq.Global,location.ilike.%,%")
+    .or('location.is.null,location.eq.Unknown,location.eq.Global,location.ilike.*\\,*')
     .limit(batch);
 
   if (error) {
