@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
             {
               role: "system",
               content:
-                "Extract the country or region from the job/opportunity content. RULES: (1) Never return a city, US state, or province alone — always infer the country. (2) If the role spans multiple countries in the same region, return the region (e.g. 'Sub-Saharan Africa', 'Southeast Asia', 'Latin America', 'MENA', 'Europe'). (3) Return 'Global' ONLY if truly worldwide. (4) If unsure between countries, pick the most prominently mentioned.",
+                "Extract the COUNTRY (or region) where the job/opportunity is physically based. RULES: (1) Carefully scan the description AND title for any city, state, province, office location, or parenthetical hints like 'Hybrid - Ottawa', '(Remote, Nairobi)', 'based in Berlin'. Always infer the country from such hints (Ottawa → Canada, Nairobi → Kenya, Berlin → Germany). (2) Never return a city, US state, or province alone — always the country. (3) Only return a REGION ('Sub-Saharan Africa', 'Southeast Asia', 'Latin America', 'MENA', 'Europe', etc.) when the role explicitly spans multiple countries within that region. (4) Return 'Global' ONLY if the role is truly worldwide with NO city or country mentioned anywhere. A hybrid/remote role tied to one office city is NOT global — return that office's country. (5) If unsure between countries, pick the most prominently mentioned.",
             },
             {
               role: "user",
