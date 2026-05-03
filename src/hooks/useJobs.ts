@@ -50,7 +50,11 @@ export function useJobs({
       }
 
       if (location) {
-        query = query.ilike("location", `%${location}%`);
+        if (location.toLowerCase() === "remote") {
+          query = query.or("is_remote.eq.true,job_type.eq.Remote,location.ilike.%remote%");
+        } else {
+          query = query.ilike("location", `%${location}%`);
+        }
       }
 
       if (dateRange) {
