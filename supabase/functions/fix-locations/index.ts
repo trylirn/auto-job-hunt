@@ -65,11 +65,23 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const batch = Math.min(Number(url.searchParams.get("batch") ?? "20"), 50);
 
-  const { data: rows, error } = await supabase
-    .from("jobs")
-    .select("id, title, location, description, clean_description")
-    .or('location.is.null,location.eq.Unknown,location.eq.Global,location.ilike.*\\,*')
-    .limit(batch);
+  // PostgREST .or() can't handle commas inside ilike values, so we run two queries and merge.
+  const [q1, q2] = await Promise.all([
+    supabase
+      .from("jobs")
+      .select("id, title, location, description, clean_description")
+      .or("location.is.null,location.eq.Unknown,location.eq.Global")
+      .limit(batch),
+    supabase
+      .from("jobs")
+      .select("id, title, location, description, clean_description")
+      .like("location", "%,%")
+      .limit(batch),
+  ]);
+  const error = q1.error || q2.error;
+  const merged = [...(q1.data ?? []), ...(q2.data ?? [])];
+  const seen = new Set<string>();
+  const rows = merged.filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true))).slice(0, batch);
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {
