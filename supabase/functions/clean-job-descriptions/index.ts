@@ -35,7 +35,11 @@ STRUCTURE (opportunities — applicant tone):
 Also extract:
 - apply_url: actual application URL (Google Forms, mailto, company career page). Ignore chatgpt:// / yeshub.ng / share links.
 - company_name: actual hiring organization. PRIORITIZE the title. Don't use blog/source name. Null if unknown.
-- detected_location: COUNTRY ONLY (e.g., "Nigeria", "USA", "Global"). No cities. Read the FULL description text and find the most specific country mentioned. Use "Global" only if truly worldwide.
+- detected_location: COUNTRY name OR REGION name. Never a city, state, or province alone. Rules:
+  • If a city/state/province is mentioned (e.g. "Lagos", "California", "Bavaria", "Ontario"), infer and return the COUNTRY (e.g. "Nigeria", "USA", "Germany", "Canada").
+  • If the role spans multiple countries in the same region, return the REGION instead. Allowed regions: "Sub-Saharan Africa", "East Africa", "West Africa", "Southern Africa", "North Africa", "MENA", "Middle East", "Europe", "Western Europe", "Eastern Europe", "Latin America", "Caribbean", "South Asia", "Southeast Asia", "East Asia", "Central Asia", "Oceania", "North America".
+  • Use "Global" ONLY if truly worldwide.
+  • Never return a city or US state on its own.
 - work_mode: "Remote", "Hybrid", or "Physical".
 - listing_type: "job" or "opportunity". Fellowships, scholarships, grants, conferences, training, awards, PhD positions, short courses, competitions are opportunities.
 - opportunity_category: when listing_type='opportunity', one of: "fellowship", "scholarship", "grant", "conference", "internship".
@@ -71,7 +75,7 @@ const TOOL_DEFINITION = {
         detected_location: {
           type: "string",
           description:
-            "Country name ONLY, e.g. 'Nigeria', 'Kenya', 'USA', 'Global'. No cities.",
+            "Country name OR region name. If only a city/state/province is given, infer the country. If the role spans multiple countries in one region, return the region (e.g. 'Sub-Saharan Africa', 'Southeast Asia', 'Latin America', 'MENA', 'Europe'). Use 'Global' only if truly worldwide. Never return a city or state alone.",
         },
         work_mode: {
           type: "string",

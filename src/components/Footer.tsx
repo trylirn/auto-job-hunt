@@ -64,30 +64,43 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-6 pt-5 border-t flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Newsletter — separate, compact block */}
+        <div className="mt-8 pt-5 border-t">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Stay updated
+              </h4>
+              <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+                Join 10,000+ subscribers — weekly digest
+              </p>
+            </div>
+            {status === "success" ? (
+              <p className="text-[11px] text-primary flex items-center gap-1.5">
+                <Mail className="h-3 w-3" /> Subscribed — thanks!
+              </p>
+            ) : (
+              <form onSubmit={handleSubmit} className="flex items-center gap-1.5 max-w-xs w-full sm:w-auto">
+                <Input
+                  type="email"
+                  required
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-7 text-[11px] flex-1"
+                />
+                <Button type="submit" size="sm" className="h-7 text-[11px] px-3" disabled={status === "loading"}>
+                  {status === "loading" ? "..." : "Join"}
+                </Button>
+              </form>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 pt-5 border-t">
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Eplicant. All rights reserved.
           </p>
-          {status === "success" ? (
-            <p className="text-xs text-primary flex items-center gap-1.5">
-              <Mail className="h-3 w-3" /> Subscribed — thanks!
-            </p>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex items-center gap-1.5 max-w-xs w-full sm:w-auto">
-              <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <Input
-                type="email"
-                required
-                placeholder="Newsletter email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-7 text-xs flex-1"
-              />
-              <Button type="submit" size="sm" className="h-7 text-xs px-3" disabled={status === "loading"}>
-                {status === "loading" ? "..." : "Join"}
-              </Button>
-            </form>
-          )}
         </div>
       </div>
     </footer>
