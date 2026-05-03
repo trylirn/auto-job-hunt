@@ -36,9 +36,10 @@ Also extract:
 - apply_url: actual application URL (Google Forms, mailto, company career page). Ignore chatgpt:// / yeshub.ng / share links.
 - company_name: actual hiring organization. PRIORITIZE the title. Don't use blog/source name. Null if unknown.
 - detected_location: COUNTRY name OR REGION name. Never a city, state, or province alone. Rules:
-  • If a city/state/province is mentioned (e.g. "Lagos", "California", "Bavaria", "Ontario"), infer and return the COUNTRY (e.g. "Nigeria", "USA", "Germany", "Canada").
-  • If the role spans multiple countries in the same region, return the REGION instead. Allowed regions: "Sub-Saharan Africa", "East Africa", "West Africa", "Southern Africa", "North Africa", "MENA", "Middle East", "Europe", "Western Europe", "Eastern Europe", "Latin America", "Caribbean", "South Asia", "Southeast Asia", "East Asia", "Central Asia", "Oceania", "North America".
-  • Use "Global" ONLY if truly worldwide.
+  • Scan the FULL description AND title for any city, state, province, office, or parenthetical hints like "Hybrid - Ottawa", "(Remote, Nairobi)", "based in Berlin". Always infer the COUNTRY from these (Ottawa → Canada, Nairobi → Kenya, Lagos → Nigeria, California → USA, Bavaria → Germany, Ontario → Canada).
+  • A hybrid or remote role tied to ONE specific office city is NOT global — return that office's country.
+  • Only return a REGION when the role explicitly spans multiple countries in the same region. Allowed regions: "Sub-Saharan Africa", "East Africa", "West Africa", "Southern Africa", "North Africa", "MENA", "Middle East", "Europe", "Western Europe", "Eastern Europe", "Latin America", "Caribbean", "South Asia", "Southeast Asia", "East Asia", "Central Asia", "Oceania", "North America".
+  • Use "Global" ONLY if truly worldwide with NO city or country mentioned anywhere.
   • Never return a city or US state on its own.
 - work_mode: "Remote", "Hybrid", or "Physical".
 - listing_type: "job" or "opportunity". Fellowships, scholarships, grants, conferences, training, awards, PhD positions, short courses, competitions are opportunities.
