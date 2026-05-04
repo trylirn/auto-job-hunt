@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export function Header() {
   const location = useLocation();
@@ -30,6 +31,9 @@ export function Header() {
             )}>
             Opportunities
           </Link>
+          <Button asChild size="sm" className="h-8">
+            <Link to="/submit">Post a Job</Link>
+          </Button>
         </nav>
       </div>
     </header>
