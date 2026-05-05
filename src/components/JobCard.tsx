@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Clock, Building2, Sparkles, AlarmClock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import type { Job } from "@/types/job";
 import { getDeadlineInfo } from "@/lib/deadline";
 
@@ -11,6 +11,7 @@ interface JobCardProps {
 }
 
 export function JobCard({ job }: JobCardProps) {
+  const location = useLocation();
   const timeAgo = job.posted_at
     ? formatDistanceToNow(new Date(job.posted_at), { addSuffix: true })
     : "Recently";
@@ -22,9 +23,10 @@ export function JobCard({ job }: JobCardProps) {
 
   const deadline = getDeadlineInfo(job.apply_before_date);
   const isFeaturedActive = job.is_featured && (!job.featured_until || new Date(job.featured_until) > new Date());
+  const listingPath = `${location.pathname}${location.search}`;
 
   return (
-    <Link to={`/job/${job.slug || job.id}`} className="block w-full overflow-hidden">
+    <Link to={`/job/${job.slug || job.id}`} state={{ from: listingPath }} className="block w-full overflow-hidden">
       <Card className={`group cursor-pointer transition-all hover:shadow-md hover:border-primary/30 overflow-hidden max-w-full ${isFeaturedActive ? "ring-1 ring-amber-400/40 bg-amber-50/30 dark:bg-amber-950/10" : ""}`}>
         <CardContent className="p-4 md:p-5">
           {(isFeaturedActive || deadline?.urgent) && (
