@@ -11,6 +11,7 @@ Deno.serve(async () => {
   const { data: jobs, error } = await supabase
     .from("jobs")
     .select("id, slug, updated_at")
+    .is("archived_at", null)
     .order("updated_at", { ascending: false });
 
   if (error) {
