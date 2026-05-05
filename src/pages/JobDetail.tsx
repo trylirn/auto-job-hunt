@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { useParams, Link, Navigate, useNavigate } from "react-router-dom";
+import { useParams, Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useJobBySlug, useJob } from "@/hooks/useJobs";
 import { Header } from "@/components/Header";
@@ -290,10 +290,17 @@ const JobDetailSidebar = ({
 const JobDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: job, isLoading } = useJobBySlug(slug ?? "");
   const descriptionRef = useRef<HTMLDivElement>(null);
 
   const goBack = () => {
+    const from = (location.state as { from?: string } | null)?.from;
+    if (from) {
+      navigate(from);
+      return;
+    }
+
     // If user navigated from within the app, go back; else fall back to listing
     if (window.history.length > 1 && document.referrer && new URL(document.referrer, window.location.origin).origin === window.location.origin) {
       navigate(-1);
