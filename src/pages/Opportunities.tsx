@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/Header";
 import { SearchBar } from "@/components/SearchBar";
@@ -20,7 +21,16 @@ const Opportunities = () => {
   const [location, setLocation] = useState("");
   const [dateRange, setDateRange] = useState("");
   const [region, setRegion] = useState("");
-  const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+  const setPage = useCallback((p: number) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (p <= 1) next.delete("page");
+      else next.set("page", String(p));
+      return next;
+    }, { replace: false });
+  }, [setSearchParams]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const debouncedSearch = useDebounce(search, 300);
