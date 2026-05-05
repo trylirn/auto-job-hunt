@@ -15,6 +15,7 @@ import Contact from "./pages/Contact";
 import Submit from "./pages/Submit";
 import NotFound from "./pages/NotFound";
 import { WhatsAppBanner } from "./components/WhatsAppBanner";
+import { PostHogPageview } from "./components/PostHogPageview";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <PostHogPageview />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/opportunities" element={<Opportunities />} />
