@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock, Building2, Sparkles, AlarmClock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import type { Job } from "@/types/job";
 import { getDeadlineInfo } from "@/lib/deadline";
 
@@ -10,15 +10,18 @@ interface JobListItemProps {
 }
 
 export function JobListItem({ job }: JobListItemProps) {
+  const location = useLocation();
   const timeAgo = job.posted_at
     ? formatDistanceToNow(new Date(job.posted_at), { addSuffix: true })
     : "Recently";
   const deadline = getDeadlineInfo(job.apply_before_date);
   const isFeaturedActive = job.is_featured && (!job.featured_until || new Date(job.featured_until) > new Date());
+  const listingPath = `${location.pathname}${location.search}`;
 
   return (
     <Link
       to={`/job/${job.slug || job.id}`}
+      state={{ from: listingPath }}
       className={`group flex items-center gap-3 rounded-lg border bg-card p-3 transition-all hover:shadow-md hover:border-primary/30 overflow-hidden ${isFeaturedActive ? "ring-1 ring-amber-400/40" : ""}`}
     >
       {job.company_logo ? (
