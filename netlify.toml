@@ -12,6 +12,11 @@
   status = 200
   force = true
 
+# 410 Gone for deleted/archived job URLs (must run before SPA fallback)
+[[edge_functions]]
+  function = "job-gone"
+  path     = "/job/*"
+
 # SPA fallback — serve index.html for all routes
 [[redirects]]
   from = "/*"
