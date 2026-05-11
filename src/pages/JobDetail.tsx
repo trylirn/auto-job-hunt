@@ -49,7 +49,50 @@ function extractApplyUrl(description: string | null): string | null {
   return null;
 }
 
+// Map of region names (as emitted by fix-locations) to representative countries
+const REGION_TO_COUNTRIES: Record<string, string[]> = {
+  "Sub-Saharan Africa": ["Nigeria", "Kenya", "South Africa", "Ghana", "Ethiopia"],
+  "East Africa": ["Kenya", "Tanzania", "Uganda", "Rwanda", "Ethiopia"],
+  "West Africa": ["Nigeria", "Ghana", "Senegal", "Côte d'Ivoire"],
+  "Southern Africa": ["South Africa", "Botswana", "Zambia", "Zimbabwe"],
+  "North Africa": ["Egypt", "Morocco", "Tunisia", "Algeria"],
+  "MENA": ["Egypt", "United Arab Emirates", "Saudi Arabia", "Jordan", "Morocco"],
+  "Middle East": ["United Arab Emirates", "Saudi Arabia", "Jordan", "Qatar"],
+  "Europe": ["Germany", "France", "United Kingdom", "Netherlands", "Spain"],
+  "Western Europe": ["Germany", "France", "United Kingdom", "Netherlands"],
+  "Eastern Europe": ["Poland", "Romania", "Czech Republic", "Hungary"],
+  "Latin America": ["Brazil", "Mexico", "Argentina", "Colombia", "Chile"],
+  "Caribbean": ["Jamaica", "Dominican Republic", "Trinidad and Tobago"],
+  "South Asia": ["India", "Pakistan", "Bangladesh", "Sri Lanka"],
+  "Southeast Asia": ["Indonesia", "Philippines", "Vietnam", "Thailand", "Malaysia"],
+  "East Asia": ["China", "Japan", "South Korea"],
+  "Central Asia": ["Kazakhstan", "Uzbekistan"],
+  "Oceania": ["Australia", "New Zealand"],
+  "North America": ["United States", "Canada", "Mexico"],
+};
+
+function buildApplicantLocationRequirements(location: string | null) {
+  if (!location || location.toLowerCase() === "global" || location.toLowerCase() === "anywhere") {
+    return { "@type": "Country", name: "Anywhere" };
+  }
+  const region = REGION_TO_COUNTRIES[location];
+  if (region) {
+    return region.map((name) => ({ "@type": "Country", name }));
+  }
+  return { "@type": "Country", name: location };
+}
+
+function safeHostname(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
 function buildJobPostingJsonLd(job: {
+  id: string;
   title: string;
   company: string;
   location?: string | null;
@@ -61,36 +104,72 @@ function buildJobPostingJsonLd(job: {
   description?: string | null;
   apply_url?: string | null;
   slug?: string | null;
-  id: string;
+  apply_before_date?: string | null;
 }) {
   const plainDescription = (job.clean_description || job.description || "")
     .replace(/<[^>]+>/g, "")
     .slice(0, 500);
 
   const jobPath = job.slug || job.id;
+  const datePosted = job.posted_at || new Date().toISOString();
+
+  // validThrough: deadline if present, else 30 days after posted
+  let validThrough: string;
+  if (job.apply_before_date) {
+    validThrough = new Date(job.apply_before_date).toISOString();
+  } else {
+    const d = new Date(datePosted);
+    d.setDate(d.getDate() + 30);
+    validThrough = d.toISOString();
+  }
+
+  const sameAs = safeHostname(job.apply_url);
 
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "JobPosting",
     title: job.title,
     description: plainDescription,
+    identifier: {
+      "@type": "PropertyValue",
+      name: "Eplicant",
+      value: job.id,
+    },
     hiringOrganization: {
       "@type": "Organization",
       name: job.company,
+      ...(sameAs ? { sameAs: `https://${sameAs}` } : {}),
     },
-    datePosted: job.posted_at || new Date().toISOString(),
+    datePosted,
+    validThrough,
     url: `https://eplicant.com/job/${jobPath}`,
   };
 
-  if (job.location) {
+  // Physical location (only when we have a real address — not just region/global)
+  const isRegion = job.location ? job.location in REGION_TO_COUNTRIES : false;
+  const isGlobal = job.location?.toLowerCase() === "global";
+  if (job.location && !isRegion && !isGlobal && !job.is_remote) {
     jsonLd.jobLocation = {
       "@type": "Place",
       address: { "@type": "PostalAddress", addressLocality: job.location },
     };
   }
 
-  if (job.is_remote) {
+  if (job.is_remote || isGlobal || isRegion) {
     jsonLd.jobLocationType = "TELECOMMUTE";
+    // Required by Google when jobLocationType is set
+    jsonLd.applicantLocationRequirements = buildApplicantLocationRequirements(
+      job.location ?? null
+    );
+    // For TELECOMMUTE postings without a physical office, Google still expects jobLocation
+    // to be present in many cases. Provide a country-level Place when possible.
+    if (!jsonLd.jobLocation && job.location && !isGlobal) {
+      const country = isRegion ? REGION_TO_COUNTRIES[job.location][0] : job.location;
+      jsonLd.jobLocation = {
+        "@type": "Place",
+        address: { "@type": "PostalAddress", addressCountry: country },
+      };
+    }
   }
 
   if (job.job_type) {
@@ -110,6 +189,7 @@ function buildJobPostingJsonLd(job: {
 
   return jsonLd;
 }
+
 
 /** Redirect component for legacy /job/id/:id URLs */
 export const JobIdRedirect = () => {
