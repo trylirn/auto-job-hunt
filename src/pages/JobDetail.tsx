@@ -411,6 +411,11 @@ const JobDetail = () => {
   if (!job) {
     return (
       <div className="min-h-screen bg-background">
+        <Helmet>
+          <title>Listing no longer available — Eplicant</title>
+          <meta name="robots" content="noindex, nofollow" />
+          <meta name="prerender-status-code" content="410" />
+        </Helmet>
         <Header />
         <div className="container flex flex-col items-center justify-center py-20 text-center">
           <h2 className="font-display text-2xl font-semibold">Job not found</h2>
