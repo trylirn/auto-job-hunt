@@ -47,7 +47,7 @@ export default async (request: Request, context: { next: () => Promise<Response>
     const column = isIdRoute ? "id" : "slug";
     const apiUrl = `${SUPABASE_URL}/rest/v1/jobs?${column}=eq.${encodeURIComponent(
       key
-    )}&select=id,archived_at&limit=1`;
+    )}&select=id,archived_at,apply_before_date&limit=1`;
 
     const res = await fetch(apiUrl, {
       headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` },
@@ -55,8 +55,15 @@ export default async (request: Request, context: { next: () => Promise<Response>
 
     if (!res.ok) return context.next(); // fail open
 
-    const rows = (await res.json()) as Array<{ id: string; archived_at: string | null }>;
-    const gone = !rows?.length || rows[0].archived_at !== null;
+    const rows = (await res.json()) as Array<{
+      id: string;
+      archived_at: string | null;
+      apply_before_date: string | null;
+    }>;
+    const today = new Date().toISOString().slice(0, 10);
+    const expired =
+      rows?.length && rows[0].apply_before_date && rows[0].apply_before_date < today;
+    const gone = !rows?.length || rows[0].archived_at !== null || expired;
 
     if (!gone) return context.next();
 
