@@ -46,6 +46,7 @@ const Newsletter = () => {
       <Helmet>
         <title>Weekly Newsletter | Eplicant</title>
         <meta name="description" content="Stay updated with the latest verified jobs and opportunities curated weekly by Eplicant." />
+        <link rel="canonical" href="https://eplicant.com/newsletter" />
       </Helmet>
       <Header />
       <main className="container py-8 md:py-12">
