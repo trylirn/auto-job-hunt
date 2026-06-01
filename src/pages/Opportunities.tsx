@@ -59,17 +59,17 @@ const Opportunities = () => {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Opportunities — Fellowships, Grants & Scholarships | Eplicant</title>
-        <meta name="description" content="Discover fellowships, scholarships, grants, conferences, and internship opportunities." />
+        <title>Fellowships, Grants & Scholarships | Eplicant</title>
+        <meta name="description" content="Discover fellowships, scholarships, grants, conferences, and internship opportunities for international development professionals." />
         <link rel="canonical" href="https://eplicant.com/opportunities" />
-        <meta property="og:title" content="Opportunities — Fellowships, Grants & Scholarships | Eplicant" />
-        <meta property="og:description" content="Discover fellowships, scholarships, grants, conferences, and internship opportunities." />
+        <meta property="og:title" content="Fellowships, Grants & Scholarships | Eplicant" />
+        <meta property="og:description" content="Discover fellowships, scholarships, grants, conferences, and internship opportunities for international development professionals." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://eplicant.com/opportunities" />
         <meta property="og:image" content="https://eplicant.com/logo.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Opportunities — Fellowships, Grants & Scholarships | Eplicant" />
-        <meta name="twitter:description" content="Discover fellowships, scholarships, grants, conferences, and internship opportunities." />
+        <meta name="twitter:title" content="Fellowships, Grants & Scholarships | Eplicant" />
+        <meta name="twitter:description" content="Discover fellowships, scholarships, grants, conferences, and internship opportunities for international development professionals." />
       </Helmet>
       <Header />
 
@@ -77,7 +77,7 @@ const Opportunities = () => {
       <section className="border-b bg-card">
         <div className="container py-12 md:py-16">
           <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
-            Apply for opportunities
+            International Development Fellowships & Grants
           </h1>
           <p className="mt-3 max-w-xl text-lg text-muted-foreground">
             Fellowships, scholarships, grants, conferences and internships open to applicants.

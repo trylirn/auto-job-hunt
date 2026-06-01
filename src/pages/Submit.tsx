@@ -100,6 +100,10 @@ const Submit = () => {
         <title>Post a Job — Free | Eplicant</title>
         <meta name="description" content="Post a job for international development professionals — free, no account needed." />
         <link rel="canonical" href="https://eplicant.com/submit" />
+        <meta property="og:title" content="Post a Job — Free | Eplicant" />
+        <meta property="og:description" content="Post a job for international development professionals — free, no account needed." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://eplicant.com/submit" />
       </Helmet>
       <Header />
       <main className="container max-w-2xl py-8 md:py-12">

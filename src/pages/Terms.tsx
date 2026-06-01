@@ -8,6 +8,10 @@ const Terms = () => (
       <title>Terms of Service — Eplicant</title>
       <meta name="description" content="Eplicant terms of service — the rules for using our job board." />
       <link rel="canonical" href="https://eplicant.com/terms" />
+      <meta property="og:title" content="Terms of Service — Eplicant" />
+      <meta property="og:description" content="Eplicant terms of service — the rules for using our job board." />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://eplicant.com/terms" />
     </Helmet>
     <Header />
     <main className="container max-w-3xl py-10 prose prose-sm">

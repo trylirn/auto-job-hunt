@@ -1,0 +1,19 @@
+# Eplicant
+
+> Eplicant is a job board for international development professionals — aggregating verified jobs, fellowships, scholarships, grants, internships, and conferences from across the sector in one searchable place.
+
+Eplicant focuses entirely on the international development sector: humanitarian response, global health, climate, education, governance, human rights, and economic development. Every listing links directly to the original employer or program.
+
+## Pages
+
+- [Jobs](/): Browse current jobs in international development — full-time, part-time, contract, and remote roles.
+- [Opportunities](/opportunities): Fellowships, scholarships, grants, conferences, and internships for development professionals.
+- [Newsletter](/newsletter): Weekly curated digest of new jobs and opportunities.
+- [About](/about): Our mission, what we do, and who we serve.
+- [Submit](/submit): Post a job for free — no account required.
+- [Contact](/contact): Get in touch with the Eplicant team.
+
+## Optional
+
+- [Terms](/terms): Terms of service.
+- [Privacy](/privacy): Privacy policy.

@@ -8,6 +8,10 @@ const Privacy = () => (
       <title>Privacy Policy — Eplicant</title>
       <meta name="description" content="How Eplicant collects, uses, and protects your personal information." />
       <link rel="canonical" href="https://eplicant.com/privacy" />
+      <meta property="og:title" content="Privacy Policy — Eplicant" />
+      <meta property="og:description" content="How Eplicant collects, uses, and protects your personal information." />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://eplicant.com/privacy" />
     </Helmet>
     <Header />
     <main className="container max-w-3xl py-10 prose prose-sm">

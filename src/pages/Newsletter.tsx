@@ -47,6 +47,10 @@ const Newsletter = () => {
         <title>Weekly Newsletter | Eplicant</title>
         <meta name="description" content="Stay updated with the latest verified jobs and opportunities curated weekly by Eplicant." />
         <link rel="canonical" href="https://eplicant.com/newsletter" />
+        <meta property="og:title" content="Weekly Newsletter | Eplicant" />
+        <meta property="og:description" content="Stay updated with the latest verified jobs and opportunities curated weekly by Eplicant." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://eplicant.com/newsletter" />
       </Helmet>
       <Header />
       <main className="container py-8 md:py-12">
@@ -89,7 +93,7 @@ const Newsletter = () => {
         ) : (
           <div className="mx-auto max-w-md rounded-lg border bg-card p-8 text-center">
             <Newspaper className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
-            <h3 className="font-medium">No newsletter available yet</h3>
+            <h2 className="font-medium">No newsletter available yet</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Check back on Monday for the latest curated jobs and opportunities.
             </p>
