@@ -247,7 +247,7 @@ const JobDetailSidebar = ({
           {job.company_logo ? (
             <img
               src={job.company_logo}
-              alt={job.company}
+              alt={`${job.company} company logo`}
               className="h-14 w-14 rounded-xl border object-contain bg-card"
             />
           ) : (
@@ -360,7 +360,7 @@ const JobDetailSidebar = ({
       <CardContent className="p-4 flex gap-2 text-xs text-muted-foreground">
         <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
         <p>
-          <span className="font-semibold text-foreground">Beware of scams!</span> When applying for jobs, you should NEVER have to pay anything. <a href="https://consumer.ftc.gov/articles/job-scams" target="_blank" rel="noopener noreferrer" className="text-primary underline">Learn more.</a>
+          <span className="font-semibold text-foreground">Beware of scams!</span> When applying for jobs, you should NEVER have to pay anything. <a href="https://consumer.ftc.gov/articles/job-scams" target="_blank" rel="noopener noreferrer" className="text-primary underline">Learn about job scams.</a>
         </p>
       </CardContent>
     </Card>

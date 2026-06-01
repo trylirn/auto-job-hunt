@@ -9,7 +9,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between gap-3">
         <Link to="/" className="flex items-center gap-2.5 shrink-0">
-          <img src="/logo.png" alt="Eplicant logo" className="h-9 w-9 rounded-lg object-contain" />
+          <img src="/logo.png" alt="Eplicant — International Development Jobs" className="h-9 w-9 rounded-lg object-contain" />
           <span className="font-display text-xl font-bold tracking-tight hidden sm:inline">
             Eplicant
           </span>

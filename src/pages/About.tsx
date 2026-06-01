@@ -8,6 +8,10 @@ const About = () => (
       <title>About — Eplicant</title>
       <meta name="description" content="Eplicant is a job board for international development professionals — connecting talent with mission-driven roles worldwide." />
       <link rel="canonical" href="https://eplicant.com/about" />
+      <meta property="og:title" content="About — Eplicant" />
+      <meta property="og:description" content="Eplicant is a job board for international development professionals — connecting talent with mission-driven roles worldwide." />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://eplicant.com/about" />
     </Helmet>
     <Header />
     <main className="container max-w-3xl py-10 prose prose-sm">

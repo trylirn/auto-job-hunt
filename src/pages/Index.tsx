@@ -89,6 +89,17 @@ const Index = () => {
             { "@type": "SiteNavigationElement", "position": 3, "name": "Remote Jobs", "url": "https://eplicant.com/?location=Remote" }
           ]
         })}</script>
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            { "@type": "Question", "name": "What is Eplicant?", "acceptedAnswer": { "@type": "Answer", "text": "Eplicant is a job board for international development professionals. We bring together roles, fellowships, scholarships, grants, and other opportunities from across the sector so you can find them all in one place." } },
+            { "@type": "Question", "name": "How often are jobs updated?", "acceptedAnswer": { "@type": "Answer", "text": "New jobs and opportunities are added every day, so it's worth checking back regularly or subscribing to our weekly newsletter." } },
+            { "@type": "Question", "name": "Are these jobs legitimate?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Listings come from established organisations working in international development. We remove outdated or suspicious postings to keep the board trustworthy." } },
+            { "@type": "Question", "name": "How do I apply for a job?", "acceptedAnswer": { "@type": "Answer", "text": "Click on any listing to view its full details, then hit the Apply button to go directly to the application page. From there, you can submit your application to the employer or organization." } },
+            { "@type": "Question", "name": "What's the difference between Jobs and Opportunities?", "acceptedAnswer": { "@type": "Answer", "text": "Jobs are traditional employment roles — full-time, part-time, or contract positions. Opportunities cover fellowships, scholarships, grants, conferences, and other programs designed to advance your career." } }
+          ]
+        })}</script>
       </Helmet>
       <Header />
 
@@ -98,7 +109,7 @@ const Index = () => {
           <div className="grid md:grid-cols-[1fr_320px] gap-8 items-center">
             <div>
               <h1 className="font-display text-2xl font-bold tracking-tight md:text-4xl lg:text-5xl">
-                Find your next opportunity
+                International Development Jobs & Opportunities
               </h1>
               <p className="mt-2 max-w-xl text-base text-muted-foreground md:text-lg">
                 Thousands of jobs and opportunities — updated daily.

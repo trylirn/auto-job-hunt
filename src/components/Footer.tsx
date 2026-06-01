@@ -36,7 +36,7 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-3">
           <div>
             <Link to="/" className="flex items-center gap-2 mb-3">
-              <img src="/logo.png" alt="Eplicant" className="h-8 w-8 rounded-lg" />
+              <img src="/logo.png" alt="Eplicant — International Development Jobs" className="h-8 w-8 rounded-lg" />
               <span className="font-display font-bold">Eplicant</span>
             </Link>
             <p className="text-xs text-muted-foreground">
@@ -45,7 +45,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="font-semibold text-sm mb-3">Browse</h4>
+            <h3 className="font-semibold text-sm mb-3">Browse</h3>
             <ul className="space-y-1.5 text-sm text-muted-foreground">
               <li><Link to="/" className="hover:text-foreground">Jobs</Link></li>
               <li><Link to="/opportunities" className="hover:text-foreground">Opportunities</Link></li>
@@ -54,7 +54,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="font-semibold text-sm mb-3">Company</h4>
+            <h3 className="font-semibold text-sm mb-3">Company</h3>
             <ul className="space-y-1.5 text-sm text-muted-foreground">
               <li><Link to="/about" className="hover:text-foreground">About</Link></li>
               <li><Link to="/contact" className="hover:text-foreground">Contact</Link></li>
@@ -68,9 +68,9 @@ export function Footer() {
         <div className="mt-8 pt-5 border-t">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Stay updated
-              </h4>
+              </h3>
               <p className="text-[11px] text-muted-foreground/80 mt-0.5">
                 Join 10,000+ subscribers — weekly digest
               </p>
@@ -81,9 +81,14 @@ export function Footer() {
               </p>
             ) : (
               <form onSubmit={handleSubmit} className="flex items-center gap-1.5 max-w-xs w-full sm:w-auto">
+                <label htmlFor="footer-newsletter-email" className="sr-only">
+                  Email address for newsletter subscription
+                </label>
                 <Input
+                  id="footer-newsletter-email"
                   type="email"
                   required
+                  aria-label="Email address for newsletter subscription"
                   placeholder="your@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
