@@ -92,7 +92,7 @@ const Newsletter = () => {
           </div>
         ) : (
           <div className="mx-auto max-w-md rounded-lg border bg-card p-8 text-center">
-            <Newspaper className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+            <Newspaper aria-hidden="true" className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <h2 className="font-medium">No newsletter available yet</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Check back on Monday for the latest curated jobs and opportunities.
