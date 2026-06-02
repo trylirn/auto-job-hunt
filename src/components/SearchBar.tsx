@@ -10,7 +10,13 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
   return (
     <div className="relative">
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <label htmlFor="job-search" className="sr-only">
+        Search jobs by title, company, or keyword
+      </label>
       <Input
+        id="job-search"
+        type="search"
+        aria-label="Search jobs by title, company, or keyword"
         placeholder="Search jobs by title, company, or keyword..."
         value={value}
         onChange={(e) => onChange(e.target.value)}

@@ -47,7 +47,8 @@ export function JobCard({ job }: JobCardProps) {
             {job.company_logo ? (
               <img
                 src={job.company_logo}
-                alt={job.company}
+                alt={`${job.company} company logo`}
+                loading="lazy"
                 className="h-10 w-10 md:h-11 md:w-11 shrink-0 rounded-lg border object-contain bg-card"
               />
             ) : (
