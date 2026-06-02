@@ -27,7 +27,8 @@ export function JobListItem({ job }: JobListItemProps) {
       {job.company_logo ? (
         <img
           src={job.company_logo}
-          alt={job.company}
+          alt={`${job.company} company logo`}
+          loading="lazy"
           className="h-10 w-10 shrink-0 rounded-lg border object-contain bg-card"
         />
       ) : (
