@@ -14,6 +14,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Submit from "./pages/Submit";
 import NotFound from "./pages/NotFound";
+import Location from "./pages/Location";
 import { WhatsAppBanner } from "./components/WhatsAppBanner";
 import { PostHogPageview } from "./components/PostHogPageview";
 
