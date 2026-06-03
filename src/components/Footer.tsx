@@ -33,7 +33,7 @@ export function Footer() {
   return (
     <footer className="border-t bg-card mt-12">
       <div className="container py-8">
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="grid gap-8 md:grid-cols-4">
           <div>
             <Link to="/" className="flex items-center gap-2 mb-3">
               <img src="/logo.png" alt="Eplicant — International Development Jobs" className="h-8 w-8 rounded-lg" />
@@ -50,6 +50,18 @@ export function Footer() {
               <li><Link to="/" className="hover:text-foreground">Jobs</Link></li>
               <li><Link to="/opportunities" className="hover:text-foreground">Opportunities</Link></li>
               <li><Link to="/newsletter" className="hover:text-foreground">Newsletter</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-sm mb-3">Jobs by city</h3>
+            <ul className="space-y-1.5 text-sm text-muted-foreground">
+              <li><Link to="/jobs/in/nairobi" className="hover:text-foreground">Nairobi</Link></li>
+              <li><Link to="/jobs/in/new-york" className="hover:text-foreground">New York</Link></li>
+              <li><Link to="/jobs/in/geneva" className="hover:text-foreground">Geneva</Link></li>
+              <li><Link to="/jobs/in/washington-dc" className="hover:text-foreground">Washington, D.C.</Link></li>
+              <li><Link to="/jobs/in/london" className="hover:text-foreground">London</Link></li>
+              <li><Link to="/jobs/in/bangkok" className="hover:text-foreground">Bangkok</Link></li>
             </ul>
           </div>
 

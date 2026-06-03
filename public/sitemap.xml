@@ -8,4 +8,12 @@
   <url><loc>https://eplicant.com/contact</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://eplicant.com/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://eplicant.com/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://eplicant.com/jobs/in/nairobi</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eplicant.com/jobs/in/new-york</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eplicant.com/jobs/in/geneva</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eplicant.com/jobs/in/washington-dc</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eplicant.com/jobs/in/london</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eplicant.com/jobs/in/addis-ababa</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eplicant.com/jobs/in/bangkok</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eplicant.com/jobs/in/dakar</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
 </urlset>
