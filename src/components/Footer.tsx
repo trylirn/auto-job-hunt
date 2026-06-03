@@ -71,7 +71,7 @@ export function Footer() {
               <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Stay updated
               </h3>
-              <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+              <p className="text-[11px] text-muted-foreground mt-0.5">
                 Join 10,000+ subscribers — weekly digest
               </p>
             </div>
