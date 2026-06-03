@@ -79,6 +79,75 @@ async function fetchYeshubJobs(): Promise<NormalizedJob[]> {
 
 const OPINION_CATEGORY_ID = 2;
 
+async function fetchReliefWebUSJobs(): Promise<NormalizedJob[]> {
+  try {
+    const res = await fetch("https://api.reliefweb.int/v1/jobs?appname=eplicant.com", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filter: { field: "country.iso3", value: "USA" },
+        fields: {
+          include: [
+            "title", "body", "date", "source", "country", "city",
+            "type", "career_categories", "experience", "theme",
+            "url_alias", "how_to_apply", "closing_date",
+          ],
+        },
+        limit: 100,
+        sort: ["date.created:desc"],
+      }),
+    });
+    if (!res.ok) {
+      console.error("ReliefWeb fetch failed:", res.status);
+      return [];
+    }
+    const json = await res.json();
+    const data: any[] = json.data || [];
+
+    return data.map((item: any) => {
+      const f = item.fields || {};
+      const city = f.city?.[0]?.name || null;
+      const location = city ? `${city}, United States` : "United States";
+      const company = f.source?.[0]?.name || "Unknown";
+      const jobType = f.type?.[0]?.name || "Job";
+
+      const howTo: string = f.how_to_apply || "";
+      const urlMatch = howTo.match(/https?:\/\/[^\s<>"')]+/);
+      const applyUrl = urlMatch ? urlMatch[0] : (f.url_alias || null);
+
+      const closing = f.closing_date ? String(f.closing_date).slice(0, 10) : null;
+
+      const tags = [
+        ...(f.career_categories || []).map((c: any) => c.name),
+        ...(f.theme || []).map((t: any) => t.name),
+      ].filter(Boolean);
+
+      return {
+        title: f.title || "Untitled",
+        company,
+        location,
+        job_type: jobType,
+        category: "jobs",
+        description: f.body || null,
+        url: f.url_alias || `https://reliefweb.int/node/${item.id}`,
+        source: "reliefweb",
+        external_id: String(item.id),
+        posted_at: f.date?.created || null,
+        salary: null,
+        tags: tags.length ? tags : null,
+        company_logo: null,
+        is_remote: false,
+        listing_type: "job",
+        apply_url: applyUrl,
+        apply_before_date: closing,
+      } as NormalizedJob & { listing_type: string; apply_url: string | null; apply_before_date: string | null };
+    });
+  } catch (e) {
+    console.error("ReliefWeb fetch error:", e);
+    return [];
+  }
+}
+
 const GSO_CATEGORY_MAP: Record<number, string> = {
   20: "jobs",
   25: "fellowship",
