@@ -11,7 +11,6 @@
       gtag('config', 'G-FJTL2TMEF2');
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="fragment" content="!" />
     <title>Eplicant — Jobs for International Development Professionals</title>
     <meta name="description" content="Jobs and opportunities for international development professionals — roles, fellowships, scholarships, and grants in one place." />
     <meta name="author" content="Eplicant" />
@@ -76,14 +75,19 @@
     </noscript>
     <div id="root"></div>
     <script>
-      // Prevent indexing of the lovable.app mirror host so eplicant.com is the only canonical
+      // Canonical-host enforcement: apex eplicant.com is the only indexable host.
+      // - lovable.app mirror → noindex
+      // - www.eplicant.com → client redirect to apex (backup; Netlify primary handles it server-side)
       (function () {
         try {
-          if (location.hostname.endsWith('.lovable.app')) {
+          var h = location.hostname;
+          if (h.endsWith('.lovable.app')) {
             var m = document.createElement('meta');
             m.name = 'robots';
             m.content = 'noindex, nofollow';
             document.head.appendChild(m);
+          } else if (h === 'www.eplicant.com') {
+            location.replace('https://eplicant.com' + location.pathname + location.search + location.hash);
           }
         } catch (e) {}
       })();
