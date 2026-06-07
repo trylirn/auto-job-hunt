@@ -14,7 +14,8 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Submit from "./pages/Submit";
 import NotFound from "./pages/NotFound";
-import Location from "./pages/Location";
+import LocationPage, { LegacyCityRedirect } from "./pages/Location";
+import JobsIndex from "./pages/JobsIndex";
 import { WhatsAppBanner } from "./components/WhatsAppBanner";
 import { PostHogPageview } from "./components/PostHogPageview";
 
@@ -39,8 +40,9 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/submit" element={<Submit />} />
-            <Route path="/jobs/in/:city" element={<Location />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/jobs/in" element={<JobsIndex />} />
+            <Route path="/jobs/in/cities/:city" element={<LocationPage mode="city" />} />
+            <Route path="/jobs/in/:country" element={<CountryOrLegacyRoute />} />
           </Routes>
         </BrowserRouter>
         <WhatsAppBanner />

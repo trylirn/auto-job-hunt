@@ -77,9 +77,15 @@ export function useJobs({
       }
 
       if (region === "us") {
-        query = query.or("location.ilike.%United States%,location.ilike.%USA%,location.ilike.%U.S.A%");
+        // "Global" rolls into the U.S. bucket — it's surfaced as "USA / Global"
+        // and used as our U.S.-priority audience target.
+        query = query.or("location.ilike.%United States%,location.ilike.%USA%,location.ilike.%U.S.A%,location.eq.Global");
       } else if (region === "non-us") {
-        query = query.not("location", "ilike", "%United States%").not("location", "ilike", "%USA%").not("location", "ilike", "%U.S.A%");
+        query = query
+          .not("location", "ilike", "%United States%")
+          .not("location", "ilike", "%USA%")
+          .not("location", "ilike", "%U.S.A%")
+          .not("location", "eq", "Global");
       }
 
       const { data, error, count } = await query;
