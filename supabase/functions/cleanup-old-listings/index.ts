@@ -15,15 +15,13 @@ Deno.serve(async () => {
 
   console.log(`Deleting expired listings (cutoff ${cutoffISO}, today ${todayISO})`);
 
-  // Delete:
-  //  - listings with NO deadline that are older than 45 days, OR
-  //  - listings with a deadline that has already passed
+  // Delete any listing older than 45 days (regardless of deadline), or any
+  // listing whose deadline has already passed. Age always wins — we don't
+  // want stale rows lingering just because they carry a future apply_before.
   const { data: deleted, error } = await supabase
     .from("jobs")
     .delete()
-    .or(
-      `and(apply_before_date.is.null,created_at.lt.${cutoffISO}),apply_before_date.lt.${todayISO}`
-    )
+    .or(`created_at.lt.${cutoffISO},apply_before_date.lt.${todayISO}`)
     .select("id");
 
   if (error) {

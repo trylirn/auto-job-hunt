@@ -45,7 +45,8 @@ function looksDirty(loc: string | null): boolean {
   if (!loc) return true;
   const v = loc.trim();
   if (!v || v.toLowerCase() === "unknown") return true;
-  if (v.toLowerCase() === "global") return true;
+  // NOTE: "Global" is intentionally left alone. It's surfaced as "USA / Global"
+  // in the UI and serves as our U.S.-priority bucket for SEO.
   if (v.includes(",")) return true;
   if (v.length > 30) return true;
   if (US_STATES.has(v.toLowerCase())) return true;
@@ -70,7 +71,7 @@ Deno.serve(async (req) => {
     supabase
       .from("jobs")
       .select("id, title, location, description, clean_description")
-      .or("location.is.null,location.eq.Unknown,location.eq.Global")
+      .or("location.is.null,location.eq.Unknown")
       .limit(batch),
     supabase
       .from("jobs")
