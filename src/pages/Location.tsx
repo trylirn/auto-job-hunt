@@ -244,13 +244,13 @@ export default function LocationPage({ mode }: LocationPageProps) {
   );
 }
 
-/** Legacy /jobs/in/:city redirect — preserves backlinks from the old 8 city URLs. */
+/** Legacy /jobs/in/:slug redirect — preserves backlinks from the old 8 city URLs. */
 export function LegacyCityRedirect() {
-  const { city = "" } = useParams<{ city: string }>();
-  const target = LEGACY_CITY_REDIRECTS[city.toLowerCase()];
+  const params = useParams<{ city?: string; country?: string }>();
+  const slug = (params.country ?? params.city ?? "").toLowerCase();
+  const target = LEGACY_CITY_REDIRECTS[slug];
   if (target) return <Navigate to={target} replace />;
-  // If it matches a current country hub slug, route there
-  if (getCountryHubBySlug(city)) return <Navigate to={`/jobs/in/${city}`} replace />;
-  if (getCityHubBySlug(city)) return <Navigate to={`/jobs/in/cities/${city}`} replace />;
+  if (getCountryHubBySlug(slug)) return <Navigate to={`/jobs/in/${slug}`} replace />;
+  if (getCityHubBySlug(slug)) return <Navigate to={`/jobs/in/cities/${slug}`} replace />;
   return <Navigate to="/jobs/in" replace />;
 }
