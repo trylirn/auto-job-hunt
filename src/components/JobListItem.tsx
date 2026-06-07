@@ -4,6 +4,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Link, useLocation } from "react-router-dom";
 import type { Job } from "@/types/job";
 import { getDeadlineInfo } from "@/lib/deadline";
+import { formatLocation } from "@/lib/locationLabel";
 
 interface JobListItemProps {
   job: Job;
@@ -71,7 +72,7 @@ export function JobListItem({ job }: JobListItemProps) {
         {job.location && (
           <span className="flex items-center gap-1">
             <MapPin className="h-3 w-3" />
-            <span className="max-w-[120px] truncate">{job.location}</span>
+            <span className="max-w-[140px] truncate">{formatLocation(job.location)}</span>
           </span>
         )}
         <span className="flex items-center gap-1">

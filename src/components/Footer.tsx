@@ -54,14 +54,14 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="font-semibold text-sm mb-3">Jobs by city</h3>
+            <h3 className="font-semibold text-sm mb-3">Jobs by country</h3>
             <ul className="space-y-1.5 text-sm text-muted-foreground">
-              <li><Link to="/jobs/in/nairobi" className="hover:text-foreground">Nairobi</Link></li>
-              <li><Link to="/jobs/in/new-york" className="hover:text-foreground">New York</Link></li>
-              <li><Link to="/jobs/in/geneva" className="hover:text-foreground">Geneva</Link></li>
-              <li><Link to="/jobs/in/washington-dc" className="hover:text-foreground">Washington, D.C.</Link></li>
-              <li><Link to="/jobs/in/london" className="hover:text-foreground">London</Link></li>
-              <li><Link to="/jobs/in/bangkok" className="hover:text-foreground">Bangkok</Link></li>
+              <li><Link to="/jobs/in/united-states" className="hover:text-foreground">United States</Link></li>
+              <li><Link to="/jobs/in/usa-global" className="hover:text-foreground">USA / Global (Remote)</Link></li>
+              <li><Link to="/jobs/in/united-kingdom" className="hover:text-foreground">United Kingdom</Link></li>
+              <li><Link to="/jobs/in/nigeria" className="hover:text-foreground">Nigeria</Link></li>
+              <li><Link to="/jobs/in/kenya" className="hover:text-foreground">Kenya</Link></li>
+              <li><Link to="/jobs/in" className="hover:text-foreground font-medium text-foreground">Browse all locations →</Link></li>
             </ul>
           </div>
 

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useParams, Link, useSearchParams, Navigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/Header";
@@ -7,14 +7,49 @@ import { JobCard } from "@/components/JobCard";
 import { JobCardSkeleton } from "@/components/JobCardSkeleton";
 import { JobPagination } from "@/components/JobPagination";
 import { useJobs } from "@/hooks/useJobs";
-import { LOCATION_HUBS, getHubBySlug } from "@/data/locationHubs";
+import { COUNTRY_HUBS, getCountryHubBySlug, LEGACY_CITY_REDIRECTS } from "@/data/countryHubs";
+import { CITY_HUBS, getCityHubBySlug } from "@/data/cityHubs";
 import { Briefcase, MapPin } from "lucide-react";
 
 const SITE = "https://eplicant.com";
 
-export default function Location() {
-  const { city = "" } = useParams<{ city: string }>();
-  const hub = getHubBySlug(city);
+interface LocationPageProps {
+  mode: "country" | "city";
+}
+
+export default function LocationPage({ mode }: LocationPageProps) {
+  const params = useParams<{ country?: string; city?: string }>();
+  const slug = (mode === "country" ? params.country : params.city) ?? "";
+
+  const hub = useMemo(() => {
+    if (mode === "country") {
+      const h = getCountryHubBySlug(slug);
+      return h
+        ? {
+            slug: h.slug,
+            displayName: h.name,
+            subtitle: h.name,
+            blurb: h.blurb,
+            keywords: h.keywords,
+            locationQuery: h.locationQuery,
+            urlPath: `/jobs/in/${h.slug}`,
+          }
+        : null;
+    }
+    const h = getCityHubBySlug(slug);
+    return h
+      ? {
+          slug: h.slug,
+          displayName: h.city,
+          subtitle: `${h.city}, ${h.country}`,
+          blurb: h.blurb,
+          keywords: h.keywords,
+          locationQuery: h.locationQuery,
+          urlPath: `/jobs/in/cities/${h.slug}`,
+        }
+      : null;
+  }, [mode, slug]);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
   const setPage = useCallback(
@@ -29,24 +64,27 @@ export default function Location() {
     [setSearchParams]
   );
 
-  if (!hub) return <Navigate to="/" replace />;
-
   const { data, isLoading } = useJobs({
-    location: hub.locationQuery,
+    location: hub?.locationQuery ?? "",
     page,
     pageSize: 24,
   });
 
-  const canonical = `${SITE}/jobs/in/${hub.slug}`;
-  const title = `Jobs in ${hub.city} — International Development & UN Roles | Eplicant`;
-  const description = `Latest international development, UN, and NGO jobs in ${hub.city}, ${hub.country}. ${hub.blurb}`;
+  if (!hub) return <Navigate to="/jobs/in" replace />;
+
+  const canonical = `${SITE}${hub.urlPath}`;
+  const title =
+    mode === "country"
+      ? `Jobs in ${hub.displayName} — International Development & UN Roles | Eplicant`
+      : `Jobs in ${hub.displayName} — International Development & UN Roles | Eplicant`;
+  const description = `Latest international development, UN, and NGO jobs in ${hub.subtitle}. ${hub.blurb}`;
 
   const jobs = data?.jobs ?? [];
 
   const itemListLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: `Jobs in ${hub.city}`,
+    name: `Jobs in ${hub.displayName}`,
     itemListElement: jobs.slice(0, 20).map((j, i) => ({
       "@type": "ListItem",
       position: i + 1,
@@ -60,10 +98,15 @@ export default function Location() {
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: SITE + "/" },
-      { "@type": "ListItem", position: 2, name: "Locations", item: SITE + "/jobs/in" },
-      { "@type": "ListItem", position: 3, name: hub.city, item: canonical },
+      { "@type": "ListItem", position: 2, name: "Jobs by location", item: SITE + "/jobs/in" },
+      { "@type": "ListItem", position: 3, name: hub.displayName, item: canonical },
     ],
   };
+
+  const otherHubs =
+    mode === "country"
+      ? COUNTRY_HUBS.filter((h) => h.slug !== hub.slug).slice(0, 12)
+      : CITY_HUBS.filter((h) => h.slug !== hub.slug).slice(0, 12);
 
   return (
     <div className="min-h-screen bg-background">
@@ -90,10 +133,12 @@ export default function Location() {
           <nav className="text-xs text-muted-foreground mb-3" aria-label="Breadcrumb">
             <Link to="/" className="hover:text-foreground">Home</Link>
             <span className="mx-1.5">/</span>
-            <span>Jobs in {hub.city}</span>
+            <Link to="/jobs/in" className="hover:text-foreground">Jobs by location</Link>
+            <span className="mx-1.5">/</span>
+            <span>Jobs in {hub.displayName}</span>
           </nav>
           <h1 className="font-display text-2xl font-bold tracking-tight md:text-4xl">
-            Jobs in {hub.city}, {hub.country}
+            Jobs in {hub.subtitle}
           </h1>
           <p className="mt-3 max-w-3xl text-base text-muted-foreground md:text-lg">
             {hub.blurb}
@@ -114,7 +159,7 @@ export default function Location() {
       <main className="container py-6 md:py-8">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold md:text-xl">
-            Open roles in {hub.city}
+            Open roles in {hub.displayName}
           </h2>
           {data && (
             <p className="text-sm text-muted-foreground">
@@ -152,15 +197,12 @@ export default function Location() {
               <Briefcase className="h-8 w-8 text-muted-foreground" />
             </div>
             <h3 className="mt-4 font-display text-xl font-semibold">
-              No open roles in {hub.city} right now
+              No open roles in {hub.displayName} right now
             </h3>
             <p className="mt-1 text-muted-foreground">
               Check back soon — new jobs are added daily.
             </p>
-            <Link
-              to="/"
-              className="mt-4 text-sm text-primary hover:underline"
-            >
+            <Link to="/" className="mt-4 text-sm text-primary hover:underline">
               Browse all jobs →
             </Link>
           </div>
@@ -170,24 +212,45 @@ export default function Location() {
       <section className="border-t bg-card">
         <div className="container py-8 md:py-12">
           <h2 className="font-display text-lg font-semibold md:text-xl mb-4">
-            Other major hubs
+            {mode === "country" ? "Other countries" : "Other cities"}
           </h2>
           <ul className="flex flex-wrap gap-2">
-            {LOCATION_HUBS.filter((h) => h.slug !== hub.slug).map((h) => (
-              <li key={h.slug}>
-                <Link
-                  to={`/jobs/in/${h.slug}`}
-                  className="inline-flex items-center gap-1 rounded-full border bg-background px-3 py-1.5 text-sm hover:border-primary/40 hover:text-foreground"
-                >
-                  <MapPin className="h-3 w-3" /> Jobs in {h.city}
-                </Link>
-              </li>
-            ))}
+            {otherHubs.map((h) => {
+              const isCity = "city" in h;
+              const label = isCity ? h.city : h.name;
+              const to = isCity ? `/jobs/in/cities/${h.slug}` : `/jobs/in/${h.slug}`;
+              return (
+                <li key={h.slug}>
+                  <Link
+                    to={to}
+                    className="inline-flex items-center gap-1 rounded-full border bg-background px-3 py-1.5 text-sm hover:border-primary/40 hover:text-foreground"
+                  >
+                    <MapPin className="h-3 w-3" /> Jobs in {label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
+          <div className="mt-4">
+            <Link to="/jobs/in" className="text-sm text-primary hover:underline">
+              Browse all locations →
+            </Link>
+          </div>
         </div>
       </section>
 
       <Footer />
     </div>
   );
+}
+
+/** Legacy /jobs/in/:slug redirect — preserves backlinks from the old 8 city URLs. */
+export function LegacyCityRedirect() {
+  const params = useParams<{ city?: string; country?: string }>();
+  const slug = (params.country ?? params.city ?? "").toLowerCase();
+  const target = LEGACY_CITY_REDIRECTS[slug];
+  if (target) return <Navigate to={target} replace />;
+  if (getCountryHubBySlug(slug)) return <Navigate to={`/jobs/in/${slug}`} replace />;
+  if (getCityHubBySlug(slug)) return <Navigate to={`/jobs/in/cities/${slug}`} replace />;
+  return <Navigate to="/jobs/in" replace />;
 }

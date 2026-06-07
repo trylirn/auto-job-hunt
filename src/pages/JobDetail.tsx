@@ -23,6 +23,7 @@ import {
   AlarmClock,
 } from "lucide-react";
 import { getDeadlineInfo } from "@/lib/deadline";
+import { formatLocation } from "@/lib/locationLabel";
 import { Footer } from "@/components/Footer";
 import { ShareButtons } from "@/components/ShareButtons";
 import { SimilarJobs } from "@/components/SimilarJobs";
@@ -309,7 +310,7 @@ const JobDetailSidebar = ({
               </p>
               <p className="text-sm font-medium mt-0.5 flex items-center gap-1">
                 <Globe className="h-3 w-3 text-muted-foreground" />
-                {job.location || "Remote"}
+                {formatLocation(job.location) || "Remote"}
               </p>
             </div>
           )}

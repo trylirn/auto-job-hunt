@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useParams } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import Index from "./pages/Index";
 import JobDetail, { JobIdRedirect } from "./pages/JobDetail";
@@ -14,11 +14,21 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Submit from "./pages/Submit";
 import NotFound from "./pages/NotFound";
-import Location from "./pages/Location";
+import LocationPage, { LegacyCityRedirect } from "./pages/Location";
+import JobsIndex from "./pages/JobsIndex";
 import { WhatsAppBanner } from "./components/WhatsAppBanner";
 import { PostHogPageview } from "./components/PostHogPageview";
 
 const queryClient = new QueryClient();
+
+// /jobs/in/:slug — render the country hub if slug matches a country, otherwise
+// fall through to the legacy /jobs/in/:city redirect for old backlinks.
+import { getCountryHubBySlug } from "./data/countryHubs";
+const CountryOrLegacyRoute = () => {
+  const { country = "" } = useParams<{ country: string }>();
+  if (getCountryHubBySlug(country)) return <LocationPage mode="country" />;
+  return <LegacyCityRedirect />;
+};
 
 const App = () => (
   <HelmetProvider>
@@ -39,7 +49,9 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/submit" element={<Submit />} />
-            <Route path="/jobs/in/:city" element={<Location />} />
+            <Route path="/jobs/in" element={<JobsIndex />} />
+            <Route path="/jobs/in/cities/:city" element={<LocationPage mode="city" />} />
+            <Route path="/jobs/in/:country" element={<CountryOrLegacyRoute />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
