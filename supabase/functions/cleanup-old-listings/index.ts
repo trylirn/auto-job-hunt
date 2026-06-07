@@ -15,14 +15,29 @@ Deno.serve(async () => {
 
   console.log(`Deleting expired listings (cutoff ${cutoffISO}, today ${todayISO})`);
 
-  // Delete any listing older than 45 days (regardless of deadline), or any
-  // listing whose deadline has already passed. Age always wins — we don't
-  // want stale rows lingering just because they carry a future apply_before.
-  const { data: deleted, error } = await supabase
-    .from("jobs")
-    .delete()
-    .or(`created_at.lt.${cutoffISO},apply_before_date.lt.${todayISO}`)
-    .select("id");
+  // Two passes: (1) anything older than 45 days, (2) anything whose deadline
+  // has already passed. Run separately because PostgREST's .or() filter on
+  // .delete() chokes on ISO timestamps with colons.
+  const [{ data: byAge, error: ageErr }, { data: byDeadline, error: dlErr }] =
+    await Promise.all([
+      supabase
+        .from("jobs")
+        .delete()
+        .lt("created_at", cutoffISO)
+        .select("id"),
+      supabase
+        .from("jobs")
+        .delete()
+        .lt("apply_before_date", todayISO)
+        .select("id"),
+    ]);
+  const error = ageErr || dlErr;
+  const deleted = [
+    ...(byAge ?? []),
+    ...(byDeadline ?? []).filter(
+      (r) => !(byAge ?? []).some((a) => a.id === r.id)
+    ),
+  ];
 
   if (error) {
     console.error("Primary delete error:", error.message);
