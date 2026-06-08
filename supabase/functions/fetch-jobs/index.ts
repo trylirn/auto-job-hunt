@@ -79,71 +79,81 @@ async function fetchYeshubJobs(): Promise<NormalizedJob[]> {
 
 const OPINION_CATEGORY_ID = 2;
 
-async function fetchReliefWebUSJobs(): Promise<NormalizedJob[]> {
+const JOBSTOAPPLY_CATEGORY_MAP: Record<number, string> = {
+  1528: "jobs",        // Jobs
+  1533: "jobs",        // Remote Jobs
+  1529: "jobs",        // NGO
+  1530: "jobs",        // Government
+  1531: "jobs",        // Education
+  1532: "jobs",        // Private Sector
+  1534: "fellowship",  // Fellowships
+  1535: "scholarship", // Scholarships
+  1536: "funding",     // Grants
+  1523: "funding",     // Awards
+  1537: "opportunity", // Trainings
+  1: "opportunity",    // Uncategorized
+};
+
+const JOBSTOAPPLY_REMOTE_IDS = new Set([1533]);
+
+async function fetchJobsToApplyJobs(): Promise<NormalizedJob[]> {
   try {
-    const res = await fetch("https://api.reliefweb.int/v1/jobs?appname=eplicant.com", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        filter: { field: "country.iso3", value: "USA" },
-        fields: {
-          include: [
-            "title", "body", "date", "source", "country", "city",
-            "type", "career_categories", "experience", "theme",
-            "url_alias", "how_to_apply", "closing_date",
-          ],
-        },
-        limit: 100,
-        sort: ["date.created:desc"],
-      }),
-    });
-    if (!res.ok) {
-      console.error("ReliefWeb fetch failed:", res.status);
-      return [];
+    const catRes = await fetch("https://jobstoapply.com/wp-json/wp/v2/categories?per_page=100");
+    const categories: Record<number, string> = {};
+    if (catRes.ok) {
+      const cats = await catRes.json();
+      for (const c of cats) {
+        categories[c.id] = (c.name || "").toLowerCase();
+      }
     }
-    const json = await res.json();
-    const data: any[] = json.data || [];
 
-    return data.map((item: any) => {
-      const f = item.fields || {};
-      const city = f.city?.[0]?.name || null;
-      const location = city ? `${city}, United States` : "United States";
-      const company = f.source?.[0]?.name || "Unknown";
-      const jobType = f.type?.[0]?.name || "Job";
+    const allPosts: any[] = [];
+    for (let page = 1; page <= 2; page++) {
+      const res = await fetch(
+        `https://jobstoapply.com/wp-json/wp/v2/posts?per_page=50&page=${page}&_embed`
+      );
+      if (!res.ok) break;
+      const posts = await res.json();
+      allPosts.push(...posts);
+    }
 
-      const howTo: string = f.how_to_apply || "";
-      const urlMatch = howTo.match(/https?:\/\/[^\s<>"')]+/);
-      const applyUrl = urlMatch ? urlMatch[0] : (f.url_alias || null);
+    return allPosts.map((p: any) => {
+      const catIds: number[] = p.categories || [];
+      let catName: string | null = null;
+      for (const id of catIds) {
+        if (JOBSTOAPPLY_CATEGORY_MAP[id]) {
+          catName = JOBSTOAPPLY_CATEGORY_MAP[id];
+          break;
+        }
+      }
+      if (!catName && catIds.length > 0) {
+        catName = categories[catIds[0]] || "opportunity";
+      }
 
-      const closing = f.closing_date ? String(f.closing_date).slice(0, 10) : null;
-
-      const tags = [
-        ...(f.career_categories || []).map((c: any) => c.name),
-        ...(f.theme || []).map((t: any) => t.name),
-      ].filter(Boolean);
+      const isRemote = catIds.some((id) => JOBSTOAPPLY_REMOTE_IDS.has(id));
+      const featuredMedia = p._embedded?.["wp:featuredmedia"]?.[0]?.source_url || null;
+      const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
+      const description = (p.content?.rendered || "").trim();
 
       return {
-        title: f.title || "Untitled",
-        company,
-        location,
-        job_type: jobType,
-        category: "jobs",
-        description: f.body || null,
-        url: f.url_alias || `https://reliefweb.int/node/${item.id}`,
-        source: "reliefweb",
-        external_id: String(item.id),
-        posted_at: f.date?.created || null,
+        title,
+        company: extractCompany(title),
+        location: "Global",
+        job_type: catName || "opportunity",
+        category: catName,
+        description,
+        url: p.link,
+        source: "jobstoapply",
+        external_id: String(p.id),
+        posted_at: p.date || null,
         salary: null,
-        tags: tags.length ? tags : null,
-        company_logo: null,
-        is_remote: false,
-        listing_type: "job",
-        apply_url: applyUrl,
-        apply_before_date: closing,
-      } as NormalizedJob & { listing_type: string; apply_url: string | null; apply_before_date: string | null };
+        tags: catIds.map((id: number) => categories[id]).filter(Boolean),
+        company_logo: featuredMedia,
+        is_remote: isRemote,
+      };
     });
   } catch (e) {
-    console.error("ReliefWeb fetch error:", e);
+    console.error("JobsToApply fetch error:", e);
     return [];
   }
 }
