@@ -10,7 +10,7 @@ export function useListingStats() {
           .from("jobs")
           .select("*", { count: "exact", head: true })
           .is("archived_at", null)
-          .eq("listing_type", "job"),
+          .or("listing_type.is.null,listing_type.neq.opportunity"),
         supabase
           .from("jobs")
           .select("*", { count: "exact", head: true })
