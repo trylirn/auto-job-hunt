@@ -67,7 +67,7 @@ export function useJobs({
       }
 
       if (listingType === "jobs") {
-        query = query.eq("listing_type", "job");
+        query = query.or("listing_type.is.null,listing_type.neq.opportunity");
       } else if (listingType === "opportunities") {
         query = query.eq("listing_type", "opportunity");
       }
