@@ -336,6 +336,7 @@ async function fetchRemotiveUSJobs(): Promise<NormalizedJob[]> {
         location: "United States",
         job_type: "Remote",
         category: (j.category || "jobs").toLowerCase(),
+        listing_type: "job",
         description: j.description || null,
         url: j.url,
         source: "remotive",
