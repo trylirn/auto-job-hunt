@@ -13,6 +13,7 @@ interface NormalizedJob {
   location: string | null;
   job_type: string | null;
   category: string | null;
+  listing_type?: string | null;
   description: string | null;
   url: string;
   source: string;
@@ -22,6 +23,25 @@ interface NormalizedJob {
   tags: string[] | null;
   company_logo: string | null;
   is_remote: boolean;
+}
+
+const OPPORTUNITY_CATEGORIES = new Set([
+  "fellowship",
+  "scholarship",
+  "funding",
+  "internships",
+  "internship",
+  "grant",
+  "conference",
+  "opportunity",
+]);
+
+function categoryToListingType(category: string | null): "job" | "opportunity" | null {
+  if (!category) return null;
+  const c = category.toLowerCase().trim();
+  if (OPPORTUNITY_CATEGORIES.has(c)) return "opportunity";
+  if (c === "jobs" || c === "job") return "job";
+  return null;
 }
 
 function extractCompany(title: string): string {
