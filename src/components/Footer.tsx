@@ -141,6 +141,18 @@ export function Footer() {
                   className="h-14 w-auto"
                 />
               </a>
+
+              <a 
+                href="https://dofollow.tools"
+                target="_blank"
+              >
+                <img 
+                  src="https://dofollow.tools/badge/badge_light.svg"
+                  alt="Featured on Dofollow.Tools" 
+                  width="200" 
+                  height="54" 
+                />
+              </a>
               
             </div>
           </div>
