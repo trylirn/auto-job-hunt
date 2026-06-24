@@ -115,35 +115,62 @@ export function Footer() {
         </div>
 
         <div className="mt-6 pt-5 border-t">
-          <div className="mb-4">
-            <a
-              href="https://findly.tools/eplicant?utm_source=eplicant"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <img
-                src="https://findly.tools/badges/findly-tools-badge-light.svg"
-                alt="Featured on Findly.tools"
-                width={175}
-                height={55}
-              />
-            </a>
+          <div className="overflow-hidden py-2">
+            <div className="flex w-max items-center gap-6 animate-marquee">
 
-            <a
-              href="https://twelve.tools"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <img
-                src="https://twelve.tools/badge0-white.svg"
-                alt="Featured on Twelve Tools"
-                width={200}
-                height={54}
-              />
-            </a>
+              <a
+                href="https://findly.tools/eplicant?utm_source=eplicant"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src="https://findly.tools/badges/findly-tools-badge-light.svg"
+                  alt="Featured on Findly.tools"
+                  className="h-14 w-auto"
+                />
+              </a>
+
+              <a
+                href="https://twelve.tools"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src="https://twelve.tools/badge0-white.svg"
+                  alt="Featured on Twelve Tools"
+                  className="h-14 w-auto"
+                />
+              </a>
+
+              {/* Duplicate badges for seamless scrolling */}
+              <a
+                href="https://findly.tools/eplicant?utm_source=eplicant"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src="https://findly.tools/badges/findly-tools-badge-light.svg"
+                  alt="Featured on Findly.tools"
+                  className="h-14 w-auto"
+                />
+              </a>
+
+              <a
+                href="https://twelve.tools"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src="https://twelve.tools/badge0-white.svg"
+                  alt="Featured on Twelve Tools"
+                  className="h-14 w-auto"
+                />
+              </a>
+
+            </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">
+          <p className="mt-4 text-xs text-muted-foreground text-center">
             © {new Date().getFullYear()} Eplicant. All rights reserved.
           </p>
         </div>
