@@ -20,7 +20,9 @@ export function JobCard({ job }: JobCardProps) {
   const plainDescription = (job.clean_description || job.description || "")
     .replace(/<[^>]*>/g, "")
     .replace(/\s+/g, " ")
-    .trim();
+    .replace(/(?:For more opportunities|Disclaimer:|JOIN|Follow us on|Facebook|Instagram|Twitter|LinkedIn|WhatsApp|Global South|GSO|Eplicant|Source:|Posted by).*/gi, "")
+    .trim()
+    .slice(0, 150); // Limit to 150 chars for preview
 
   const deadline = getDeadlineInfo(job.apply_before_date);
   const isFeaturedActive = job.is_featured && (!job.featured_until || new Date(job.featured_until) > new Date());
