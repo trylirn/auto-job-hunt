@@ -115,6 +115,21 @@ export function Footer() {
         </div>
 
         <div className="mt-6 pt-5 border-t">
+          <div className="mb-4">
+            <a
+              href="https://findly.tools/eplicant?utm_source=eplicant"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src="https://findly.tools/badges/findly-tools-badge-light.svg"
+                alt="Featured on Findly.tools"
+                width={175}
+                height={55}
+              />
+            </a>
+          </div>
+
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Eplicant. All rights reserved.
           </p>
