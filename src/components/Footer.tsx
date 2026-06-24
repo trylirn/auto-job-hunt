@@ -128,6 +128,19 @@ export function Footer() {
                 height={55}
               />
             </a>
+
+            <a
+              href="https://twelve.tools"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src="https://twelve.tools/badge0-white.svg"
+                alt="Featured on Twelve Tools"
+                width={200}
+                height={54}
+              />
+            </a>
           </div>
 
           <p className="text-xs text-muted-foreground">
