@@ -116,7 +116,7 @@ export function Footer() {
 
         <div className="mt-6 pt-5 border-t">
           <div className="overflow-hidden py-2">
-            <div className="flex w-max items-center gap-6 animate-marquee">
+            <div className="flex flex-wrap gap-4 justify-center">
 
               <a
                 href="https://findly.tools/eplicant?utm_source=eplicant"
