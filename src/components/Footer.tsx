@@ -176,6 +176,17 @@ export function Footer() {
                   height="60"
                 />
               </a>
+              <a 
+                href="https://wired.business" 
+                target="_blank"
+              >
+                <img 
+                  src="https://wired.business/badge0-light.svg" 
+                  alt="Featured on Wired Business"
+                  width="200" 
+                  height="54"
+                >
+              </a>
               
             </div>
           </div>
