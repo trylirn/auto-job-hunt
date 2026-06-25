@@ -154,6 +154,17 @@ export function Footer() {
                 />
               </a>
               <a href="https://aitop10.tools/" target="_blank">AiTop10 Tools</a>
+              <a 
+                href="https://similarlabs.com" 
+                target="_blank"
+              >
+                <img 
+                  src="https://similarlabs.com/similarlabs-embed-badge-dark.svg" 
+                  alt="List on Similarlabs" 
+                  width="124" 
+                  height="40"
+                />
+              </a>
               
             </div>
           </div>
