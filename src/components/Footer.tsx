@@ -165,6 +165,17 @@ export function Footer() {
                   height="40"
                 />
               </a>
+              <a 
+                href="https://launchboard.dev"
+                target="_blank" rel="noopener"
+              >
+                <img 
+                  src="https://launchboard.dev/launchboard-badge.png"
+                  alt="Launched on LaunchBoard - Product Launch Platform"
+                  width="240"
+                  height="60"
+                />
+              </a>
               
             </div>
           </div>
