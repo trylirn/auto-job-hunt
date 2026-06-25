@@ -192,17 +192,6 @@ export function Footer() {
                   height="54"
                 />
               </a>
-              <a 
-                href="https://dayslaunch.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-              >
-                <img 
-                  src="https://dayslaunch.com/badages-awards.svg"
-                  alt="Featured on Days Launch"
-                  style="height: 54px; width: auto;"
-                />
-              </a>
             </div>
           </div>
           <p className="mt-4 text-xs text-muted-foreground text-center">
