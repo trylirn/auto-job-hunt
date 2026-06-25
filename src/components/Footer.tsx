@@ -185,7 +185,7 @@ export function Footer() {
                   alt="Featured on Wired Business"
                   width="200" 
                   height="54"
-                >
+                />
               </a>
               
             </div>
