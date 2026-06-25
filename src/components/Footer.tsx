@@ -165,11 +165,12 @@ export function Footer() {
                   alt="List on Similarlabs"
                   width="124"
                   height="40"
-                  />
+                />
               </a>
               <a 
                 href="https://launchboard.dev"
-                target="_blank" rel="noopener"
+                target="_blank"
+                rel="noopener"
               >
                 <img 
                   src="https://launchboard.dev/launchboard-badge.png"
