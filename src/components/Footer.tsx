@@ -129,7 +129,6 @@ export function Footer() {
                   className="h-14 w-auto"
                 />
               </a>
-
               <a
                 href="https://twelve.tools"
                 target="_blank"
