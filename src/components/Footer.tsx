@@ -140,6 +140,34 @@ export function Footer() {
                 />
               </a>
               <a 
+                href="https://dofollow.tools" 
+                target="_blank"
+              >
+                <img 
+                  src="https://dofollow.tools/badge/badge_light.svg" 
+                  alt="Featured on Dofollow.Tools"
+                  width="200" 
+                  height="54"
+                />
+              </a>
+              <a 
+                href="https://aitop10.tools/" 
+                target="_blank"
+              >
+                AiTop10 Tools
+              </a>
+              <a 
+                href="https://similarlabs.com" 
+                target="_blank"
+              >
+                <img 
+                  src="https://similarlabs.com/similarlabs-embed-badge-dark.svg"
+                  alt="List on Similarlabs"
+                  width="124"
+                  height="40"
+                  />
+              </a>
+              <a 
                 href="https://launchboard.dev"
                 target="_blank" rel="noopener"
               >
