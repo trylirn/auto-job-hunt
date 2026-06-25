@@ -117,7 +117,6 @@ export function Footer() {
         <div className="mt-6 pt-5 border-t">
           <div className="overflow-hidden py-2">
             <div className="flex w-max items-center gap-6 animate-marquee">
-
               <a
                 href="https://findly.tools/eplicant?utm_source=eplicant"
                 target="_blank"
@@ -139,7 +138,6 @@ export function Footer() {
                   alt="Featured on Twelve Tools"
                   className="h-14 w-auto"
                 />
-              </a>
               </a>
               <a 
                 href="https://launchboard.dev"
