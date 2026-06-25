@@ -182,6 +182,17 @@ export function Footer() {
                 />
               </a>
               <a 
+                href="https://saasfame.com/item/eplicant"
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <img 
+                  src="https://saasfame.com/badge-light.svg" 
+                  alt="Featured on saasfame.com" 
+                  style="height: 54px; width: auto;" 
+                />
+              </a>
+              <a 
                 href="https://wired.business" 
                 target="_blank"
               >
