@@ -153,12 +153,7 @@ export function Footer() {
                   height="54" 
                 />
               </a>
-              <a 
-                href="https://aitop10.tools/"
-                target="_blank"
-              >
-                AiTop10 Tools
-              </a>
+              <a href="https://aitop10.tools/" target="_blank">AiTop10 Tools</a>
               
             </div>
           </div>
