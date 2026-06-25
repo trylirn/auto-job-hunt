@@ -190,17 +190,6 @@ export function Footer() {
                   height="54"
                 />
               </a>
-              <a 
-                href="https://theonestartup.com"
-                target="_blank" 
-                rel="noopener noreferrer"
-              > 
-                <img 
-                  src="https://theonestartup.com/badages-awards.svg"
-                  alt="Featured on The One Startup" 
-                  style="height: 54px; width: auto;"
-                />
-              </a>
             </div>
           </div>
           <p className="mt-4 text-xs text-muted-foreground text-center">
