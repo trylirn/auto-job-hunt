@@ -191,17 +191,6 @@ export function Footer() {
                   width="200" 
                   height="54"
                 />
-              </a> 
-              <a 
-                href="https://saasfame.com/item/eplicant"
-                target="_blank" 
-                rel="noopener noreferrer"
-              >
-                <img 
-                  src="https://saasfame.com/badge-light.svg" 
-                  alt="Featured on saasfame.com" 
-                  style="height: 54px; width: auto;" 
-                />
               </a>
             </div>
           </div>
