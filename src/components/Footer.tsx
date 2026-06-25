@@ -153,7 +153,12 @@ export function Footer() {
                   height="54" 
                 />
               </a>
-              <a href="https://aitop10.tools/" target="_blank">AiTop10 Tools</a>
+              <a 
+                href="https://aitop10.tools/" 
+                target="_blank"
+                >
+                AiTop10 Tools
+              </a>
               <a 
                 href="https://similarlabs.com" 
                 target="_blank"
@@ -186,11 +191,9 @@ export function Footer() {
                   width="200" 
                   height="54"
                 />
-              </a>
-              
+              </a>   
             </div>
           </div>
-
           <p className="mt-4 text-xs text-muted-foreground text-center">
             © {new Date().getFullYear()} Eplicant. All rights reserved.
           </p>
