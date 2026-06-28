@@ -120,16 +120,35 @@ const TOOL_DEFINITION = {
   },
 };
 
+const SPAM_APPLY_HOSTS = [
+  "facebook.com", "l.facebook.com", "m.facebook.com", "instagram.com",
+  "twitter.com", "x.com", "whatsapp.com", "wa.me", "t.me", "telegram.me", "threads.net",
+];
+
+function isSpamApplyUrl(raw: string): boolean {
+  if (raw.startsWith("mailto:")) return false;
+  try {
+    const url = new URL(raw);
+    const host = url.hostname.replace(/^www\./, "");
+    if (SPAM_APPLY_HOSTS.includes(host)) return true;
+    if (host === "linkedin.com" && /^\/(company|showcase)\//i.test(url.pathname)) return true;
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 function buildUpdateData(args: Record<string, unknown>) {
   const updateData: Record<string, unknown> = {
     clean_description: args.clean_description || null,
-    apply_url:
-      args.apply_url &&
-      typeof args.apply_url === "string" &&
-      (args.apply_url.startsWith("https://") || args.apply_url.startsWith("mailto:"))
-        ? args.apply_url
-        : null,
   };
+
+  const candidateUrl = typeof args.apply_url === "string" ? args.apply_url.trim() : "";
+  const hasValidShape = candidateUrl.startsWith("https://") || candidateUrl.startsWith("mailto:");
+  if (hasValidShape && !isSpamApplyUrl(candidateUrl)) {
+    updateData.apply_url = candidateUrl;
+  }
+
   if (args.company_name) updateData.company = args.company_name;
   if (args.detected_location) updateData.location = args.detected_location;
   
