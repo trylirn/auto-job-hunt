@@ -34,7 +34,7 @@ STRUCTURE (opportunities — applicant tone):
 5. <h3>Deadline</h3>
 
 Also extract:
-- apply_url: actual application URL (Google Forms, mailto, company career page). Ignore chatgpt:// / yeshub.ng / share links.
+- apply_url: the actual application URL (Google Forms, mailto, company career page, or an ATS link like Greenhouse/Lever/Workable). NEVER return a link to facebook.com, instagram.com, twitter.com/x.com, linkedin.com/company/* or /showcase/*, whatsapp.com, wa.me, or t.me — those are the source blog's own social channels, not application links, even if they appear right next to the real apply link. Also ignore chatgpt:// and yeshub.ng links. If the only links present are the source blog's own social channels, return null rather than guessing.
 - company_name: actual hiring organization. PRIORITIZE the title. Don't use blog/source name. Null if unknown.
 - detected_location: COUNTRY name OR REGION name. Never a city, state, or province alone. Rules:
   • Scan the FULL description AND title for any city, state, province, office, or parenthetical hints like "Hybrid - Ottawa", "(Remote, Nairobi)", "based in Berlin". Always infer the COUNTRY from these (Ottawa → Canada, Nairobi → Kenya, Lagos → Nigeria, California → USA, Bavaria → Germany, Ontario → Canada).
