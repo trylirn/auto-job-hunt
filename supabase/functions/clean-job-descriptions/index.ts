@@ -189,12 +189,28 @@ Deno.serve(async (req) => {
     const openaiKey = Deno.env.get("OPENAI_API_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { data: jobs, error } = await supabase
+    const reqUrl = new URL(req.url);
+    const mode = reqUrl.searchParams.get("mode") || "dirty";
+    const batchSize = Math.min(parseInt(reqUrl.searchParams.get("batch") || "20"), 25);
+    const offset = parseInt(reqUrl.searchParams.get("offset") || "0");
+
+    let query = supabase
       .from("jobs")
-      .select("id, title, description, location, job_type, category")
-      .is("clean_description", null)
-      .not("description", "is", null)
-      .limit(20);
+      .select("id, title, description, location, job_type, category");
+
+    if (mode === "all") {
+      query = query
+        .not("description", "is", null)
+        .order("created_at", { ascending: false })
+        .range(offset, offset + batchSize - 1);
+    } else {
+      query = query
+        .is("clean_description", null)
+        .not("description", "is", null)
+        .limit(batchSize);
+    }
+
+    const { data: jobs, error } = await query;
 
     if (error) throw error;
     if (!jobs || jobs.length === 0) {
