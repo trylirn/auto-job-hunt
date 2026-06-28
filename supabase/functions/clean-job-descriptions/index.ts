@@ -11,6 +11,7 @@ const SYSTEM_PROMPT = `You clean and structure job/opportunity descriptions. You
 
 RULES:
 - Remove ALL SEO spam, chatgpt:// links, YesHub branding, social share buttons, and irrelevant content
+- Remove the SOURCE BLOG's own self-promotion footer/outro entirely — delete it, don't summarize it. This includes things like: "follow us on Facebook/Instagram/Twitter/LinkedIn/WhatsApp", "join our WhatsApp channel", disclaimers stating the blog/aggregator "is not the organization offering this opportunity", requests not to send applications/CVs to the blog, and any links to the blog's own facebook.com, instagram.com, twitter.com/x.com, linkedin.com/company (or /showcase) pages, whatsapp.com, wa.me, or t.me channels. None of that is genuine job content.
 - Do NOT rewrite or fabricate content — only reorganize what exists
 - Use <h3> for section headings, <ul>/<li> for lists, <p> for paragraphs
 - Keep it concise and scannable
