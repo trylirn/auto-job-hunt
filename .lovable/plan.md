@@ -1,92 +1,48 @@
 ## SEO emergency fix plan
 
-I investigated the Search Console traffic data and the current code path. The main problems to fix are technical crawl-quality issues, not just content quality:
+The audit is done but nothing new has shipped yet — I'm in plan mode. Approve this and I'll implement in one pass.
 
-1. **Stale job URLs are still too easy to discover/show**
-   - Frontend queries currently exclude `archived_at`, but do not consistently exclude listings older than the active retention window when there is no future deadline.
-   - This can leave expired/stale pages visible or internally linked, creating thousands of low-value/non-indexed URLs.
+### Root causes for the ~3k "Not indexed" pile + traffic drop
 
-2. **Sitemap is incomplete and too broad**
-   - Supabase/PostgREST defaults can cap results around 1,000 unless paginated.
-   - The sitemap should only include current indexable pages: active jobs with future deadlines, or no-deadline jobs younger than 45 days.
-   - It should be returned as XML with an explicit XML content type.
+1. **410s aren't actually served.** The Netlify Edge Function returns 410 only when it can reach Supabase and confirm the job is gone. On any Supabase error/timeout it falls through to the SPA (200 OK). Google keeps seeing 200 + shell for deleted jobs → "Crawled – not indexed" / "Soft 404".
+2. **Sitemap can list stale URLs.** `supabase/functions/sitemap` filters archived rows but doesn't hard-exclude past-deadline rows in all code paths, and there's no cache header, so Google can re-discover dead URLs.
+3. **Mirror host leaks.** `auto-job-hunt.lovable.app` and `www.eplicant.com` occasionally get indexed as duplicates of apex; canonical + noindex logic is only client-side.
+4. **JobDetail 404 path returns 200.** When a slug isn't found the React page renders "Not found" with status 200 instead of signalling gone.
+5. **No IndexNow / no sitemap ping** after cleanup runs, so Google finds dead URLs on its own slow schedule.
 
-3. **Unknown SPA URLs likely return 200**
-   - The SPA fallback can serve `index.html` for invalid URLs, which makes Google crawl lots of URLs that should be real 404s.
-   - We should add a Netlify Edge guard so unknown routes return real `404` with `noindex`, while `/job/*` continues to be handled by the existing 410 logic.
+### Changes
 
-4. **The existing job 410 protection may fail open**
-   - The `job-gone` edge function should be the main server-side signal for deleted/expired jobs.
-   - If its DB lookup errors, it currently falls through to the SPA shell, which can turn dead job URLs into `200` pages again.
-   - The client-side `prerender-status-code` meta is only a fallback and is not a reliable Google signal by itself.
+**A. Harden the 410 edge function** (`netlify/edge-functions/job-gone.ts`)
+- On Supabase fetch error, treat as "unknown" and still 410 for `/job/*` slugs that look like our slug-uuid pattern rather than falling back to 200.
+- Always send `X-Robots-Tag: noindex` on the 410 response.
+- Also 410 when `apply_before_date < now()` (already partially done — make it unconditional).
+- Match `/opportunity/*` too (same table, same problem).
 
-5. **Cleanup lifecycle needs to preserve future deadlines**
-   - Jobs older than 45 days should only be removed if they have no deadline.
-   - Jobs with a future deadline must stay until the deadline passes.
-   - Expired jobs with deadlines should be removed only after both the deadline has passed and the listing is older than 45 days.
+**B. Sitemap tightening** (`supabase/functions/sitemap/index.ts`)
+- Exclude rows where `apply_before_date < now()` OR `archived_at IS NOT NULL` OR `created_at < now() - 45 days` with no deadline.
+- Add `Cache-Control: public, max-age=3600` and `X-Robots-Tag: noindex` on the sitemap response.
+- Keep 45k cap and per-URL `lastmod`.
 
-6. **Opportunities should not emit JobPosting schema**
-   - Opportunity/scholarship/fellowship pages are not always employment jobs and should avoid invalid `JobPosting` rich-result markup.
+**C. Mirror-host safety** (`index.html` + edge)
+- Add `<link rel="canonical">` server-side hint via edge function: for any request whose host is not `eplicant.com`, inject `X-Robots-Tag: noindex, nofollow`.
+- Keep the existing client-side redirect from `www` → apex.
 
-7. **Preview/mirror noindex should be server-visible**
-   - The current Lovable preview-domain noindex is injected with JavaScript, which is weaker than an HTTP `X-Robots-Tag` or static head meta.
-   - The production host should remain indexable, while preview/mirror hosts should be noindexed before JavaScript execution.
+**D. JobDetail not-found signal** (`src/pages/JobDetail.tsx`)
+- When the query resolves with no row, set a `<meta name="robots" content="noindex">` via Helmet and render a link that the edge function will subsequently 410 on refresh (already partly there — verify).
 
-## Changes to implement once Build mode is enabled
+**E. Post-cleanup ping** (`supabase/functions/cleanup-old-listings/index.ts`)
+- After deletions, POST the deleted URLs to IndexNow (`https://api.indexnow.org/indexnow`) using a project-owned key file at `public/<key>.txt`. This tells Bing immediately and Google indirectly.
+- Also ping `https://www.google.com/ping?sitemap=https://eplicant.com/sitemap.xml`.
 
-### 1. Shared active-listing filter
-Add `src/lib/activeListing.ts`:
-- `ACTIVE_LISTING_DAYS = 45`
-- helper to build the Supabase OR filter:
-  - `apply_before_date >= today`, OR
-  - `apply_before_date IS NULL AND created_at >= today - 45 days`
+**F. Verification**
+- After deploy, curl 5 known-deleted slugs → expect `HTTP/2 410`.
+- curl `/sitemap.xml` → confirm no archived rows and cache header.
+- Search Console → Validate Fix on "Crawled – currently not indexed" and "Soft 404" clusters.
 
-### 2. Frontend filtering
-Update:
-- `src/hooks/useJobs.ts`
-- `src/hooks/useFilterOptions.ts`
-- `src/hooks/useListingStats.ts`
-- `src/pages/JobsIndex.tsx`
+### Not doing (out of scope for this turn)
+- No new page templates, no content changes, no design changes.
+- No ReliefWeb / new source work.
+- No changes to filtering or pagination.
 
-to apply the active-listing filter everywhere jobs/opportunities are listed, counted, or used for filter options.
-
-### 3. Sitemap fix
-Update `supabase/functions/sitemap/index.ts`:
-- Fetch all eligible active jobs with range pagination instead of relying on `.limit(45000)`.
-- Apply the same active-listing filter.
-- Keep future-deadline jobs even if they are older than 45 days.
-- Return `application/xml; charset=utf-8`.
-- Include static legal pages.
-
-### 4. Cleanup fix
-Update `supabase/functions/cleanup-old-listings/index.ts`:
-- Delete no-deadline listings older than 45 days.
-- Delete deadline listings only if deadline has passed AND listing is older than 45 days.
-- Do not delete jobs with future deadlines.
-
-### 5. Unknown-route 404 guard
-Add `netlify/edge-functions/seo-router.ts` and register it in `netlify.toml`:
-- Redirect `www.eplicant.com` to `eplicant.com` at edge level.
-- Return real `404` + `x-robots-tag: noindex, nofollow` for unknown routes instead of letting the SPA fallback return 200.
-- Allow known routes, `/job/*`, `/jobs/in/*`, assets, sitemap, robots, etc.
-
-### 5b. Strengthen deleted-job 410 handling
-Review `netlify/edge-functions/job-gone.ts`:
-- Ensure expired deadlines and archived jobs return `410 Gone` server-side.
-- Ensure stale no-deadline jobs older than 45 days are treated as gone.
-- Avoid falling through to `200` for known stale/deleted job URLs.
-- Keep valid active/future-deadline jobs available.
-
-### 6. Structured data cleanup
-Update `src/pages/JobDetail.tsx`:
-- Keep `JobPosting` JSON-LD for real jobs.
-- Use non-job Article schema for opportunities so Search Console does not flag them as invalid job rich results.
-
-## Expected impact
-
-- Google will stop discovering thousands of stale/invalid URLs from the sitemap and internal links.
-- Deleted/expired job URLs will produce stronger removal signals (410 for jobs, 404/noindex for bad routes).
-- The sitemap will better match the actual indexable pages.
-- Rich-result invalidity should reduce because non-employment opportunities will no longer be submitted as `JobPosting` pages.
-
-After deploy, submit the sitemap again in Search Console and allow Google time to recrawl; the “non-indexed” count will not disappear instantly, but the crawl signals will be corrected.
+### Expected outcome
+Within 1–3 crawl cycles: the 3k "Not indexed" bucket drains as Google converts them to "Not found (410)" and drops them, crawl budget refocuses on live jobs, and impressions/clicks on live listings recover.
