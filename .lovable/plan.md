@@ -15,13 +15,22 @@ I investigated the Search Console traffic data and the current code path. The ma
    - The SPA fallback can serve `index.html` for invalid URLs, which makes Google crawl lots of URLs that should be real 404s.
    - We should add a Netlify Edge guard so unknown routes return real `404` with `noindex`, while `/job/*` continues to be handled by the existing 410 logic.
 
-4. **Cleanup lifecycle needs to preserve future deadlines**
+4. **The existing job 410 protection may fail open**
+   - The `job-gone` edge function should be the main server-side signal for deleted/expired jobs.
+   - If its DB lookup errors, it currently falls through to the SPA shell, which can turn dead job URLs into `200` pages again.
+   - The client-side `prerender-status-code` meta is only a fallback and is not a reliable Google signal by itself.
+
+5. **Cleanup lifecycle needs to preserve future deadlines**
    - Jobs older than 45 days should only be removed if they have no deadline.
    - Jobs with a future deadline must stay until the deadline passes.
    - Expired jobs with deadlines should be removed only after both the deadline has passed and the listing is older than 45 days.
 
-5. **Opportunities should not emit JobPosting schema**
+6. **Opportunities should not emit JobPosting schema**
    - Opportunity/scholarship/fellowship pages are not always employment jobs and should avoid invalid `JobPosting` rich-result markup.
+
+7. **Preview/mirror noindex should be server-visible**
+   - The current Lovable preview-domain noindex is injected with JavaScript, which is weaker than an HTTP `X-Robots-Tag` or static head meta.
+   - The production host should remain indexable, while preview/mirror hosts should be noindexed before JavaScript execution.
 
 ## Changes to implement once Build mode is enabled
 
@@ -60,6 +69,13 @@ Add `netlify/edge-functions/seo-router.ts` and register it in `netlify.toml`:
 - Redirect `www.eplicant.com` to `eplicant.com` at edge level.
 - Return real `404` + `x-robots-tag: noindex, nofollow` for unknown routes instead of letting the SPA fallback return 200.
 - Allow known routes, `/job/*`, `/jobs/in/*`, assets, sitemap, robots, etc.
+
+### 5b. Strengthen deleted-job 410 handling
+Review `netlify/edge-functions/job-gone.ts`:
+- Ensure expired deadlines and archived jobs return `410 Gone` server-side.
+- Ensure stale no-deadline jobs older than 45 days are treated as gone.
+- Avoid falling through to `200` for known stale/deleted job URLs.
+- Keep valid active/future-deadline jobs available.
 
 ### 6. Structured data cleanup
 Update `src/pages/JobDetail.tsx`:
