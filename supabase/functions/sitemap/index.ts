@@ -177,6 +177,7 @@ Deno.serve(async () => {
         headers: {
           "Content-Type": "application/xml",
           "Cache-Control": "public, max-age=3600",
+          "X-Robots-Tag": "noindex",
         },
       }
     );
@@ -186,6 +187,7 @@ Deno.serve(async () => {
       headers: {
         "Content-Type": "application/xml",
         "Cache-Control": "public, max-age=300",
+        "X-Robots-Tag": "noindex",
       },
     });
   }

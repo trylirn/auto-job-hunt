@@ -53,7 +53,23 @@ export default async (request: Request, context: { next: () => Promise<Response>
       headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` },
     });
 
-    if (!res.ok) return context.next(); // fail open
+    // Slug-uuid pattern: <words>-<8hex> ; our generated job slugs always end this way.
+    const slugLooksReal = /-[0-9a-f]{8}$/i.test(key);
+
+    if (!res.ok) {
+      // Fail-closed for well-formed slugs: better to 410 than to keep serving 200 shell.
+      if (!isIdRoute && slugLooksReal) {
+        return new Response(goneHtml(url.pathname), {
+          status: 410,
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "cache-control": "public, max-age=300",
+            "x-robots-tag": "noindex",
+          },
+        });
+      }
+      return context.next();
+    }
 
     const rows = (await res.json()) as Array<{
       id: string;
