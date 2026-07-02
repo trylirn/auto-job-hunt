@@ -54,6 +54,34 @@ Deno.serve(async () => {
     }
   }
 
+  // Ping IndexNow + Google so search engines drop the dead URLs quickly.
+  if (deletedIds.length > 0) {
+    try {
+      const urlList = deletedIds.map((id) => `https://eplicant.com/job/${id}`);
+      // Best-effort; do not block on failures.
+      await Promise.allSettled([
+        fetch("https://api.indexnow.org/indexnow", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            host: "eplicant.com",
+            key: "8aac24519bd55434079e97180d8a080d",
+            keyLocation:
+              "https://eplicant.com/8aac24519bd55434079e97180d8a080d.txt",
+            urlList,
+          }),
+        }),
+        fetch(
+          "https://www.google.com/ping?sitemap=" +
+            encodeURIComponent("https://eplicant.com/sitemap.xml")
+        ),
+      ]);
+      console.log(`Pinged IndexNow + Google for ${urlList.length} URLs`);
+    } catch (e) {
+      console.warn("IndexNow/Google ping failed:", e);
+    }
+  }
+
   return new Response(JSON.stringify({ deleted: count }), {
     headers: { "Content-Type": "application/json" },
   });

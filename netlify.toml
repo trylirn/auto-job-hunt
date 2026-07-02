@@ -5,6 +5,13 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# www → apex 301 (canonical host = eplicant.com)
+[[redirects]]
+  from = "https://www.eplicant.com/*"
+  to = "https://eplicant.com/:splat"
+  status = 301
+  force = true
+
 # Dynamic sitemap — proxy to edge function (must be before SPA fallback)
 [[redirects]]
   from = "/sitemap.xml"
