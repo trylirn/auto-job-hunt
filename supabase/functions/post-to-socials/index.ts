@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-webhook-secret",
 };
 
 function formatPostMessage(job: {
@@ -37,6 +37,27 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Require a shared secret so only the DB trigger (or trusted internal callers)
+  // can trigger a social post. Blocks anonymous payload injection.
+  const expected = Deno.env.get("SOCIAL_WEBHOOK_TOKEN");
+  if (!expected) {
+    return new Response(
+      JSON.stringify({ success: false, error: "server_misconfigured" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+  const supplied =
+    req.headers.get("x-webhook-secret") ??
+    (req.headers.get("authorization")?.toLowerCase().startsWith("bearer ")
+      ? req.headers.get("authorization")!.slice(7).trim()
+      : "");
+  if (supplied !== expected) {
+    return new Response(
+      JSON.stringify({ success: false, error: "unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
   try {
     const linkedinWebhook = Deno.env.get("ZAPIER_LINKEDIN_WEBHOOK");
     const twitterWebhook = Deno.env.get("ZAPIER_TWITTER_WEBHOOK");
@@ -50,12 +71,32 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const record = body.record || body;
-
-    if (!record.id || !record.title || !record.company) {
+    const incoming = body.record || body;
+    const jobId: string | undefined = incoming?.id;
+    if (!jobId) {
       return new Response(
-        JSON.stringify({ success: false, error: "Missing job data" }),
+        JSON.stringify({ success: false, error: "Missing job id" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // NEVER trust the request body: re-fetch the record from the database so
+    // an attacker cannot inject arbitrary title/company/apply URLs even if they
+    // learn the webhook secret.
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    const { data: record, error: fetchErr } = await supabase
+      .from("jobs")
+      .select("id,title,company,location,job_type,listing_type,slug,apply_url")
+      .eq("id", jobId)
+      .single();
+
+    if (fetchErr || !record) {
+      return new Response(
+        JSON.stringify({ success: false, error: "job_not_found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

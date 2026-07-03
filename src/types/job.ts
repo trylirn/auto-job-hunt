@@ -28,3 +28,9 @@ export interface Job {
   is_featured: boolean;
   featured_until: string | null;
 }
+
+// Explicit column list for public reads. Sensitive fields (submitter_email,
+// payment_id, payment_status) are intentionally excluded — the DB revokes
+// SELECT on those columns from anon/authenticated, so `select("*")` would fail.
+export const PUBLIC_JOB_COLUMNS =
+  "id,title,company,location,job_type,category,description,clean_description,apply_url,url,source,external_id,posted_at,salary,tags,company_logo,is_remote,created_at,listing_type,slug,updated_at,apply_before,apply_before_date,archived_at,skills,employment_type,is_featured,featured_until";

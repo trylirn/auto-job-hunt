@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Newspaper, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 const Newsletter = () => {
   const [copied, setCopied] = useState(false);
@@ -78,7 +79,7 @@ const Newsletter = () => {
             <h2 className="mb-6 text-xl font-semibold">{newsletter.title}</h2>
             <div
               className="prose prose-sm max-w-none dark:prose-invert"
-              dangerouslySetInnerHTML={{ __html: newsletter.content }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(newsletter.content) }}
             />
             <div className="mt-6 flex items-center justify-between border-t pt-4">
               <p className="text-xs text-muted-foreground">

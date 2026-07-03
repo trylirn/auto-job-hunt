@@ -1,10 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { mirrorUpdate } from "../_shared/eplicant-client.ts";
+import { requireCronAuth } from "../_shared/require-cron.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-cron-token",
 };
 
 const SYSTEM_PROMPT = `You extract clean job titles and company/organization names from raw job listing titles and descriptions.
@@ -51,6 +52,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  const authFail = requireCronAuth(req);
+  if (authFail) return authFail;
+
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

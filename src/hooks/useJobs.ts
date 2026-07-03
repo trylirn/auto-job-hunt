@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Job } from "@/types/job";
+import { PUBLIC_JOB_COLUMNS, type Job } from "@/types/job";
 import { subDays } from "date-fns";
 
 interface UseJobsParams {
@@ -33,7 +33,7 @@ export function useJobs({
     queryFn: async () => {
       let query = supabase
         .from("jobs")
-        .select("*", { count: "exact" })
+        .select(PUBLIC_JOB_COLUMNS, { count: "exact" })
         .is("archived_at", null)
         .order("is_featured", { ascending: false })
         .order(sortBy, { ascending: false, nullsFirst: false })
@@ -107,7 +107,7 @@ export function useJob(id: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("*")
+        .select(PUBLIC_JOB_COLUMNS)
         .eq("id", id)
         .single();
 
@@ -124,7 +124,7 @@ export function useJobBySlug(slug: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("*")
+        .select(PUBLIC_JOB_COLUMNS)
         .eq("slug", slug)
         .single();
 
@@ -143,7 +143,7 @@ export function useSimilarJobs(job: Job | undefined) {
 
       let query = supabase
         .from("jobs")
-        .select("*")
+        .select(PUBLIC_JOB_COLUMNS)
         .neq("id", job.id)
         .is("archived_at", null)
         .order("posted_at", { ascending: false, nullsFirst: false })
