@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { mirrorUpdate } from "../_shared/eplicant-client.ts";
+import { requireCronAuth } from "../_shared/require-cron.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
