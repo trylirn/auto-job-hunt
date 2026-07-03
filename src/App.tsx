@@ -51,6 +51,7 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/submit" element={<Submit />} />
             <Route path="/jobs/in" element={<JobsIndex />} />
+            <Route path="/guides/un-careers" element={<UnCareersGuide />} />
             <Route path="/jobs/in/cities/:city" element={<LocationPage mode="city" />} />
             <Route path="/jobs/in/:country" element={<CountryOrLegacyRoute />} />
             <Route path="*" element={<NotFound />} />
