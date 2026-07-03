@@ -28,6 +28,7 @@ import { Footer } from "@/components/Footer";
 import { ShareButtons } from "@/components/ShareButtons";
 import { SimilarJobs } from "@/components/SimilarJobs";
 import { EmailSubscriber } from "@/components/EmailSubscriber";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { formatDistanceToNow } from "date-fns";
 
 function extractApplyUrl(description: string | null): string | null {
@@ -545,7 +546,7 @@ const JobDetail = () => {
                     prose-strong:text-foreground
                     break-words overflow-hidden [overflow-wrap:anywhere]
                     [word-break:break-word]"
-                  dangerouslySetInnerHTML={{ __html: displayDescription }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayDescription) }}
                 />
               </div>
             )}
