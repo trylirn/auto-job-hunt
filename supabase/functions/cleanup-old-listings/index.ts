@@ -1,7 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getEplicantClient } from "../_shared/eplicant-client.ts";
+import { requireCronAuth } from "../_shared/require-cron.ts";
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  const authFail = requireCronAuth(req);
+  if (authFail) return authFail;
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
