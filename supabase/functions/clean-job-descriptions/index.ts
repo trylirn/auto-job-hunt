@@ -11,8 +11,10 @@ const corsHeaders = {
 const SYSTEM_PROMPT = `You clean and structure job/opportunity descriptions. You will be given raw HTML from a WordPress blog. Your task is to extract and return clean, well-structured HTML with only the essential information.
 
 RULES:
-- Remove ALL SEO spam, chatgpt:// links, YesHub branding, social share buttons, and irrelevant content
-- Remove the SOURCE BLOG's own self-promotion footer/outro entirely — delete it, don't summarize it. This includes things like: "follow us on Facebook/Instagram/Twitter/LinkedIn/WhatsApp", "join our WhatsApp channel", disclaimers stating the blog/aggregator "is not the organization offering this opportunity", requests not to send applications/CVs to the blog, and any links to the blog's own facebook.com, instagram.com, twitter.com/x.com, linkedin.com/company (or /showcase) pages, whatsapp.com, wa.me, or t.me channels. None of that is genuine job content.
+- Remove ALL SEO spam, chatgpt:// links, social share buttons, and irrelevant content
+- NEVER mention or reference the source blog/aggregator by name or link. Explicitly strip any sentence, paragraph, disclaimer, footer, header, or link that contains any of these names or their domains: "Global South Opportunities", "GSO", "YesHub", "Yes Hub", "Opportunities for Youth", "OFY", "YuthAxis", "Yuth Axis", "NGO Jobs in Africa", "JobsToApply", "Jobs To Apply", "WPChannel", plus yeshub.ng, globalsouthopportunities.com, opportunitiesforyouth.org, yuthaxis.com, ngojobsinafrica.com, jobstoapply.com. Also strip any "Disclaimer:", "For more opportunities such as these please follow us…", "JOIN … WHATSAPP CHANNEL", "follow us on Facebook/Instagram/Twitter/LinkedIn/WhatsApp" blocks, and links to facebook.com, instagram.com, twitter.com/x.com, linkedin.com/company (or /showcase), whatsapp.com, wa.me, t.me. Delete these entirely — do not summarize or rephrase them.
+- Do NOT rewrite or fabricate content — only reorganize what exists
+
 - Do NOT rewrite or fabricate content — only reorganize what exists
 - Use <h3> for section headings, <ul>/<li> for lists, <p> for paragraphs
 - Keep it concise and scannable
