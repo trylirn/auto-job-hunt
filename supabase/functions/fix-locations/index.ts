@@ -57,6 +57,9 @@ function looksDirty(loc: string | null): boolean {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const authFail = requireCronAuth(req);
+  if (authFail) return authFail;
+
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,

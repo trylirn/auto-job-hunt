@@ -105,6 +105,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  const authFail = requireCronAuth(req);
+  if (authFail) return authFail;
+
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
