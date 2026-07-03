@@ -354,6 +354,57 @@ async function fetchRemotiveUSJobs(): Promise<NormalizedJob[]> {
   }
 }
 
+async function fetchReliefWebUSJobs(): Promise<NormalizedJob[]> {
+  try {
+    const url =
+      "https://api.reliefweb.int/v1/jobs?appname=eplicant.com&profile=full&limit=50" +
+      "&sort[]=date.created:desc" +
+      "&filter[field]=country.name&filter[value]=United%20States%20of%20America";
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error("ReliefWeb HTTP", res.status);
+      return [];
+    }
+    const json = await res.json();
+    const items: any[] = json.data || [];
+    return items.map((it: any) => {
+      const f = it.fields || {};
+      const country = Array.isArray(f.country) ? f.country[0]?.name : null;
+      const city = Array.isArray(f.city) ? f.city[0]?.name : null;
+      const location = [city, country || "United States"].filter(Boolean).join(", ");
+      const orgs = Array.isArray(f.source) ? f.source.map((s: any) => s.name).filter(Boolean) : [];
+      const careerCats = Array.isArray(f.career_categories)
+        ? f.career_categories.map((c: any) => c.name).filter(Boolean)
+        : [];
+      const themes = Array.isArray(f.theme) ? f.theme.map((t: any) => t.name).filter(Boolean) : [];
+      const applyUrl = f.how_to_apply || null;
+      const bodyHtml = f["body-html"] || (f.body ? `<p>${String(f.body).replace(/\n/g, "</p><p>")}</p>` : "");
+      const desc = applyUrl ? `${bodyHtml}\n<p><a href="${applyUrl}">Apply here</a></p>` : bodyHtml;
+      return {
+        title: f.title || "Untitled",
+        company: orgs[0] || "Unknown",
+        location,
+        job_type: "jobs",
+        category: "jobs",
+        listing_type: "job",
+        description: desc || null,
+        url: f.url_alias || f.url || `https://reliefweb.int/node/${it.id}`,
+        source: "reliefweb",
+        external_id: String(it.id),
+        posted_at: f.date?.created || null,
+        salary: null,
+        tags: [...careerCats, ...themes].slice(0, 8),
+        company_logo: null,
+        is_remote: false,
+      } as NormalizedJob;
+    });
+  } catch (e) {
+    console.error("ReliefWeb fetch error:", e);
+    return [];
+  }
+}
+
+
 
 async function fetchNgoJobsInAfricaJobs(): Promise<NormalizedJob[]> {
   try {
@@ -533,7 +584,12 @@ Deno.serve(async (req) => {
     const jobsToApplyJobs = await fetchJobsToApplyJobs();
     console.log(`Fetched ${jobsToApplyJobs.length} jobs from JobsToApply`);
 
-    const allJobs = [...yeshubJobs, ...globalSouthJobs, ...ofy4Jobs, ...yuthAxisJobs, ...ngoJobsAfrica, ...remotiveJobs, ...jobsToApplyJobs];
+    console.log("Fetching US jobs from ReliefWeb...");
+    const reliefwebJobs = await fetchReliefWebUSJobs();
+    console.log(`Fetched ${reliefwebJobs.length} US jobs from ReliefWeb`);
+
+    const allJobs = [...yeshubJobs, ...globalSouthJobs, ...ofy4Jobs, ...yuthAxisJobs, ...ngoJobsAfrica, ...remotiveJobs, ...jobsToApplyJobs, ...reliefwebJobs];
+
     let inserted = 0;
     let skipped = 0;
 
@@ -588,7 +644,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        fetched: { yeshub: yeshubJobs.length, globalsouth: globalSouthJobs.length, opportunitiesforyouth: ofy4Jobs.length, yuthaxis: yuthAxisJobs.length, ngojobsinafrica: ngoJobsAfrica.length, remotive: remotiveJobs.length, jobstoapply: jobsToApplyJobs.length, total: allJobs.length },
+        fetched: { yeshub: yeshubJobs.length, globalsouth: globalSouthJobs.length, opportunitiesforyouth: ofy4Jobs.length, yuthaxis: yuthAxisJobs.length, ngojobsinafrica: ngoJobsAfrica.length, remotive: remotiveJobs.length, jobstoapply: jobsToApplyJobs.length, reliefweb: reliefwebJobs.length, total: allJobs.length },
         inserted,
         skipped,
       }),

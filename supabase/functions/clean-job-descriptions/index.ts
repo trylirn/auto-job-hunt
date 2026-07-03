@@ -11,8 +11,10 @@ const corsHeaders = {
 const SYSTEM_PROMPT = `You clean and structure job/opportunity descriptions. You will be given raw HTML from a WordPress blog. Your task is to extract and return clean, well-structured HTML with only the essential information.
 
 RULES:
-- Remove ALL SEO spam, chatgpt:// links, YesHub branding, social share buttons, and irrelevant content
-- Remove the SOURCE BLOG's own self-promotion footer/outro entirely — delete it, don't summarize it. This includes things like: "follow us on Facebook/Instagram/Twitter/LinkedIn/WhatsApp", "join our WhatsApp channel", disclaimers stating the blog/aggregator "is not the organization offering this opportunity", requests not to send applications/CVs to the blog, and any links to the blog's own facebook.com, instagram.com, twitter.com/x.com, linkedin.com/company (or /showcase) pages, whatsapp.com, wa.me, or t.me channels. None of that is genuine job content.
+- Remove ALL SEO spam, chatgpt:// links, social share buttons, and irrelevant content
+- NEVER mention or reference the source blog/aggregator by name or link. Explicitly strip any sentence, paragraph, disclaimer, footer, header, or link that contains any of these names or their domains: "Global South Opportunities", "GSO", "YesHub", "Yes Hub", "Opportunities for Youth", "OFY", "YuthAxis", "Yuth Axis", "NGO Jobs in Africa", "JobsToApply", "Jobs To Apply", "WPChannel", plus yeshub.ng, globalsouthopportunities.com, opportunitiesforyouth.org, yuthaxis.com, ngojobsinafrica.com, jobstoapply.com. Also strip any "Disclaimer:", "For more opportunities such as these please follow us…", "JOIN … WHATSAPP CHANNEL", "follow us on Facebook/Instagram/Twitter/LinkedIn/WhatsApp" blocks, and links to facebook.com, instagram.com, twitter.com/x.com, linkedin.com/company (or /showcase), whatsapp.com, wa.me, t.me. Delete these entirely — do not summarize or rephrase them.
+- Do NOT rewrite or fabricate content — only reorganize what exists
+
 - Do NOT rewrite or fabricate content — only reorganize what exists
 - Use <h3> for section headings, <ul>/<li> for lists, <p> for paragraphs
 - Keep it concise and scannable
@@ -126,12 +128,61 @@ const SPAM_APPLY_HOSTS = [
   "twitter.com", "x.com", "whatsapp.com", "wa.me", "t.me", "telegram.me", "threads.net",
 ];
 
+const AGGREGATOR_NAMES = [
+  "global south opportunities", "gso",
+  "yeshub", "yes hub",
+  "opportunities for youth", "ofy",
+  "yuthaxis", "yuth axis",
+  "ngo jobs in africa",
+  "jobstoapply", "jobs to apply",
+  "wpchannel",
+];
+
+const AGGREGATOR_DOMAINS = [
+  "yeshub.ng", "globalsouthopportunities.com", "opportunitiesforyouth.org",
+  "yuthaxis.com", "ngojobsinafrica.com", "jobstoapply.com",
+];
+
+const NOISE_PHRASES = [
+  "for more opportunities such as these",
+  "join gso whatsapp channel",
+  "join our whatsapp channel",
+  "follow us on facebook",
+  "is not the organization offering this opportunity",
+  "do not send your applications",
+];
+
+function stripSourceBlogNoise(html: string): string {
+  if (!html) return html;
+  let out = html;
+
+  // Remove <a>…</a> whose href references an aggregator or social domain.
+  const domainRe = new RegExp(
+    `<a\\b[^>]*href=["'][^"']*(?:${[...AGGREGATOR_DOMAINS, ...SPAM_APPLY_HOSTS].map(d => d.replace(/\./g, "\\.")).join("|")})[^"']*["'][^>]*>[\\s\\S]*?<\\/a>`,
+    "gi",
+  );
+  out = out.replace(domainRe, "");
+
+  // Remove any block-level element containing an aggregator name or noise phrase.
+  const needles = [...AGGREGATOR_NAMES, ...NOISE_PHRASES].map(s => s.toLowerCase());
+  out = out.replace(/<(p|div|section|h[1-6]|li|ul|ol)\b[^>]*>[\s\S]*?<\/\1>/gi, (block) => {
+    const text = block.replace(/<[^>]*>/g, " ").toLowerCase();
+    return needles.some(n => text.includes(n)) ? "" : block;
+  });
+
+  // Also drop stray "Disclaimer:" paragraphs even without a block wrapper.
+  out = out.replace(/disclaimer\s*:[^<]{0,600}/gi, "");
+
+  return out.replace(/\n{3,}/g, "\n\n").trim();
+}
+
 function isSpamApplyUrl(raw: string): boolean {
   if (raw.startsWith("mailto:")) return false;
   try {
     const url = new URL(raw);
     const host = url.hostname.replace(/^www\./, "");
     if (SPAM_APPLY_HOSTS.includes(host)) return true;
+    if (AGGREGATOR_DOMAINS.some(d => host === d || host.endsWith("." + d))) return true;
     if (host === "linkedin.com" && /^\/(company|showcase)\//i.test(url.pathname)) return true;
     return false;
   } catch {
@@ -140,9 +191,11 @@ function isSpamApplyUrl(raw: string): boolean {
 }
 
 function buildUpdateData(args: Record<string, unknown>) {
+  const rawClean = typeof args.clean_description === "string" ? args.clean_description : "";
   const updateData: Record<string, unknown> = {
-    clean_description: args.clean_description || null,
+    clean_description: stripSourceBlogNoise(rawClean) || null,
   };
+
 
   const candidateUrl = typeof args.apply_url === "string" ? args.apply_url.trim() : "";
   const hasValidShape = candidateUrl.startsWith("https://") || candidateUrl.startsWith("mailto:");
