@@ -30,6 +30,7 @@ const STATIC_PAGES: SitemapEntry[] = [
   { loc: `${SITE_URL}/jobs/in`, changefreq: "daily", priority: "0.8" },
   { loc: `${SITE_URL}/newsletter`, changefreq: "weekly", priority: "0.7" },
   { loc: `${SITE_URL}/submit`, changefreq: "monthly", priority: "0.6" },
+  { loc: `${SITE_URL}/guides/un-careers`, changefreq: "monthly", priority: "0.7" },
   { loc: `${SITE_URL}/about`, changefreq: "monthly", priority: "0.5" },
   { loc: `${SITE_URL}/contact`, changefreq: "monthly", priority: "0.5" },
 ];
