@@ -1,48 +1,53 @@
-## SEO emergency fix plan
+## What I found
 
-The audit is done but nothing new has shipped yet — I'm in plan mode. Approve this and I'll implement in one pass.
+1. **Misclassified listings in the DB** (verified against current data):
+   - 16 rows are `listing_type='opportunity'` but categorized `jobs`, plus 5 as `job`, 1 as `remote jobs`, 10 as `consultancy` — most of these are actually jobs.
+   - Some `listing_type='job'` rows carry opportunity-flavored categories (`africa`, `continent`, etc.). The AI classifier is the source of truth but has drifted on ambiguous posts.
 
-### Root causes for the ~3k "Not indexed" pile + traffic drop
+2. **Source-blog references leaking into descriptions** (screenshot):
+   - "For more opportunities such as these please follow us on Facebook, Instagram, Twitter, LinkedIn and WPChannel"
+   - "Disclaimer: Global South Opportunities (GSO) is not the organization offering this opportunity…"
+   - "JOIN GSO WHATSAPP CHANNEL NOW"
+   The AI prompt already forbids this, but older cleaned rows still contain it, and the model occasionally leaves it in.
 
-1. **410s aren't actually served.** The Netlify Edge Function returns 410 only when it can reach Supabase and confirm the job is gone. On any Supabase error/timeout it falls through to the SPA (200 OK). Google keeps seeing 200 + shell for deleted jobs → "Crawled – not indexed" / "Soft 404".
-2. **Sitemap can list stale URLs.** `supabase/functions/sitemap` filters archived rows but doesn't hard-exclude past-deadline rows in all code paths, and there's no cache header, so Google can re-discover dead URLs.
-3. **Mirror host leaks.** `auto-job-hunt.lovable.app` and `www.eplicant.com` occasionally get indexed as duplicates of apex; canonical + noindex logic is only client-side.
-4. **JobDetail 404 path returns 200.** When a slug isn't found the React page renders "Not found" with status 200 instead of signalling gone.
-5. **No IndexNow / no sitemap ping** after cleanup runs, so Google finds dead URLs on its own slow schedule.
+3. **jobstoapply.com** is already wired up in `fetch-jobs` — the source is active. I'll confirm the schedule still hits it and surface it in the response summary.
 
-### Changes
+4. **ReliefWeb** was previously removed. It has a free public API at `https://api.reliefweb.int/v1/jobs` — no key required, just an `appname` query param. I can filter to `United States of America` server-side.
 
-**A. Harden the 410 edge function** (`netlify/edge-functions/job-gone.ts`)
-- On Supabase fetch error, treat as "unknown" and still 410 for `/job/*` slugs that look like our slug-uuid pattern rather than falling back to 200.
-- Always send `X-Robots-Tag: noindex` on the 410 response.
-- Also 410 when `apply_before_date < now()` (already partially done — make it unconditional).
-- Match `/opportunity/*` too (same table, same problem).
+## Changes
 
-**B. Sitemap tightening** (`supabase/functions/sitemap/index.ts`)
-- Exclude rows where `apply_before_date < now()` OR `archived_at IS NOT NULL` OR `created_at < now() - 45 days` with no deadline.
-- Add `Cache-Control: public, max-age=3600` and `X-Robots-Tag: noindex` on the sitemap response.
-- Keep 45k cap and per-URL `lastmod`.
+### A. Reclassify existing rows (SQL migration, one-off)
+- `UPDATE jobs SET listing_type='job'` where current `listing_type='opportunity'` and `category` ∈ (`jobs`, `job`, `remote jobs`, `consultancy`, `consulting`).
+- `UPDATE jobs SET listing_type='opportunity'` where `category` ∈ (`fellowship`, `scholarship`, `grant`, `conference`, `internship`, `internships`, `award`, `funding`, `training`, `course`, `short course`, `online course`, `phd`, `competition`, `learnership`) regardless of prior `listing_type`.
+- Backfill `listing_type='job'` for rows still NULL with a jobs-like `job_type`.
 
-**C. Mirror-host safety** (`index.html` + edge)
-- Add `<link rel="canonical">` server-side hint via edge function: for any request whose host is not `eplicant.com`, inject `X-Robots-Tag: noindex, nofollow`.
-- Keep the existing client-side redirect from `www` → apex.
+### B. Harden `clean-job-descriptions` prompt + post-processor
+- Tighten system prompt: list the exact aggregator names to strip (`Global South Opportunities`, `GSO`, `YesHub`, `Opportunities for Youth`, `YuthAxis`, `NGO Jobs in Africa`, `JobsToApply`, `Jobs To Apply`), including their "Disclaimer:", "For more opportunities…", "JOIN … WHATSAPP CHANNEL", "follow us on …" blocks. Never mention the source.
+- Add a deterministic regex sanitizer (runs after the AI) that removes any surviving paragraphs/sentences containing those aggregator names, plus links to their domains, before writing `clean_description`.
 
-**D. JobDetail not-found signal** (`src/pages/JobDetail.tsx`)
-- When the query resolves with no row, set a `<meta name="robots" content="noindex">` via Helmet and render a link that the edge function will subsequently 410 on refresh (already partly there — verify).
+### C. Re-clean affected rows
+- Trigger `clean-job-descriptions?mode=all` in batches over rows where `clean_description` contains any of the aggregator names (via a small helper query) so old listings get scrubbed.
 
-**E. Post-cleanup ping** (`supabase/functions/cleanup-old-listings/index.ts`)
-- After deletions, POST the deleted URLs to IndexNow (`https://api.indexnow.org/indexnow`) using a project-owned key file at `public/<key>.txt`. This tells Bing immediately and Google indirectly.
-- Also ping `https://www.google.com/ping?sitemap=https://eplicant.com/sitemap.xml`.
+### D. Confirm `jobstoapply.com`
+- Already integrated; no code change needed. I'll double-check it still fetches on the scheduled cron and note it in the summary.
 
-**F. Verification**
-- After deploy, curl 5 known-deleted slugs → expect `HTTP/2 410`.
-- curl `/sitemap.xml` → confirm no archived rows and cache header.
-- Search Console → Validate Fix on "Crawled – currently not indexed" and "Soft 404" clusters.
+### E. Re-add ReliefWeb (US only)
+- New `fetchReliefWebUSJobs()` in `supabase/functions/fetch-jobs/index.ts`:
+  - `GET https://api.reliefweb.int/v1/jobs?appname=eplicant.com&profile=full&limit=50&sort[]=date.created:desc&filter[field]=country.name&filter[value]=United%20States%20of%20America`
+  - Normalize: title, source_org, city/country, career_categories → tags, body-html → description, url_alias → url, `source='reliefweb'`, `external_id=id`.
+  - Wrap in `try/catch` so a ReliefWeb outage never breaks the whole run.
+  - Add to the aggregated `allJobs` array and to the response summary.
 
-### Not doing (out of scope for this turn)
-- No new page templates, no content changes, no design changes.
-- No ReliefWeb / new source work.
-- No changes to filtering or pagination.
+### Technical details
 
-### Expected outcome
-Within 1–3 crawl cycles: the 3k "Not indexed" bucket drains as Google converts them to "Not found (410)" and drops them, crawl budget refocuses on live jobs, and impressions/clicks on live listings recover.
+- Migration file: `supabase/migrations/<ts>_reclassify_listings.sql` — pure `UPDATE` statements, no schema change.
+- Edit `supabase/functions/clean-job-descriptions/index.ts`:
+  - Expand `SYSTEM_PROMPT` with explicit aggregator names.
+  - Add `stripSourceBlogNoise(html: string): string` — removes `<p>`/`<div>` blocks matching a compiled aggregator regex and any `<a>` whose href contains an aggregator domain.
+  - Apply it to `clean_description` in `buildUpdateData`.
+- Edit `supabase/functions/fetch-jobs/index.ts`: add ReliefWeb fetcher + call site + response payload.
+- After deploy, POST once to `clean-job-descriptions?mode=all` with the cron token to rescrub.
+
+### Out of scope
+- No UI changes; filtering already respects `listing_type` correctly once the DB is fixed.
+- No changes to `useJobs`, header, or footer.
