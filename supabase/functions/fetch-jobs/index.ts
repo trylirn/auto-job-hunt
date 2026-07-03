@@ -354,6 +354,57 @@ async function fetchRemotiveUSJobs(): Promise<NormalizedJob[]> {
   }
 }
 
+async function fetchReliefWebUSJobs(): Promise<NormalizedJob[]> {
+  try {
+    const url =
+      "https://api.reliefweb.int/v1/jobs?appname=eplicant.com&profile=full&limit=50" +
+      "&sort[]=date.created:desc" +
+      "&filter[field]=country.name&filter[value]=United%20States%20of%20America";
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error("ReliefWeb HTTP", res.status);
+      return [];
+    }
+    const json = await res.json();
+    const items: any[] = json.data || [];
+    return items.map((it: any) => {
+      const f = it.fields || {};
+      const country = Array.isArray(f.country) ? f.country[0]?.name : null;
+      const city = Array.isArray(f.city) ? f.city[0]?.name : null;
+      const location = [city, country || "United States"].filter(Boolean).join(", ");
+      const orgs = Array.isArray(f.source) ? f.source.map((s: any) => s.name).filter(Boolean) : [];
+      const careerCats = Array.isArray(f.career_categories)
+        ? f.career_categories.map((c: any) => c.name).filter(Boolean)
+        : [];
+      const themes = Array.isArray(f.theme) ? f.theme.map((t: any) => t.name).filter(Boolean) : [];
+      const applyUrl = f.how_to_apply || null;
+      const bodyHtml = f["body-html"] || (f.body ? `<p>${String(f.body).replace(/\n/g, "</p><p>")}</p>` : "");
+      const desc = applyUrl ? `${bodyHtml}\n<p><a href="${applyUrl}">Apply here</a></p>` : bodyHtml;
+      return {
+        title: f.title || "Untitled",
+        company: orgs[0] || "Unknown",
+        location,
+        job_type: "jobs",
+        category: "jobs",
+        listing_type: "job",
+        description: desc || null,
+        url: f.url_alias || f.url || `https://reliefweb.int/node/${it.id}`,
+        source: "reliefweb",
+        external_id: String(it.id),
+        posted_at: f.date?.created || null,
+        salary: null,
+        tags: [...careerCats, ...themes].slice(0, 8),
+        company_logo: null,
+        is_remote: false,
+      } as NormalizedJob;
+    });
+  } catch (e) {
+    console.error("ReliefWeb fetch error:", e);
+    return [];
+  }
+}
+
+
 
 async function fetchNgoJobsInAfricaJobs(): Promise<NormalizedJob[]> {
   try {
