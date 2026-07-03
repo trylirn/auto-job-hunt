@@ -16,6 +16,7 @@ import Submit from "./pages/Submit";
 import NotFound from "./pages/NotFound";
 import LocationPage, { LegacyCityRedirect } from "./pages/Location";
 import JobsIndex from "./pages/JobsIndex";
+import UnCareersGuide from "./pages/UnCareersGuide";
 import { WhatsAppBanner } from "./components/WhatsAppBanner";
 import { PostHogPageview } from "./components/PostHogPageview";
 
