@@ -33,16 +33,113 @@ const OPPORTUNITY_CATEGORIES = new Set([
   "internships",
   "internship",
   "grant",
+  "grants",
   "conference",
+  "training",
+  "trainings",
+  "award",
+  "awards",
+  "competition",
+  "competitions",
+  "program",
+  "programme",
+  "course",
+  "short course",
   "opportunity",
 ]);
+
+const JOB_CATEGORIES = new Set([
+  "jobs",
+  "job",
+  "vacancy",
+  "vacancies",
+  "consultancy",
+  "consultant",
+  "remote jobs",
+  "ngo",
+  "government",
+  "education",
+  "private sector",
+]);
+
+const OPPORTUNITY_KEYWORDS = [
+  /\bfellowship\b/i,
+  /\bscholarship\b/i,
+  /\bgrant\b/i,
+  /\bfunding\b/i,
+  /\baward\b/i,
+  /\bconference\b/i,
+  /\btraining\b/i,
+  /\bbootcamp\b/i,
+  /\bshort course\b/i,
+  /\bcompetition\b/i,
+  /\bchallenge\b/i,
+  /\baccelerator\b/i,
+  /\bincubator\b/i,
+  /\bmentorship\b/i,
+  /\bvolunteer programme\b/i,
+  /\bvolunteer program\b/i,
+  /\bphd\b/i,
+  /\bpostdoctoral\b/i,
+  /\binternship\b/i,
+];
+
+const JOB_KEYWORDS = [
+  /\bjob\b/i,
+  /\bjobs\b/i,
+  /\bvacancy\b/i,
+  /\bvacancies\b/i,
+  /\bhiring\b/i,
+  /\brecruit(?:ing|ment)?\b/i,
+  /\bconsultant\b/i,
+  /\bconsultancy\b/i,
+  /\bofficer\b/i,
+  /\bmanager\b/i,
+  /\bspecialist\b/i,
+  /\bcoordinator\b/i,
+  /\bdirector\b/i,
+  /\bassistant\b/i,
+  /\banalyst\b/i,
+  /\baccountant\b/i,
+  /\bengineer\b/i,
+  /\blead\b/i,
+  /\badvisor\b/i,
+];
 
 function categoryToListingType(category: string | null): "job" | "opportunity" | null {
   if (!category) return null;
   const c = category.toLowerCase().trim();
   if (OPPORTUNITY_CATEGORIES.has(c)) return "opportunity";
-  if (c === "jobs" || c === "job") return "job";
+  if (JOB_CATEGORIES.has(c)) return "job";
   return null;
+}
+
+function normalizeCategory(category: string | null, title: string, description = ""): string | null {
+  const raw = (category || "").toLowerCase().trim();
+  const text = `${title} ${description.replace(/<[^>]*>/g, " ")}`;
+
+  if (/\bfellowship\b/i.test(text)) return "fellowship";
+  if (/\bscholarship\b/i.test(text)) return "scholarship";
+  if (/\bgrant\b|\bfunding\b/i.test(text)) return "grant";
+  if (/\bconference\b/i.test(text)) return "conference";
+  if (/\binternship\b/i.test(text)) return "internship";
+  if (/\btraining\b|\bbootcamp\b|\bshort course\b|\bcompetition\b|\bchallenge\b|\baccelerator\b|\bincubator\b|\baward\b/i.test(text)) return "opportunity";
+  if (OPPORTUNITY_CATEGORIES.has(raw)) return raw;
+  if (JOB_CATEGORIES.has(raw) || JOB_KEYWORDS.some((re) => re.test(text))) return "jobs";
+  return raw || null;
+}
+
+function classifyListing(title: string, category: string | null, description = ""): "job" | "opportunity" {
+  const normalizedCategory = normalizeCategory(category, title, description);
+  const byCategory = categoryToListingType(normalizedCategory);
+  if (byCategory) return byCategory;
+
+  const text = `${title} ${description.replace(/<[^>]*>/g, " ")}`;
+  const opportunityHits = OPPORTUNITY_KEYWORDS.filter((re) => re.test(text)).length;
+  const jobHits = JOB_KEYWORDS.filter((re) => re.test(text)).length;
+
+  if (opportunityHits > 0 && opportunityHits >= jobHits) return "opportunity";
+  return "job";
 }
 
 function extractCompany(title: string): string {
@@ -75,13 +172,15 @@ async function fetchYeshubJobs(): Promise<NormalizedJob[]> {
       const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
       const description = (p.content?.rendered || "").trim();
 
+      const normalizedCategory = normalizeCategory(catName, title, description);
+
       return {
         title,
         company: extractCompany(title),
         location: "Nigeria",
-        job_type: catName || "opportunity",
-        category: catName,
-        listing_type: categoryToListingType(catName || "opportunity"),
+        job_type: normalizedCategory || "jobs",
+        category: normalizedCategory,
+        listing_type: classifyListing(title, normalizedCategory, description),
         description,
         url: p.link,
         source: "yeshub",
@@ -157,13 +256,15 @@ async function fetchJobsToApplyJobs(): Promise<NormalizedJob[]> {
       const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
       const description = (p.content?.rendered || "").trim();
 
+      const normalizedCategory = normalizeCategory(catName, title, description);
+
       return {
         title,
         company: extractCompany(title),
         location: "Global",
-        job_type: catName || "opportunity",
-        category: catName,
-        listing_type: categoryToListingType(catName || "opportunity"),
+        job_type: normalizedCategory || "jobs",
+        category: normalizedCategory,
+        listing_type: classifyListing(title, normalizedCategory, description),
         description,
         url: p.link,
         source: "jobstoapply",
@@ -218,13 +319,15 @@ async function fetchOpportunitiesForYouthJobs(): Promise<NormalizedJob[]> {
       const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
       const description = (p.content?.rendered || "").trim();
 
+      const normalizedCategory = normalizeCategory(catName, title, description);
+
       return {
         title,
         company: extractCompany(title),
         location: "Global",
-        job_type: catName || "opportunity",
-        category: catName,
-        listing_type: categoryToListingType(catName || "opportunity"),
+        job_type: normalizedCategory || "jobs",
+        category: normalizedCategory,
+        listing_type: classifyListing(title, normalizedCategory, description),
         description,
         url: p.link,
         source: "opportunitiesforyouth",
@@ -289,13 +392,15 @@ async function fetchYuthAxisJobs(): Promise<NormalizedJob[]> {
       const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
       const description = (p.content?.rendered || "").trim();
 
+      const normalizedCategory = normalizeCategory(catName, title, description);
+
       return {
         title,
         company: extractCompany(title),
         location: "Global",
-        job_type: catName || "opportunity",
-        category: catName,
-        listing_type: categoryToListingType(catName || "opportunity"),
+        job_type: normalizedCategory || "jobs",
+        category: normalizedCategory,
+        listing_type: classifyListing(title, normalizedCategory, description),
         description,
         url: p.link,
         source: "yuthaxis",
@@ -449,13 +554,15 @@ async function fetchNgoJobsInAfricaJobs(): Promise<NormalizedJob[]> {
         const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
         const description = (p.content?.rendered || "").trim();
 
+        const normalizedCategory = normalizeCategory(catName, title, description);
+
         return {
           title,
           company: extractCompany(title),
           location: "Africa",
-          job_type: catName || "opportunity",
-          category: catName,
-          listing_type: categoryToListingType(catName || "opportunity"),
+          job_type: normalizedCategory || "jobs",
+          category: normalizedCategory,
+          listing_type: classifyListing(title, normalizedCategory, description),
           description,
           url: p.link,
           source: "ngojobsinafrica",
@@ -519,13 +626,15 @@ async function fetchGlobalSouthJobs(): Promise<NormalizedJob[]> {
         const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
         const description = (p.content?.rendered || "").trim();
 
+        const normalizedCategory = normalizeCategory(catName, title, description);
+
         return {
           title,
           company: extractCompany(title),
           location: "Global",
-          job_type: catName || "opportunity",
-          category: catName,
-          listing_type: categoryToListingType(catName || "opportunity"),
+          job_type: normalizedCategory || "jobs",
+          category: normalizedCategory,
+          listing_type: classifyListing(title, normalizedCategory, description),
           description,
           url: p.link,
           source: "globalsouth",
