@@ -8,7 +8,7 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  const authFail = requireCronAuth(req);
+  const authFail = await requireCronAuth(req);
   if (authFail) return authFail;
 
   const supabase = createClient(

@@ -3,7 +3,7 @@ import { getEplicantClient } from "../_shared/eplicant-client.ts";
 import { requireCronAuth } from "../_shared/require-cron.ts";
 
 Deno.serve(async (req) => {
-  const authFail = requireCronAuth(req);
+  const authFail = await requireCronAuth(req);
   if (authFail) return authFail;
 
   const supabase = createClient(
