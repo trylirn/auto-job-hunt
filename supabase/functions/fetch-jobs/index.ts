@@ -26,6 +26,16 @@ interface NormalizedJob {
   is_remote: boolean;
 }
 
+async function timedFetch(input: string | URL, init: RequestInit = {}, timeoutMs = 8000): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 const OPPORTUNITY_CATEGORIES = new Set([
   "fellowship",
   "scholarship",
@@ -33,16 +43,113 @@ const OPPORTUNITY_CATEGORIES = new Set([
   "internships",
   "internship",
   "grant",
+  "grants",
   "conference",
+  "training",
+  "trainings",
+  "award",
+  "awards",
+  "competition",
+  "competitions",
+  "program",
+  "programme",
+  "course",
+  "short course",
   "opportunity",
 ]);
+
+const JOB_CATEGORIES = new Set([
+  "jobs",
+  "job",
+  "vacancy",
+  "vacancies",
+  "consultancy",
+  "consultant",
+  "remote jobs",
+  "ngo",
+  "government",
+  "education",
+  "private sector",
+]);
+
+const OPPORTUNITY_KEYWORDS = [
+  /\bfellowship\b/i,
+  /\bscholarship\b/i,
+  /\bgrant\b/i,
+  /\bfunding\b/i,
+  /\baward\b/i,
+  /\bconference\b/i,
+  /\btraining\b/i,
+  /\bbootcamp\b/i,
+  /\bshort course\b/i,
+  /\bcompetition\b/i,
+  /\bchallenge\b/i,
+  /\baccelerator\b/i,
+  /\bincubator\b/i,
+  /\bmentorship\b/i,
+  /\bvolunteer programme\b/i,
+  /\bvolunteer program\b/i,
+  /\bphd\b/i,
+  /\bpostdoctoral\b/i,
+  /\binternship\b/i,
+];
+
+const JOB_KEYWORDS = [
+  /\bjob\b/i,
+  /\bjobs\b/i,
+  /\bvacancy\b/i,
+  /\bvacancies\b/i,
+  /\bhiring\b/i,
+  /\brecruit(?:ing|ment)?\b/i,
+  /\bconsultant\b/i,
+  /\bconsultancy\b/i,
+  /\bofficer\b/i,
+  /\bmanager\b/i,
+  /\bspecialist\b/i,
+  /\bcoordinator\b/i,
+  /\bdirector\b/i,
+  /\bassistant\b/i,
+  /\banalyst\b/i,
+  /\baccountant\b/i,
+  /\bengineer\b/i,
+  /\blead\b/i,
+  /\badvisor\b/i,
+];
 
 function categoryToListingType(category: string | null): "job" | "opportunity" | null {
   if (!category) return null;
   const c = category.toLowerCase().trim();
   if (OPPORTUNITY_CATEGORIES.has(c)) return "opportunity";
-  if (c === "jobs" || c === "job") return "job";
+  if (JOB_CATEGORIES.has(c)) return "job";
   return null;
+}
+
+function normalizeCategory(category: string | null, title: string, description = ""): string | null {
+  const raw = (category || "").toLowerCase().trim();
+  const text = `${title} ${description.replace(/<[^>]*>/g, " ")}`;
+
+  if (/\bfellowship\b/i.test(text)) return "fellowship";
+  if (/\bscholarship\b/i.test(text)) return "scholarship";
+  if (/\bgrant\b|\bfunding\b/i.test(text)) return "grant";
+  if (/\bconference\b/i.test(text)) return "conference";
+  if (/\binternship\b/i.test(text)) return "internship";
+  if (/\btraining\b|\bbootcamp\b|\bshort course\b|\bcompetition\b|\bchallenge\b|\baccelerator\b|\bincubator\b|\baward\b/i.test(text)) return "opportunity";
+  if (OPPORTUNITY_CATEGORIES.has(raw)) return raw;
+  if (JOB_CATEGORIES.has(raw) || JOB_KEYWORDS.some((re) => re.test(text))) return "jobs";
+  return raw || null;
+}
+
+function classifyListing(title: string, category: string | null, description = ""): "job" | "opportunity" {
+  const normalizedCategory = normalizeCategory(category, title, description);
+  const byCategory = categoryToListingType(normalizedCategory);
+  if (byCategory) return byCategory;
+
+  const text = `${title} ${description.replace(/<[^>]*>/g, " ")}`;
+  const opportunityHits = OPPORTUNITY_KEYWORDS.filter((re) => re.test(text)).length;
+  const jobHits = JOB_KEYWORDS.filter((re) => re.test(text)).length;
+
+  if (opportunityHits > 0 && opportunityHits >= jobHits) return "opportunity";
+  return "job";
 }
 
 function extractCompany(title: string): string {
@@ -55,7 +162,7 @@ function extractCompany(title: string): string {
 
 async function fetchYeshubJobs(): Promise<NormalizedJob[]> {
   try {
-    const catRes = await fetch("https://yeshub.ng/wp-json/wp/v2/categories?per_page=100");
+    const catRes = await timedFetch("https://yeshub.ng/wp-json/wp/v2/categories?per_page=100");
     const categories: Record<number, string> = {};
     if (catRes.ok) {
       const cats = await catRes.json();
@@ -64,7 +171,7 @@ async function fetchYeshubJobs(): Promise<NormalizedJob[]> {
       }
     }
 
-    const res = await fetch("https://yeshub.ng/wp-json/wp/v2/posts?per_page=50&_embed");
+    const res = await timedFetch("https://yeshub.ng/wp-json/wp/v2/posts?per_page=50&_embed");
     if (!res.ok) return [];
     const posts = await res.json();
 
@@ -75,13 +182,15 @@ async function fetchYeshubJobs(): Promise<NormalizedJob[]> {
       const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
       const description = (p.content?.rendered || "").trim();
 
+      const normalizedCategory = normalizeCategory(catName, title, description);
+
       return {
         title,
         company: extractCompany(title),
         location: "Nigeria",
-        job_type: catName || "opportunity",
-        category: catName,
-        listing_type: categoryToListingType(catName || "opportunity"),
+        job_type: normalizedCategory || "jobs",
+        category: normalizedCategory,
+        listing_type: classifyListing(title, normalizedCategory, description),
         description,
         url: p.link,
         source: "yeshub",
@@ -120,7 +229,7 @@ const JOBSTOAPPLY_REMOTE_IDS = new Set([1533]);
 
 async function fetchJobsToApplyJobs(): Promise<NormalizedJob[]> {
   try {
-    const catRes = await fetch("https://jobstoapply.com/wp-json/wp/v2/categories?per_page=100");
+    const catRes = await timedFetch("https://jobstoapply.com/wp-json/wp/v2/categories?per_page=100");
     const categories: Record<number, string> = {};
     if (catRes.ok) {
       const cats = await catRes.json();
@@ -131,7 +240,7 @@ async function fetchJobsToApplyJobs(): Promise<NormalizedJob[]> {
 
     const allPosts: any[] = [];
     for (let page = 1; page <= 2; page++) {
-      const res = await fetch(
+      const res = await timedFetch(
         `https://jobstoapply.com/wp-json/wp/v2/posts?per_page=50&page=${page}&_embed`
       );
       if (!res.ok) break;
@@ -157,13 +266,15 @@ async function fetchJobsToApplyJobs(): Promise<NormalizedJob[]> {
       const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
       const description = (p.content?.rendered || "").trim();
 
+      const normalizedCategory = normalizeCategory(catName, title, description);
+
       return {
         title,
         company: extractCompany(title),
         location: "Global",
-        job_type: catName || "opportunity",
-        category: catName,
-        listing_type: categoryToListingType(catName || "opportunity"),
+        job_type: normalizedCategory || "jobs",
+        category: normalizedCategory,
+        listing_type: classifyListing(title, normalizedCategory, description),
         description,
         url: p.link,
         source: "jobstoapply",
@@ -192,7 +303,7 @@ const GSO_CATEGORY_MAP: Record<number, string> = {
 
 async function fetchOpportunitiesForYouthJobs(): Promise<NormalizedJob[]> {
   try {
-    const catRes = await fetch("https://opportunitiesforyouth.org/wp-json/wp/v2/categories?per_page=100");
+    const catRes = await timedFetch("https://opportunitiesforyouth.org/wp-json/wp/v2/categories?per_page=100");
     const categories: Record<number, string> = {};
     if (catRes.ok) {
       const cats = await catRes.json();
@@ -203,7 +314,7 @@ async function fetchOpportunitiesForYouthJobs(): Promise<NormalizedJob[]> {
 
     const allPosts: any[] = [];
     for (let page = 1; page <= 2; page++) {
-      const res = await fetch(
+      const res = await timedFetch(
         `https://opportunitiesforyouth.org/wp-json/wp/v2/posts?per_page=50&page=${page}&_embed`
       );
       if (!res.ok) break;
@@ -218,13 +329,15 @@ async function fetchOpportunitiesForYouthJobs(): Promise<NormalizedJob[]> {
       const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
       const description = (p.content?.rendered || "").trim();
 
+      const normalizedCategory = normalizeCategory(catName, title, description);
+
       return {
         title,
         company: extractCompany(title),
         location: "Global",
-        job_type: catName || "opportunity",
-        category: catName,
-        listing_type: categoryToListingType(catName || "opportunity"),
+        job_type: normalizedCategory || "jobs",
+        category: normalizedCategory,
+        listing_type: classifyListing(title, normalizedCategory, description),
         description,
         url: p.link,
         source: "opportunitiesforyouth",
@@ -253,7 +366,7 @@ const YUTHAXIS_CATEGORY_MAP: Record<number, string> = {
 
 async function fetchYuthAxisJobs(): Promise<NormalizedJob[]> {
   try {
-    const catRes = await fetch("https://yuthaxis.com/wp-json/wp/v2/categories?per_page=100");
+    const catRes = await timedFetch("https://yuthaxis.com/wp-json/wp/v2/categories?per_page=100");
     const categories: Record<number, string> = {};
     if (catRes.ok) {
       const cats = await catRes.json();
@@ -264,7 +377,7 @@ async function fetchYuthAxisJobs(): Promise<NormalizedJob[]> {
 
     const allPosts: any[] = [];
     for (let page = 1; page <= 2; page++) {
-      const res = await fetch(
+      const res = await timedFetch(
         `https://yuthaxis.com/wp-json/wp/v2/posts?per_page=50&page=${page}&_embed`
       );
       if (!res.ok) break;
@@ -289,13 +402,15 @@ async function fetchYuthAxisJobs(): Promise<NormalizedJob[]> {
       const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
       const description = (p.content?.rendered || "").trim();
 
+      const normalizedCategory = normalizeCategory(catName, title, description);
+
       return {
         title,
         company: extractCompany(title),
         location: "Global",
-        job_type: catName || "opportunity",
-        category: catName,
-        listing_type: categoryToListingType(catName || "opportunity"),
+        job_type: normalizedCategory || "jobs",
+        category: normalizedCategory,
+        listing_type: classifyListing(title, normalizedCategory, description),
         description,
         url: p.link,
         source: "yuthaxis",
@@ -321,7 +436,7 @@ const NGOJOBS_CATEGORY_MAP: Record<number, string> = {
 
 async function fetchRemotiveUSJobs(): Promise<NormalizedJob[]> {
   try {
-    const res = await fetch("https://remotive.com/api/remote-jobs?limit=50");
+    const res = await timedFetch("https://remotive.com/api/remote-jobs?limit=50");
     if (!res.ok) return [];
     const json = await res.json();
     const jobs: any[] = json.jobs || [];
@@ -360,7 +475,7 @@ async function fetchReliefWebUSJobs(): Promise<NormalizedJob[]> {
       "https://api.reliefweb.int/v1/jobs?appname=eplicant.com&profile=full&limit=50" +
       "&sort[]=date.created:desc" +
       "&filter[field]=country.name&filter[value]=United%20States%20of%20America";
-    const res = await fetch(url);
+    const res = await timedFetch(url);
     if (!res.ok) {
       console.error("ReliefWeb HTTP", res.status);
       return [];
@@ -408,7 +523,7 @@ async function fetchReliefWebUSJobs(): Promise<NormalizedJob[]> {
 
 async function fetchNgoJobsInAfricaJobs(): Promise<NormalizedJob[]> {
   try {
-    const catRes = await fetch("https://ngojobsinafrica.com/wp-json/wp/v2/categories?per_page=100");
+    const catRes = await timedFetch("https://ngojobsinafrica.com/wp-json/wp/v2/categories?per_page=100");
     const categories: Record<number, string> = {};
     if (catRes.ok) {
       const cats = await catRes.json();
@@ -419,7 +534,7 @@ async function fetchNgoJobsInAfricaJobs(): Promise<NormalizedJob[]> {
 
     const allPosts: any[] = [];
     for (let page = 1; page <= 2; page++) {
-      const res = await fetch(
+      const res = await timedFetch(
         `https://ngojobsinafrica.com/wp-json/wp/v2/posts?per_page=50&page=${page}&_embed`
       );
       if (!res.ok) break;
@@ -449,13 +564,15 @@ async function fetchNgoJobsInAfricaJobs(): Promise<NormalizedJob[]> {
         const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
         const description = (p.content?.rendered || "").trim();
 
+        const normalizedCategory = normalizeCategory(catName, title, description);
+
         return {
           title,
           company: extractCompany(title),
           location: "Africa",
-          job_type: catName || "opportunity",
-          category: catName,
-          listing_type: categoryToListingType(catName || "opportunity"),
+          job_type: normalizedCategory || "jobs",
+          category: normalizedCategory,
+          listing_type: classifyListing(title, normalizedCategory, description),
           description,
           url: p.link,
           source: "ngojobsinafrica",
@@ -476,7 +593,7 @@ async function fetchNgoJobsInAfricaJobs(): Promise<NormalizedJob[]> {
 async function fetchGlobalSouthJobs(): Promise<NormalizedJob[]> {
   try {
     // Fetch categories for tag mapping
-    const catRes = await fetch("https://www.globalsouthopportunities.com/wp-json/wp/v2/categories?per_page=100");
+    const catRes = await timedFetch("https://www.globalsouthopportunities.com/wp-json/wp/v2/categories?per_page=100");
     const categories: Record<number, string> = {};
     if (catRes.ok) {
       const cats = await catRes.json();
@@ -488,7 +605,7 @@ async function fetchGlobalSouthJobs(): Promise<NormalizedJob[]> {
     const allPosts: any[] = [];
     // Fetch 2 pages of 50 for good volume
     for (let page = 1; page <= 2; page++) {
-      const res = await fetch(
+      const res = await timedFetch(
         `https://www.globalsouthopportunities.com/wp-json/wp/v2/posts?per_page=50&page=${page}&_embed`
       );
       if (!res.ok) break;
@@ -519,13 +636,15 @@ async function fetchGlobalSouthJobs(): Promise<NormalizedJob[]> {
         const title = (p.title?.rendered || "").replace(/<[^>]*>/g, "").trim();
         const description = (p.content?.rendered || "").trim();
 
+        const normalizedCategory = normalizeCategory(catName, title, description);
+
         return {
           title,
           company: extractCompany(title),
           location: "Global",
-          job_type: catName || "opportunity",
-          category: catName,
-          listing_type: categoryToListingType(catName || "opportunity"),
+          job_type: normalizedCategory || "jobs",
+          category: normalizedCategory,
+          listing_type: classifyListing(title, normalizedCategory, description),
           description,
           url: p.link,
           source: "globalsouth",
@@ -547,7 +666,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
-  const authFail = requireCronAuth(req);
+  const authFail = await requireCronAuth(req);
   if (authFail) return authFail;
 
 
@@ -556,37 +675,29 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log("Fetching jobs from YesHub...");
-    const yeshubJobs = await fetchYeshubJobs();
-    console.log(`Fetched ${yeshubJobs.length} jobs from YesHub`);
-
-    console.log("Fetching jobs from Global South Opportunities...");
-    const globalSouthJobs = await fetchGlobalSouthJobs();
-    console.log(`Fetched ${globalSouthJobs.length} jobs from Global South`);
-
-    console.log("Fetching jobs from Opportunities for Youth...");
-    const ofy4Jobs = await fetchOpportunitiesForYouthJobs();
-    console.log(`Fetched ${ofy4Jobs.length} jobs from Opportunities for Youth`);
-
-    console.log("Fetching jobs from YuthAxis...");
-    const yuthAxisJobs = await fetchYuthAxisJobs();
-    console.log(`Fetched ${yuthAxisJobs.length} jobs from YuthAxis`);
-
-    console.log("Fetching jobs from NGO Jobs in Africa...");
-    const ngoJobsAfrica = await fetchNgoJobsInAfricaJobs();
-    console.log(`Fetched ${ngoJobsAfrica.length} jobs from NGO Jobs in Africa`);
-
-    console.log("Fetching US jobs from Remotive...");
-    const remotiveJobs = await fetchRemotiveUSJobs();
-    console.log(`Fetched ${remotiveJobs.length} US jobs from Remotive`);
-
-    console.log("Fetching jobs from JobsToApply...");
-    const jobsToApplyJobs = await fetchJobsToApplyJobs();
-    console.log(`Fetched ${jobsToApplyJobs.length} jobs from JobsToApply`);
-
-    console.log("Fetching US jobs from ReliefWeb...");
-    const reliefwebJobs = await fetchReliefWebUSJobs();
-    console.log(`Fetched ${reliefwebJobs.length} US jobs from ReliefWeb`);
+    console.log("Fetching jobs from all sources...");
+    const [
+      yeshubJobs,
+      globalSouthJobs,
+      ofy4Jobs,
+      yuthAxisJobs,
+      ngoJobsAfrica,
+      remotiveJobs,
+      jobsToApplyJobs,
+      reliefwebJobs,
+    ] = await Promise.all([
+      fetchYeshubJobs(),
+      fetchGlobalSouthJobs(),
+      fetchOpportunitiesForYouthJobs(),
+      fetchYuthAxisJobs(),
+      fetchNgoJobsInAfricaJobs(),
+      fetchRemotiveUSJobs(),
+      fetchJobsToApplyJobs(),
+      fetchReliefWebUSJobs(),
+    ]);
+    console.log(
+      `Fetched source counts: YesHub=${yeshubJobs.length}, GlobalSouth=${globalSouthJobs.length}, OFY=${ofy4Jobs.length}, YuthAxis=${yuthAxisJobs.length}, NGOAfrica=${ngoJobsAfrica.length}, Remotive=${remotiveJobs.length}, JobsToApply=${jobsToApplyJobs.length}, ReliefWeb=${reliefwebJobs.length}`
+    );
 
     const allJobs = [...yeshubJobs, ...globalSouthJobs, ...ofy4Jobs, ...yuthAxisJobs, ...ngoJobsAfrica, ...remotiveJobs, ...jobsToApplyJobs, ...reliefwebJobs];
 
