@@ -473,8 +473,22 @@ async function fetchReliefWebUSJobs(): Promise<NormalizedJob[]> {
   // ReliefWeb deprecated complex GET query-string filters on /v1/jobs (returns
   // 410 Gone). The v1 API is still live but filters/sort/limit must be POSTed
   // as a JSON body. Docs: https://apidoc.reliefweb.int/
+  // ReliefWeb v1 was decommissioned (410 Gone). v2 requires an "approved
+  // appname" registered at https://apidoc.reliefweb.int/parameters#appname
+  // and returns 403 otherwise. Store the approved appname in app_secrets as
+  // "reliefweb_appname" — if unset, we skip the source cleanly.
   try {
-    const url = "https://api.reliefweb.int/v1/jobs?appname=eplicant.com";
+    const { data: secret } = await supabase
+      .from("app_secrets")
+      .select("value")
+      .eq("key", "reliefweb_appname")
+      .maybeSingle();
+    const appname = secret?.value;
+    if (!appname) {
+      console.warn("ReliefWeb skipped: no approved appname registered");
+      return [];
+    }
+    const url = `https://api.reliefweb.int/v2/jobs?appname=${encodeURIComponent(appname)}`;
     const body = {
       profile: "full",
       limit: 50,
