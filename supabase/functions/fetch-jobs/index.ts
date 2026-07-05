@@ -475,17 +475,12 @@ async function fetchReliefWebUSJobs(): Promise<NormalizedJob[]> {
   // as a JSON body. Docs: https://apidoc.reliefweb.int/
   // ReliefWeb v1 was decommissioned (410 Gone). v2 requires an "approved
   // appname" registered at https://apidoc.reliefweb.int/parameters#appname
-  // and returns 403 otherwise. Store the approved appname in app_secrets as
-  // "reliefweb_appname" — if unset, we skip the source cleanly.
+  // and returns 403 otherwise. Set RELIEFWEB_APPNAME as a Supabase secret;
+  // if unset, we skip the source cleanly.
   try {
-    const { data: secret } = await supabase
-      .from("app_secrets")
-      .select("value")
-      .eq("key", "reliefweb_appname")
-      .maybeSingle();
-    const appname = secret?.value;
+    const appname = Deno.env.get("RELIEFWEB_APPNAME");
     if (!appname) {
-      console.warn("ReliefWeb skipped: no approved appname registered");
+      console.warn("ReliefWeb skipped: RELIEFWEB_APPNAME secret not set");
       return [];
     }
     const url = `https://api.reliefweb.int/v2/jobs?appname=${encodeURIComponent(appname)}`;
