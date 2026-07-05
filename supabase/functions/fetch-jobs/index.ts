@@ -470,12 +470,31 @@ async function fetchRemotiveUSJobs(): Promise<NormalizedJob[]> {
 }
 
 async function fetchReliefWebUSJobs(): Promise<NormalizedJob[]> {
+  // ReliefWeb deprecated complex GET query-string filters on /v1/jobs (returns
+  // 410 Gone). The v1 API is still live but filters/sort/limit must be POSTed
+  // as a JSON body. Docs: https://apidoc.reliefweb.int/
+  // ReliefWeb v1 was decommissioned (410 Gone). v2 requires an "approved
+  // appname" registered at https://apidoc.reliefweb.int/parameters#appname
+  // and returns 403 otherwise. Set RELIEFWEB_APPNAME as a Supabase secret;
+  // if unset, we skip the source cleanly.
   try {
-    const url =
-      "https://api.reliefweb.int/v1/jobs?appname=eplicant.com&profile=full&limit=50" +
-      "&sort[]=date.created:desc" +
-      "&filter[field]=country.name&filter[value]=United%20States%20of%20America";
-    const res = await timedFetch(url);
+    const appname = Deno.env.get("RELIEFWEB_APPNAME");
+    if (!appname) {
+      console.warn("ReliefWeb skipped: RELIEFWEB_APPNAME secret not set");
+      return [];
+    }
+    const url = `https://api.reliefweb.int/v2/jobs?appname=${encodeURIComponent(appname)}`;
+    const body = {
+      profile: "full",
+      limit: 50,
+      sort: ["date.created:desc"],
+      filter: { field: "country.name", value: "United States of America" },
+    };
+    const res = await timedFetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body),
+    });
     if (!res.ok) {
       console.error("ReliefWeb HTTP", res.status);
       return [];
