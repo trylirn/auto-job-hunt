@@ -139,11 +139,32 @@ function normalizeCategory(category: string | null, title: string, description =
   return raw || null;
 }
 
+// Strong opportunity signals that must appear in the TITLE (not just description)
+// for a listing to be classified as an opportunity. A job description that
+// mentions "grants" or "internship program" should not flip a real role like
+// "Grants Coordinator" into an opportunity.
+const TITLE_OPPORTUNITY_RE =
+  /\b(fellowship|fellowships|scholarship|scholarships|bursary|bursaries|prize|prizes|call for (applications|proposals|papers|nominations|abstracts)|grant programme|grant program|funding (opportunity|call|programme|program)|bootcamp|accelerator|incubator|competition|challenge|hackathon|conference|summit|symposium|masterclass|webinar|training programme|training program|short course|phd (student|position|scholarship|programme|program|candidate|studentship)|postdoctoral|post-doctoral|traineeship|internship programme|internship program|open call|applications open|apply now for|scholarships? for|awards? programme|awards? program)\b/i;
+
+// Job role words that, when in the TITLE, mean this is a paid position — even
+// if the description mentions grants/fellowships/internships as part of the work.
+const TITLE_JOB_ROLE_RE =
+  /\b(coordinator|director|manager|specialist|officer|analyst|engineer|assistant|consultant|advisor|adviser|associate|lead|head of|chief|president|vice president|vp|executive|administrator|architect|developer|designer|writer|editor|producer|strategist|planner|supervisor|technician|accountant|auditor|controller|counsel|attorney|lawyer|nurse|physician|therapist|teacher|professor|researcher|scientist|programmer|operator|clerk|receptionist|secretary|treasurer|ambassador|representative|liaison|facilitator|trainer|instructor|mentor|recruiter|specialist|steward|surveyor|inspector|examiner|reviewer|editor-in-chief|deputy)\b/i;
+
 function classifyListing(title: string, category: string | null, description = ""): "job" | "opportunity" {
+  // 1. Title-first: explicit opportunity phrasing in the title wins.
+  if (TITLE_OPPORTUNITY_RE.test(title)) return "opportunity";
+
+  // 2. Title-first: a clear job role in the title means it's a job, regardless
+  //    of description keywords like "grants" or "internship program".
+  if (TITLE_JOB_ROLE_RE.test(title)) return "job";
+
+  // 3. Fall back to source-provided category.
   const normalizedCategory = normalizeCategory(category, title, description);
   const byCategory = categoryToListingType(normalizedCategory);
   if (byCategory) return byCategory;
 
+  // 4. Last resort: keyword scoring across title + description.
   const text = `${title} ${description.replace(/<[^>]*>/g, " ")}`;
   const opportunityHits = OPPORTUNITY_KEYWORDS.filter((re) => re.test(text)).length;
   const jobHits = JOB_KEYWORDS.filter((re) => re.test(text)).length;
