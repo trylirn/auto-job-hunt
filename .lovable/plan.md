@@ -1,53 +1,44 @@
-## Focus: ReliefWeb 410 + real SEO fixes
+## Fix: SEO indexing collapse from client-only rendering
 
-Not touching the source updater cron/auth work. Only editing the ReliefWeb call inside `fetch-jobs`, plus front-end SEO code paths.
+Root cause is confirmed: bots receive the same static `index.html` for every URL (job pages, hubs, legacy `/job/id/:id`), so Google buckets them as duplicates and dumps ~2,853 URLs into "Duplicate without user-selected canonical", plus 332 as "Page with redirect" from `<Navigate>` (JS-only) legacy redirects.
 
----
+I will fix this at the Netlify edge — no changes to the source updater, no changes to job/opportunity import logic.
 
-### 1. ReliefWeb `410 Gone` — root cause and fix
+### 1. Rewrite `netlify/edge-functions/job-gone.ts`
 
-ReliefWeb deprecated **GET query-string filtering** on `/v1/jobs`. The v1 API is still live, but complex filter payloads must be sent as **POST with a JSON body** (per `apidoc.reliefweb.int`). Our current GET with `filter[field]=…&filter[value]=…` in the querystring is what triggers 410.
+Extend the existing edge function (already wired to `/job/*` in `netlify.toml`) to handle three cases in this order:
 
-Fix in `supabase/functions/fetch-jobs/index.ts` → `fetchReliefWebUSJobs()`:
-- Switch to `POST https://api.reliefweb.int/v1/jobs?appname=eplicant.com`
-- Send filters/sort/limit as JSON body:
-  ```json
-  {
-    "profile": "full",
-    "limit": 50,
-    "sort": ["date.created:desc"],
-    "filter": { "field": "country.name", "value": "United States of America" }
-  }
-  ```
-- Keep the existing `410 → warn and return []` guard so a future deprecation never breaks the whole run.
-- No auth/cron logic touched.
+1. **Legacy `/job/id/:uuid`** → look up the row, if live respond with a real HTTP **301** to `/job/:slug`. If archived/expired/missing → 410 (as today).
+2. **`/job/:slug` + bot request + live job** → respond with a fully-rendered HTML shell containing:
+   - Real `<title>`, `<meta name="description">`, self-referential `<link rel="canonical">`, matching `og:title`/`og:url`/`og:description`/`og:image`, `twitter:card`.
+   - Visible `<h1>`, company, location, posted date, deadline, and a plain-text snippet from `clean_description` (HTML-stripped, ~500 chars).
+   - `application/ld+json` `JobPosting` — port the existing `buildJobPostingJsonLd()` from `src/pages/JobDetail.tsx` verbatim (region map, TELECOMMUTE handling, validThrough, identifier, directApply) so bots and users see the same schema.
+   - A visible link back to the canonical URL so humans who somehow land here still get out.
+3. **`/job/:slug` + bot request + archived/expired/missing** → 410 (as today).
+4. **Any human request** → `context.next()` (unchanged; React app takes over).
 
-### 2. SEO — investigate and fix what's actually broken
+Bot detection: `user-agent` contains any of `Googlebot`, `Bingbot`, `Slurp`, `DuckDuckBot`, `Baiduspider`, `YandexBot`, `facebookexternalhit`, `Twitterbot`, `LinkedInBot`, `AhrefsBot`, `SemrushBot`, `Applebot`, `PetalBot`, `GPTBot`, `ClaudeBot`, `PerplexityBot`. Case-insensitive.
 
-Two ignored findings complain that sitemap/robots point at `eplicant.com` instead of `auto-job-hunt.lovable.app`. That's **intentional and correct** — `eplicant.com` is the canonical apex, the `.lovable.app` mirror is `noindex`, and Netlify 301s www→apex. I'll leave those ignored and note it clearly.
+Row fetch stays as it is today (Supabase REST with the anon key already embedded in the file), but the SELECT expands to include the fields the HTML/JSON-LD need: `id, slug, title, company, company_logo, location, is_remote, job_type, employment_type, salary, posted_at, apply_before_date, apply_url, clean_description, description, archived_at`.
 
-The two real Lighthouse failures need code changes:
+Cache headers on the bot HTML: `Cache-Control: public, max-age=3600, s-maxage=86400`.
 
-**a. Performance / LCP** (`src/pages/Index.tsx`, `src/components/JobCard.tsx`, hero/logo images)
-- Add `fetchpriority="high"` + explicit width/height and remove `loading="lazy"` on the above-the-fold hero/logo.
-- Add `<link rel="preload" as="image" href="/logo.png" fetchpriority="high">` in `index.html`.
-- Confirm `@font-face` for Space Grotesk / DM Sans uses `display=swap` (already in the Google Fonts URL — verify no other font blocks).
+### 2. Not applicable / out of scope
 
-**b. Accessibility / contrast** (audit components using low-contrast utilities)
-- Replace any `text-gray-300/400`, `text-muted-foreground/50`, or arbitrary greys on light backgrounds with `text-muted-foreground` / `text-foreground` tokens.
-- Fix input `placeholder:` classes to use `placeholder:text-muted-foreground`.
-- Target files to audit: `Header.tsx`, `Footer.tsx`, `JobCard.tsx`, `JobListItem.tsx`, `SearchBar.tsx`, `JobFilters.tsx`, `OpportunityFilters.tsx`, `Newsletter.tsx`, `Index.tsx`.
+- **`/jobs/in/*` country + city hubs** — same theoretical gap but only 64 URLs and not in the current GSC failure buckets. Skipping for now per your "focus" instruction; can be added in a follow-up.
+- **The 712 "Not found"** — the screenshot you attached shows the existing 410 Gone page rendering correctly for an archived listing. That's the intended behavior for archived jobs; Google marks them "Not found (404)" but they were served as 410 Gone (which is what we want — it tells Google to drop them). No code change needed; the "Started" state in GSC means Google is already revalidating and these will drop out naturally.
+- **Source updater, fetch-jobs, cron, classifier, RLS** — untouched.
+- **`sitemap.xml`, `robots.txt`, `netlify.toml`** — untouched (already correct).
 
-### 3. Google Search Console cross-check
+### 3. Verify
 
-Use the connected GSC API to pull the current index-coverage state for `https://eplicant.com/` and surface any additional URL-level issues (soft 404s, discovered-not-indexed, redirect errors) so we don't only rely on the Lovable scanner. Any concrete issues found there get folded into the same fix pass.
+- `curl -A "Googlebot" https://eplicant.com/job/<a-live-slug>` → expect 200 with real `<title>` and JSON-LD in the response body.
+- `curl -A "Mozilla/5.0" https://eplicant.com/job/<a-live-slug>` → expect the normal React shell (unchanged).
+- `curl -I -A "Googlebot" https://eplicant.com/job/id/<a-live-uuid>` → expect `HTTP/1.1 301` with `Location: /job/<slug>`.
+- `curl -I -A "Googlebot" https://eplicant.com/job/<an-archived-slug>` → expect `HTTP/1.1 410`.
 
-### 4. Deploy + verify
+### Files touched
 
-- Deploy only `fetch-jobs` (ReliefWeb change).
-- Manually invoke `fetch-jobs` once, confirm `ReliefWeb=<n>` in the log line (n > 0).
-- Mark the two Lighthouse findings fixed after the perf/contrast edits.
-- Tell the user Lighthouse re-scores against the **published** build, so they need to publish for the score to update.
+- `netlify/edge-functions/job-gone.ts` (rewrite)
 
-### Out of scope (per your instruction)
-- Cron auth, `require-cron`, `x-cron-token`, source classifier, and any other updater logic — untouched.
+That's it — one file.
