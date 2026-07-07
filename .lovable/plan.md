@@ -1,44 +1,72 @@
-## Fix: SEO indexing collapse from client-only rendering
+## Goal
 
-Root cause is confirmed: bots receive the same static `index.html` for every URL (job pages, hubs, legacy `/job/id/:id`), so Google buckets them as duplicates and dumps ~2,853 URLs into "Duplicate without user-selected canonical", plus 332 as "Page with redirect" from `<Navigate>` (JS-only) legacy redirects.
+Move listings that are actually **jobs** (paid roles like Coordinator, Officer, Manager, Specialist, Analyst, Assistant, Consultant, Director, Lead, etc.) out of the **Opportunities** feed and back into **Jobs / Homepage**, using Lovable AI as the classifier.
 
-I will fix this at the Netlify edge — no changes to the source updater, no changes to job/opportunity import logic.
+A quick DB check confirms the problem is still there — sample of active `listing_type='opportunity'` rows whose titles are clearly paid roles:
 
-### 1. Rewrite `netlify/edge-functions/job-gone.ts`
+- "Deputy Chief of Party" (category=grant)
+- "Legal Officer" (category=grant)
+- "Fundraising Specialist" (category=grant)
+- "Part-Time Communications Coordinator" (category=grant)
+- "Wildlife Funds Manager" (category=grant)
+- "Project Manager" (category=grant)
+- "Personal Assistant" (category=opportunity)
+- "HR & Talent Acquisition Manager" (category=grant)
+- "Training and Capacity Development Lead" (category=internship)
+- "Business Developer" (category=job but listing_type=opportunity)
+- …and many more
 
-Extend the existing edge function (already wired to `/job/*` in `netlify.toml`) to handle three cases in this order:
+Root cause of the leftovers: rows created before the last classifier fix in `fetch-jobs` still carry the old wrong `listing_type`, and a handful of titles use ambiguous marketing wrappers ("Join X as a Y…") that a regex can't safely resolve — an LLM can.
 
-1. **Legacy `/job/id/:uuid`** → look up the row, if live respond with a real HTTP **301** to `/job/:slug`. If archived/expired/missing → 410 (as today).
-2. **`/job/:slug` + bot request + live job** → respond with a fully-rendered HTML shell containing:
-   - Real `<title>`, `<meta name="description">`, self-referential `<link rel="canonical">`, matching `og:title`/`og:url`/`og:description`/`og:image`, `twitter:card`.
-   - Visible `<h1>`, company, location, posted date, deadline, and a plain-text snippet from `clean_description` (HTML-stripped, ~500 chars).
-   - `application/ld+json` `JobPosting` — port the existing `buildJobPostingJsonLd()` from `src/pages/JobDetail.tsx` verbatim (region map, TELECOMMUTE handling, validThrough, identifier, directApply) so bots and users see the same schema.
-   - A visible link back to the canonical URL so humans who somehow land here still get out.
-3. **`/job/:slug` + bot request + archived/expired/missing** → 410 (as today).
-4. **Any human request** → `context.next()` (unchanged; React app takes over).
+## Scope
 
-Bot detection: `user-agent` contains any of `Googlebot`, `Bingbot`, `Slurp`, `DuckDuckBot`, `Baiduspider`, `YandexBot`, `facebookexternalhit`, `Twitterbot`, `LinkedInBot`, `AhrefsBot`, `SemrushBot`, `Applebot`, `PetalBot`, `GPTBot`, `ClaudeBot`, `PerplexityBot`. Case-insensitive.
+**In scope**
+- New Supabase Edge Function `reclassify-listings` that:
+  1. Reads active rows where `listing_type = 'opportunity'` (batched, e.g. 50 per call).
+  2. For each row, asks Lovable AI (`google/gemini-2.5-flash`, cheap + fast) to classify as `job` or `opportunity` using title + short description snippet.
+  3. Updates `listing_type = 'job'` on rows the model marks `job` (with a confidence gate).
+  4. Returns a JSON summary (`scanned`, `reclassified`, `kept`, `errors`, sample of moved titles).
+- Auth: require `x-cron-secret: $CRON_SECRET` header (same pattern the other admin functions use via `_shared/require-cron.ts`) so it can only be triggered manually.
+- Run it once via `supabase--curl_edge_functions` to backfill, then leave it deployed for future manual sweeps.
 
-Row fetch stays as it is today (Supabase REST with the anon key already embedded in the file), but the SELECT expands to include the fields the HTML/JSON-LD need: `id, slug, title, company, company_logo, location, is_remote, job_type, employment_type, salary, posted_at, apply_before_date, apply_url, clean_description, description, archived_at`.
+**Explicitly out of scope (not touched)**
+- `supabase/functions/fetch-jobs/index.ts` — the source updater. No edits.
+- The OpenAI integration / `OPENAI_API_KEY` — untouched. This function uses Lovable AI Gateway (`LOVABLE_API_KEY`) only.
+- `clean-job-descriptions`, `fix-company-names`, `fix-locations`, `archive-expired-listings`, cron schedules, RLS, `jobs` schema.
+- Frontend (`Index.tsx`, `Opportunities.tsx`, filters) — no changes needed; they already read `listing_type`.
 
-Cache headers on the bot HTML: `Cache-Control: public, max-age=3600, s-maxage=86400`.
+## How it works (technical)
 
-### 2. Not applicable / out of scope
+1. **Function file**: `supabase/functions/reclassify-listings/index.ts`
+   - `require-cron.ts` auth guard.
+   - Service-role Supabase client.
+   - Query:
+     ```sql
+     select id, title, company, clean_description, description, category
+     from jobs
+     where listing_type = 'opportunity'
+       and archived_at is null
+     order by created_at desc
+     limit :batch;
+     ```
+   - For each row, call Lovable AI Gateway (`https://ai.gateway.lovable.dev/v1`, header `Lovable-API-Key: $LOVABLE_API_KEY`, model `google/gemini-2.5-flash`) with a strict JSON-mode prompt:
+     - System: "You classify listings on an international-development job board. Return JSON `{ "type": "job" | "opportunity", "confidence": 0..1, "reason": string }`. A **job** = paid employment role (any level, FT/PT/contract/consultancy assignment with a defined role title like Officer, Coordinator, Manager, Specialist, Analyst, Advisor, Consultant, Assistant, Director, Lead, Engineer, etc.). An **opportunity** = fellowship, scholarship, bursary, grant funding call, internship, traineeship, PhD/postdoc position, call for proposals/papers/applicants, competition, hackathon, conference, award/prize, residency, or capacity-building programme."
+     - User: title + company + first ~400 chars of `clean_description ?? description`.
+   - If `type === 'job'` and `confidence >= 0.7`, update `listing_type = 'job'`.
+   - Concurrency: process 5 rows in parallel per batch (small, avoids gateway 429).
+   - Handle Lovable AI failures gracefully:
+     - `429` → back off and stop the batch, return partial summary.
+     - `402` → return an explicit "credits exhausted" error to the caller.
+   - Query param `?batch=50&max_batches=20` so it can be paginated across calls without timing out.
 
-- **`/jobs/in/*` country + city hubs** — same theoretical gap but only 64 URLs and not in the current GSC failure buckets. Skipping for now per your "focus" instruction; can be added in a follow-up.
-- **The 712 "Not found"** — the screenshot you attached shows the existing 410 Gone page rendering correctly for an archived listing. That's the intended behavior for archived jobs; Google marks them "Not found (404)" but they were served as 410 Gone (which is what we want — it tells Google to drop them). No code change needed; the "Started" state in GSC means Google is already revalidating and these will drop out naturally.
-- **Source updater, fetch-jobs, cron, classifier, RLS** — untouched.
-- **`sitemap.xml`, `robots.txt`, `netlify.toml`** — untouched (already correct).
+2. **Deploy** with `supabase--deploy_edge_functions`.
 
-### 3. Verify
+3. **Backfill run** via `supabase--curl_edge_functions` with `x-cron-secret`, repeated until `reclassified == 0` for a batch (currently ~900 rows to scan; at 50/batch that's ~18 calls).
 
-- `curl -A "Googlebot" https://eplicant.com/job/<a-live-slug>` → expect 200 with real `<title>` and JSON-LD in the response body.
-- `curl -A "Mozilla/5.0" https://eplicant.com/job/<a-live-slug>` → expect the normal React shell (unchanged).
-- `curl -I -A "Googlebot" https://eplicant.com/job/id/<a-live-uuid>` → expect `HTTP/1.1 301` with `Location: /job/<slug>`.
-- `curl -I -A "Googlebot" https://eplicant.com/job/<an-archived-slug>` → expect `HTTP/1.1 410`.
+4. **Report back** with counts + a sample of titles moved.
 
-### Files touched
+## Deliverables
 
-- `netlify/edge-functions/job-gone.ts` (rewrite)
-
-That's it — one file.
+- `supabase/functions/reclassify-listings/index.ts` (new)
+- Function deployed and executed to clear the current backlog
+- Short summary of how many rows moved from Opportunities → Jobs

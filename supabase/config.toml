@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.subscribe-email]
 verify_jwt = false
+
+[functions.reclassify-listings]
+verify_jwt = false
