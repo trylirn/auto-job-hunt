@@ -18,9 +18,13 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Space Grotesk", "sans-serif"],
-        body: ["DM Sans", "sans-serif"],
+        display: ["Instrument Serif", "Georgia", "serif"],
+        body: ["Work Sans", "system-ui", "sans-serif"],
       },
+      maxWidth: {
+        prose: "68ch",
+      },
+
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
