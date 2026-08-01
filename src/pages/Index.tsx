@@ -1,22 +1,16 @@
-import { useState, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
-import { Header } from "@/components/Header";
-import { SearchBar } from "@/components/SearchBar";
-import { JobFilters } from "@/components/JobFilters";
-import { JobCard } from "@/components/JobCard";
-import { EmailSubscriber } from "@/components/EmailSubscriber";
-import { JobListItem } from "@/components/JobListItem";
-import { JobCardSkeleton } from "@/components/JobCardSkeleton";
-import { JobPagination } from "@/components/JobPagination";
-import { ViewToggle } from "@/components/ViewToggle";
-import { useJobs } from "@/hooks/useJobs";
-import { useFilterOptions } from "@/hooks/useFilterOptions";
+import { Link } from "react-router-dom";
+import { Layout } from "@/components/Layout";
+import { Seo } from "@/components/Seo";
+import { ListingBrowser } from "@/components/ListingBrowser";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { useListingStats } from "@/hooks/useListingStats";
-import { Briefcase, TrendingUp, Globe, Calendar } from "lucide-react";
-import { useDebounce } from "@/hooks/useDebounce";
-import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/button";
+import {
+  buildMeta,
+  faqJsonLd,
+  organizationJsonLd,
+  websiteJsonLd,
+} from "@/lib/seo";
+import { getStaticRoute } from "@/lib/routes";
 import {
   Accordion,
   AccordionContent,
@@ -24,246 +18,132 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+const FAQS = [
+  {
+    question: "What is Eplicant?",
+    answer:
+      "Eplicant is a job board for international development professionals. It brings together roles, fellowships, scholarships, grants and other opportunities from across the sector so you can find them all in one place.",
+  },
+  {
+    question: "How often are jobs updated?",
+    answer:
+      "New jobs and opportunities are added every day, so it is worth checking back regularly or subscribing to the weekly newsletter.",
+  },
+  {
+    question: "Are these jobs legitimate?",
+    answer:
+      "Yes. Listings come from established organisations working in international development. Outdated or suspicious postings are removed to keep the board trustworthy.",
+  },
+  {
+    question: "How do I apply for a job?",
+    answer:
+      "Open any listing to read the full details, then use the Apply button to go straight to the employer's application page. You apply directly to the organisation hiring.",
+  },
+  {
+    question: "What is the difference between Jobs and Opportunities?",
+    answer:
+      "Jobs are employment roles — full-time, part-time or contract. Opportunities cover fellowships, scholarships, grants, conferences and other programmes designed to advance your career.",
+  },
+];
+
 const Index = () => {
-  const [search, setSearch] = useState("");
-  const [jobType, setJobType] = useState("");
-  const [location, setLocation] = useState("");
-  const [dateRange, setDateRange] = useState("");
-  const [region, setRegion] = useState("");
-  const [searchParams, setSearchParams] = useSearchParams();
-  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
-  const setPage = useCallback((p: number) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (p <= 1) next.delete("page");
-      else next.set("page", String(p));
-      return next;
-    }, { replace: false });
-  }, [setSearchParams]);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-
-  const debouncedSearch = useDebounce(search, 300);
-  const { data: filterOptions } = useFilterOptions();
   const { data: stats } = useListingStats();
+  const route = getStaticRoute("/")!;
 
-  const hasActiveFilters = !!jobType || !!location || !!dateRange || !!region;
-
-  const { data, isLoading } = useJobs({
-    search: debouncedSearch,
-    jobType,
-    location,
-    dateRange: dateRange as "24h" | "week" | "month" | "",
-    region: region as "us" | "non-us" | "",
-    page,
-    listingType: "jobs"
+  const meta = buildMeta({
+    title: route.title,
+    description: route.description,
+    path: "/",
   });
 
-  const clearFilters = useCallback(() => {
-    setJobType("");
-    setLocation("");
-    setDateRange("");
-    setRegion("");
-    setPage(1);
-  }, []);
-
   return (
-    <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>Eplicant — Jobs for International Development Professionals</title>
-        <meta name="description" content="Jobs and opportunities for international development professionals — roles, fellowships, scholarships, and grants in one place." />
-        <link rel="canonical" href="https://eplicant.com/" />
-        <meta property="og:title" content="Eplicant — Jobs for International Development Professionals" />
-        <meta property="og:description" content="Jobs and opportunities for international development professionals — roles, fellowships, scholarships, and grants in one place." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://eplicant.com/" />
-        <meta property="og:image" content="https://eplicant.com/logo.png" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Eplicant — Jobs for International Development Professionals" />
-        <meta name="twitter:description" content="Jobs and opportunities for international development professionals — roles, fellowships, scholarships, and grants in one place." />
-        <script type="application/ld+json">{JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "ItemList",
-          "itemListElement": [
-            { "@type": "SiteNavigationElement", "position": 1, "name": "Jobs", "url": "https://eplicant.com/" },
-            { "@type": "SiteNavigationElement", "position": 2, "name": "Opportunities", "url": "https://eplicant.com/opportunities" },
-            { "@type": "SiteNavigationElement", "position": 3, "name": "Remote Jobs", "url": "https://eplicant.com/?location=Remote" }
-          ]
-        })}</script>
-        <script type="application/ld+json">{JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          "mainEntity": [
-            { "@type": "Question", "name": "What is Eplicant?", "acceptedAnswer": { "@type": "Answer", "text": "Eplicant is a job board for international development professionals. We bring together roles, fellowships, scholarships, grants, and other opportunities from across the sector so you can find them all in one place." } },
-            { "@type": "Question", "name": "How often are jobs updated?", "acceptedAnswer": { "@type": "Answer", "text": "New jobs and opportunities are added every day, so it's worth checking back regularly or subscribing to our weekly newsletter." } },
-            { "@type": "Question", "name": "Are these jobs legitimate?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Listings come from established organisations working in international development. We remove outdated or suspicious postings to keep the board trustworthy." } },
-            { "@type": "Question", "name": "How do I apply for a job?", "acceptedAnswer": { "@type": "Answer", "text": "Click on any listing to view its full details, then hit the Apply button to go directly to the application page. From there, you can submit your application to the employer or organization." } },
-            { "@type": "Question", "name": "What's the difference between Jobs and Opportunities?", "acceptedAnswer": { "@type": "Answer", "text": "Jobs are traditional employment roles — full-time, part-time, or contract positions. Opportunities cover fellowships, scholarships, grants, conferences, and other programs designed to advance your career." } }
-          ]
-        })}</script>
-      </Helmet>
-      <Header />
+    <Layout>
+      <Seo
+        {...meta}
+        jsonLd={[organizationJsonLd, websiteJsonLd, faqJsonLd(FAQS)]}
+      />
 
-      {/* Hero */}
-      <section className="border-b bg-card">
-        <div className="container py-8 md:py-14">
-          <div className="grid md:grid-cols-[1fr_320px] gap-8 items-center">
+      {/* Masthead */}
+      <section className="border-b border-rule bg-card">
+        <div className="container py-12 md:py-20">
+          <div className="grid gap-10 md:grid-cols-[1.7fr_1fr] md:items-end">
             <div>
-              <h1 className="font-display text-2xl font-bold tracking-tight md:text-4xl lg:text-5xl">
-                International Development Jobs & Opportunities
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                The international development job board
+              </p>
+              <h1 className="mt-4 max-w-3xl font-display text-4xl leading-[1.05] md:text-6xl">
+                Jobs and opportunities for people who work on what matters
               </h1>
-              <p className="mt-2 max-w-xl text-base text-muted-foreground md:text-lg">
-                Thousands of jobs and opportunities — updated daily.
+              <p className="mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
+                Humanitarian response, global health, climate, education,
+                governance and human rights roles from organisations across the
+                sector — gathered daily, in one place.
               </p>
-              <div className="mt-4 md:mt-6 max-w-2xl">
-                <SearchBar value={search} onChange={(v) => {setSearch(v);setPage(1);}} />
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { setLocation("Remote"); setPage(1); }}>
-                  <Globe className="h-3 w-3" /> Remote
-                </Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { setRegion("us"); setPage(1); }}>
-                  US-based
-                </Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { setDateRange("week"); setPage(1); }}>
-                  <Calendar className="h-3 w-3" /> This week
-                </Button>
-              </div>
             </div>
-            <aside className="rounded-2xl border bg-background p-5 hidden md:block">
-              <div className="flex items-center gap-2 mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                Live now
+
+            <dl className="flex gap-10 border-l border-rule pl-6 md:flex-col md:gap-5">
+              <div>
+                <dt className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Live jobs
+                </dt>
+                <dd className="font-display text-4xl">
+                  {stats ? stats.jobs.toLocaleString() : "—"}
+                </dd>
               </div>
-              <div className="space-y-3">
-                <div>
-                  <p className="font-display text-2xl font-bold">{stats?.jobs ?? "—"}</p>
-                  <p className="text-xs text-muted-foreground">Active jobs</p>
-                </div>
-                <div>
-                  <p className="font-display text-2xl font-bold">{stats?.opportunities ?? "—"}</p>
-                  <p className="text-xs text-muted-foreground">Active opportunities</p>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-2 border-t">
-                  <TrendingUp className="h-3 w-3" /> Updated daily
-                </div>
+              <div>
+                <dt className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Opportunities
+                </dt>
+                <dd className="font-display text-4xl">
+                  {stats ? stats.opportunities.toLocaleString() : "—"}
+                </dd>
               </div>
-            </aside>
+            </dl>
           </div>
         </div>
       </section>
 
-      {/* Email Subscriber */}
-      <section className="container py-4 md:py-6 max-w-2xl">
-        <EmailSubscriber />
-      </section>
+      <div className="container py-10 md:py-14">
+        <ListingBrowser
+          mode="jobs"
+          basePath="/"
+          heading="Latest jobs"
+          resultNoun="job"
+          searchPlaceholder="Search jobs by title, organisation or keyword"
+        />
+      </div>
 
-      {/* Main */}
-      <main className="container py-6 md:py-8">
-        <div className="mb-4 md:mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <JobFilters
-            jobType={jobType}
-            onJobTypeChange={(v) => {setJobType(v);setPage(1);}}
-            location={location}
-            onLocationChange={(v) => {setLocation(v);setPage(1);}}
-            dateRange={dateRange}
-            onDateRangeChange={(v) => {setDateRange(v);setPage(1);}}
-            region={region}
-            onRegionChange={(v) => {setRegion(v);setPage(1);}}
-            onClearFilters={clearFilters}
-            hasActiveFilters={hasActiveFilters}
-            availableLocations={filterOptions?.jobLocations ?? []}
-          />
-
-          <div className="flex items-center gap-3">
-            {data &&
-            <p className="text-sm text-muted-foreground whitespace-nowrap">
-                {data.totalCount} job{data.totalCount !== 1 ? "s" : ""} found
-              </p>
-            }
-            <ViewToggle value={viewMode} onChange={setViewMode} />
-          </div>
-        </div>
-
-        {isLoading ?
-        <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
-            {Array.from({ length: 6 }).map((_, i) =>
-          <JobCardSkeleton key={i} />
-          )}
-          </div> :
-        data?.jobs.length ?
-        <>
-            {viewMode === "grid" ?
-          <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
-                {data.jobs.map((job) =>
-            <JobCard key={job.id} job={job} />
-            )}
-              </div> :
-          <div className="flex flex-col gap-2">
-                {data.jobs.map((job) =>
-            <JobListItem key={job.id} job={job} />
-            )}
-              </div>
-          }
-            <div className="mt-6 md:mt-8">
-              <JobPagination
-              currentPage={page}
-              totalPages={data.totalPages}
-              onPageChange={setPage} />
-            </div>
-          </> :
-        <div className="flex flex-col items-center justify-center py-16 md:py-20 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
-              <Briefcase className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h2 className="mt-4 font-display text-xl font-semibold">No jobs found</h2>
-            <p className="mt-1 text-muted-foreground">
-              Try adjusting your search or filters
-            </p>
-          </div>
-        }
-      </main>
+      <div className="container pb-14">
+        <NewsletterSignup id="home-newsletter" />
+      </div>
 
       {/* FAQ */}
-      <section className="border-t bg-card">
-        <div className="container py-10 md:py-16 max-w-3xl">
-          <h2 className="font-display text-xl font-bold md:text-2xl mb-6">Frequently Asked Questions</h2>
+      <section className="border-t border-rule bg-card">
+        <div className="container grid gap-8 py-14 md:grid-cols-[1fr_1.6fr] md:py-20">
+          <div>
+            <h2 className="font-display text-3xl md:text-4xl">
+              Frequently asked questions
+            </h2>
+            <p className="mt-3 max-w-sm text-sm text-muted-foreground">
+              Still curious? Read more <Link to="/about" className="text-primary underline underline-offset-2">about Eplicant</Link>.
+            </p>
+          </div>
           <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="what">
-              <AccordionTrigger>What is Eplicant?</AccordionTrigger>
-              <AccordionContent>
-                Eplicant is a job board for international development professionals. We bring together roles, fellowships, scholarships, grants, and other opportunities from across the sector so you can find them all in one place.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="updated">
-              <AccordionTrigger>How often are jobs updated?</AccordionTrigger>
-              <AccordionContent>
-                New jobs and opportunities are added every day, so it's worth checking back regularly or subscribing to our weekly newsletter.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="verified">
-              <AccordionTrigger>Are these jobs legitimate?</AccordionTrigger>
-              <AccordionContent>
-                Yes. Listings come from established organisations working in international development. We remove outdated or suspicious postings to keep the board trustworthy.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="apply">
-              <AccordionTrigger>How do I apply for a job?</AccordionTrigger>
-              <AccordionContent>
-                Click on any listing to view its full details, then hit the "Apply" button to go directly to the application page. From there, you can submit your application to the employer or organization.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="difference">
-              <AccordionTrigger>What's the difference between Jobs and Opportunities?</AccordionTrigger>
-              <AccordionContent>
-                Jobs are traditional employment roles — full-time, part-time, or contract positions. Opportunities cover fellowships, scholarships, grants, conferences, and other programs designed to advance your career.
-              </AccordionContent>
-            </AccordionItem>
+            {FAQS.map((faq) => (
+              <AccordionItem key={faq.question} value={faq.question}>
+                <AccordionTrigger className="text-left font-display text-lg">
+                  {faq.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
+                  {faq.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
           </Accordion>
         </div>
       </section>
-
-      <Footer />
-    </div>);
+    </Layout>
+  );
 };
 
 export default Index;
