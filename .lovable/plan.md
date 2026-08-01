@@ -1,72 +1,60 @@
-## Goal
+## Eplicant — full frontend rebuild
 
-Move listings that are actually **jobs** (paid roles like Coordinator, Officer, Manager, Specialist, Analyst, Assistant, Consultant, Director, Lead, etc.) out of the **Opportunities** feed and back into **Jobs / Homepage**, using Lovable AI as the classifier.
+Backend stays completely untouched: the jobs database, source updater, newsletter generator, cleanup/archive functions and their schedules keep running exactly as they do today. Everything below replaces the *website* only.
 
-A quick DB check confirms the problem is still there — sample of active `listing_type='opportunity'` rows whose titles are clearly paid roles:
+### First, the honest part about SEO
 
-- "Deputy Chief of Party" (category=grant)
-- "Legal Officer" (category=grant)
-- "Fundraising Specialist" (category=grant)
-- "Part-Time Communications Coordinator" (category=grant)
-- "Wildlife Funds Manager" (category=grant)
-- "Project Manager" (category=grant)
-- "Personal Assistant" (category=opportunity)
-- "HR & Talent Acquisition Manager" (category=grant)
-- "Training and Capacity Development Lead" (category=internship)
-- "Business Developer" (category=job but listing_type=opportunity)
-- …and many more
+Lovable builds React + Vite. There is no server rendering. The reason Google struggles today is that every URL initially serves the same bare HTML shell, and the real title/description/content only appear after JavaScript runs.
 
-Root cause of the leftovers: rows created before the last classifier fix in `fetch-jobs` still carry the old wrong `listing_type`, and a handful of titles use ambiguous marketing wrappers ("Join X as a Y…") that a regex can't safely resolve — an LLM can.
+The rebuild does not remove that constraint — it fixes it properly with a **site-wide bot prerender layer at the Netlify edge**. Today that layer only covers job pages. After the rebuild, every route (home, opportunities, country hubs, city hubs, guides, legal pages, job/opportunity detail) is served to crawlers as complete, real HTML with correct title, description, canonical, and structured data, generated at request time from the live database. Humans still get the fast React app.
 
-## Scope
+That is the maximum achievable on this stack, and it is a genuine step up from where the site is now. If you ever want true SSR for every visitor, that requires moving off Lovable — worth revisiting only if this doesn't move the needle.
 
-**In scope**
-- New Supabase Edge Function `reclassify-listings` that:
-  1. Reads active rows where `listing_type = 'opportunity'` (batched, e.g. 50 per call).
-  2. For each row, asks Lovable AI (`google/gemini-2.5-flash`, cheap + fast) to classify as `job` or `opportunity` using title + short description snippet.
-  3. Updates `listing_type = 'job'` on rows the model marks `job` (with a confidence gate).
-  4. Returns a JSON summary (`scanned`, `reclassified`, `kept`, `errors`, sample of moved titles).
-- Auth: require `x-cron-secret: $CRON_SECRET` header (same pattern the other admin functions use via `_shared/require-cron.ts`) so it can only be triggered manually.
-- Run it once via `supabase--curl_edge_functions` to backfill, then leave it deployed for future manual sweeps.
+### Design direction — editorial & calm
 
-**Explicitly out of scope (not touched)**
-- `supabase/functions/fetch-jobs/index.ts` — the source updater. No edits.
-- The OpenAI integration / `OPENAI_API_KEY` — untouched. This function uses Lovable AI Gateway (`LOVABLE_API_KEY`) only.
-- `clean-job-descriptions`, `fix-company-names`, `fix-locations`, `archive-expired-listings`, cron schedules, RLS, `jobs` schema.
-- Frontend (`Index.tsx`, `Opportunities.tsx`, filters) — no changes needed; they already read `listing_type`.
+- Palette: ink `#12100E`, paper `#F7F4EF`, deep green `#1F6F5C` (primary), rust `#C2410C` (accent/deadline urgency), all as HSL semantic tokens.
+- Type: serif display headings (Instrument Serif) + clean sans body (Work Sans). No Inter, no gradients.
+- Feel: generous whitespace, hairline rules instead of heavy borders, quiet cards, restrained motion. Reads like a trusted sector publication, not a startup SaaS page.
+- Full light/dark token set, WCAG AA contrast throughout.
 
-## How it works (technical)
+### Pages being rebuilt
 
-1. **Function file**: `supabase/functions/reclassify-listings/index.ts`
-   - `require-cron.ts` auth guard.
-   - Service-role Supabase client.
-   - Query:
-     ```sql
-     select id, title, company, clean_description, description, category
-     from jobs
-     where listing_type = 'opportunity'
-       and archived_at is null
-     order by created_at desc
-     limit :batch;
-     ```
-   - For each row, call Lovable AI Gateway (`https://ai.gateway.lovable.dev/v1`, header `Lovable-API-Key: $LOVABLE_API_KEY`, model `google/gemini-2.5-flash`) with a strict JSON-mode prompt:
-     - System: "You classify listings on an international-development job board. Return JSON `{ "type": "job" | "opportunity", "confidence": 0..1, "reason": string }`. A **job** = paid employment role (any level, FT/PT/contract/consultancy assignment with a defined role title like Officer, Coordinator, Manager, Specialist, Analyst, Advisor, Consultant, Assistant, Director, Lead, Engineer, etc.). An **opportunity** = fellowship, scholarship, bursary, grant funding call, internship, traineeship, PhD/postdoc position, call for proposals/papers/applicants, competition, hackathon, conference, award/prize, residency, or capacity-building programme."
-     - User: title + company + first ~400 chars of `clean_description ?? description`.
-   - If `type === 'job'` and `confidence >= 0.7`, update `listing_type = 'job'`.
-   - Concurrency: process 5 rows in parallel per batch (small, avoids gateway 429).
-   - Handle Lovable AI failures gracefully:
-     - `429` → back off and stop the batch, return partial summary.
-     - `402` → return an explicit "credits exhausted" error to the caller.
-   - Query param `?batch=50&max_batches=20` so it can be paginated across calls without timing out.
+- **Home / Jobs** — hero with search, quick filters (Remote, US, this week), region and type filters, grid/list toggle, pagination in the URL, live counts, FAQ.
+- **Opportunities** — same shell, opportunity-specific filters.
+- **Job / Opportunity detail** — clean reading layout, deadline urgency notice, apply CTA, share buttons, similar listings, sanitized description.
+- **Post a Job** — free submission form writing to the existing submissions path, with validation and confirmation.
+- **Newsletter** — archive plus subscribe, unchanged generator behind it.
+- **Subscribe form** — same Plunk integration, "join over 10,000 subscribers" copy, no spam wording.
+- **Country hubs, city hubs, jobs index, UN careers guide** — all preserved, redesigned.
+- **About, Terms, Privacy, Contact** — same content, new layout.
+- **404** — proper noindex, useful navigation.
 
-2. **Deploy** with `supabase--deploy_edge_functions`.
+Existing behaviour that carries over unchanged: pagination memory when returning from a listing, browser-back returning to where you were, no aggregator/source attribution anywhere, deadline handling, direct application links.
 
-3. **Backfill run** via `supabase--curl_edge_functions` with `x-cron-secret`, repeated until `reclassified == 0` for a batch (currently ~900 rows to scan; at 50/batch that's ~18 calls).
+### SEO work
 
-4. **Report back** with counts + a sample of titles moved.
+- Per-route metadata: unique title, description, canonical, Open Graph, Twitter — for every route, driven by a single shared helper so nothing can be missed.
+- Structured data: Organization + WebSite on the shell, `JobPosting` (with `applicantLocationRequirements`, `validThrough`, `identifier`) on detail pages, `BreadcrumbList` on hubs, `FAQPage` on home, `ItemList` on listing pages.
+- Semantic HTML: single H1 per page, correct heading order, real `<nav>`/`<main>`/`<article>`, alt text everywhere, internal linking between hubs and listings.
+- Apex-host canonicalisation and `.lovable.app` noindex preserved.
+- 410 Gone for deleted/expired listings and 301 for legacy `/job/id/:uuid` preserved and extended to opportunities.
+- Sitemap and `llms.txt` regenerated from the same route registry so they can't drift.
+- Performance: font preload with `display: swap`, lazy images with dimensions, code-split routes, small initial bundle.
 
-## Deliverables
+### Technical notes
 
-- `supabase/functions/reclassify-listings/index.ts` (new)
-- Function deployed and executed to clear the current backlog
-- Short summary of how many rows moved from Opportunities → Jobs
+- New design tokens in `index.css` and `tailwind.config.ts`; every component uses semantic tokens only.
+- A single `src/lib/seo.ts` + `<Seo>` component as the one source of head metadata, consumed by both React and the edge prerenderer.
+- A route registry (`src/lib/routes.ts`) feeding the router, sitemap, and prerender layer.
+- `netlify/edge-functions/` extended from job-only prerendering to all routes, reusing the existing read-only database queries.
+- Data hooks (`useJobs`, `useFilterOptions`, `useListingStats`) keep their current query shapes so the backend contract is identical.
+- Old page and component files are deleted, not layered over.
+
+### Sequence
+
+1. Design system and tokens.
+2. Layout shell, header, footer, SEO helper, route registry.
+3. Listing pages and detail pages.
+4. Post a job, newsletter, subscribe, legal/about pages, hubs and guide.
+5. Edge prerender layer, sitemap, robots, llms.txt.
+6. Verify in the preview: every route renders, filters and pagination work, submissions and subscriptions succeed, and bot-fetched HTML contains real metadata.
