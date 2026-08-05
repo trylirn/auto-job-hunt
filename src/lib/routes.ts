@@ -16,9 +16,9 @@ export interface StaticRoute {
 export const STATIC_ROUTES: StaticRoute[] = [
   {
     path: "/",
-    title: "International Development Jobs & Opportunities",
+    title: "Remote International Development Jobs",
     description:
-      "Browse jobs for international development professionals — NGO, UN, humanitarian and global health roles, updated daily.",
+      "Browse remote jobs for international development professionals — NGO, UN, humanitarian and global health roles, updated daily.",
     indexable: true,
     changefreq: "daily",
     priority: 1.0,
@@ -36,7 +36,7 @@ export const STATIC_ROUTES: StaticRoute[] = [
     path: "/jobs/in",
     title: "Jobs by Country & City",
     description:
-      "Browse international development, UN and NGO jobs by country and city — every location with a live opening.",
+      "Browse remote international development, UN and NGO jobs by country and region — every location with a live opening.",
     indexable: true,
     changefreq: "daily",
     priority: 0.8,
@@ -54,16 +54,16 @@ export const STATIC_ROUTES: StaticRoute[] = [
     path: "/newsletter",
     title: "Weekly Newsletter",
     description:
-      "A weekly digest of new jobs and opportunities across the international development sector.",
+      "A weekly digest of new remote jobs across the international development sector.",
     indexable: true,
     changefreq: "weekly",
     priority: 0.6,
   },
   {
     path: "/submit",
-    title: "Post a Job — Free",
+    title: "Post a Remote Job — Free",
     description:
-      "Post a role for international development professionals. Free, no account needed, live immediately.",
+      "Post a remote role for international development professionals. Free, no account needed, live immediately.",
     indexable: true,
     changefreq: "monthly",
     priority: 0.6,
@@ -72,7 +72,7 @@ export const STATIC_ROUTES: StaticRoute[] = [
     path: "/about",
     title: "About",
     description:
-      "Eplicant is a job board for international development professionals — connecting talent with mission-driven roles worldwide.",
+      "Eplicant is a remote job board for international development professionals — connecting talent with mission-driven roles worldwide.",
     indexable: true,
     changefreq: "yearly",
     priority: 0.4,
