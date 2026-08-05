@@ -564,9 +564,21 @@ const JobDetail = () => {
             {/* Share & Apply (mobile) */}
             <div className="mt-6 border-t pt-4 space-y-4 lg:hidden">
               <Button size="lg" className="gap-2 w-full" onClick={handleApply}>
-                {job.listing_type === "opportunity" ? "Apply now" : "Apply for this position"}
-                {applyUrl && <ExternalLink className="h-4 w-4" />}
+                {isEmailApply
+                  ? "Apply by email"
+                  : job.listing_type === "opportunity"
+                    ? "Apply now"
+                    : "Apply for this position"}
+                {applyUrl && !isEmailApply && <ExternalLink className="h-4 w-4" />}
               </Button>
+              {applyEmail && (
+                <p className="text-center text-xs text-muted-foreground">
+                  Send your application to{" "}
+                  <a href={applyUrl!} className="text-primary underline underline-offset-2">
+                    {applyEmail}
+                  </a>
+                </p>
+              )}
               <ShareButtons
                 title={job.title}
                 company={job.company}
