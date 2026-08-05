@@ -28,7 +28,7 @@ import { Footer } from "@/components/Footer";
 import { ShareButtons } from "@/components/ShareButtons";
 import { SimilarJobs } from "@/components/SimilarJobs";
 import { EmailSubscriber } from "@/components/EmailSubscriber";
-import { sanitizeHtml } from "@/lib/sanitize";
+import { renderDescriptionHtml } from "@/lib/sanitize";
 import { formatDistanceToNow } from "date-fns";
 
 function extractApplyUrl(description: string | null): string | null {
@@ -351,8 +351,10 @@ const JobDetailSidebar = ({
 
         {/* Apply Button */}
         <Button size="lg" className="gap-2 w-full" onClick={onApply}>
-          Apply now
-          {applyUrl && <ExternalLink className="h-4 w-4" />}
+          {applyUrl?.toLowerCase().startsWith("mailto:") ? "Apply by email" : "Apply now"}
+          {applyUrl && !applyUrl.toLowerCase().startsWith("mailto:") && (
+            <ExternalLink className="h-4 w-4" />
+          )}
         </Button>
       </CardContent>
     </Card>
@@ -444,8 +446,17 @@ const JobDetail = () => {
 
   const displayDescription = job.clean_description || job.description;
 
+  // Recruiters may collect applications by email only — we store that as a
+  // mailto: link in apply_url so the same Apply button works for both.
+  const isEmailApply = !!applyUrl && applyUrl.toLowerCase().startsWith("mailto:");
+  const applyEmail = isEmailApply
+    ? decodeURIComponent(applyUrl!.slice(7).split("?")[0])
+    : null;
+
   const handleApply = () => {
-    if (applyUrl) {
+    if (isEmailApply) {
+      window.location.href = applyUrl!;
+    } else if (applyUrl) {
       window.open(applyUrl, "_blank", "noopener,noreferrer");
     } else {
       descriptionRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -541,12 +552,13 @@ const JobDetail = () => {
                 <div
                   className="prose prose-sm max-w-none text-muted-foreground leading-relaxed
                     prose-headings:text-foreground prose-headings:font-display
+                    prose-p:my-4
                     prose-a:text-primary prose-a:no-underline hover:prose-a:underline
                     prose-li:marker:text-muted-foreground
                     prose-strong:text-foreground
                     break-words overflow-hidden [overflow-wrap:anywhere]
                     [word-break:break-word]"
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayDescription) }}
+                  dangerouslySetInnerHTML={{ __html: renderDescriptionHtml(displayDescription) }}
                 />
               </div>
             )}
@@ -554,9 +566,21 @@ const JobDetail = () => {
             {/* Share & Apply (mobile) */}
             <div className="mt-6 border-t pt-4 space-y-4 lg:hidden">
               <Button size="lg" className="gap-2 w-full" onClick={handleApply}>
-                {job.listing_type === "opportunity" ? "Apply now" : "Apply for this position"}
-                {applyUrl && <ExternalLink className="h-4 w-4" />}
+                {isEmailApply
+                  ? "Apply by email"
+                  : job.listing_type === "opportunity"
+                    ? "Apply now"
+                    : "Apply for this position"}
+                {applyUrl && !isEmailApply && <ExternalLink className="h-4 w-4" />}
               </Button>
+              {applyEmail && (
+                <p className="text-center text-xs text-muted-foreground">
+                  Send your application to{" "}
+                  <a href={applyUrl!} className="text-primary underline underline-offset-2">
+                    {applyEmail}
+                  </a>
+                </p>
+              )}
               <ShareButtons
                 title={job.title}
                 company={job.company}

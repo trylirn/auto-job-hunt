@@ -69,15 +69,15 @@ const Index = () => {
           <div className="grid gap-10 md:grid-cols-[1.7fr_1fr] md:items-end">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                The international development job board
+                The remote international development job board
               </p>
               <h1 className="mt-4 max-w-3xl font-display text-4xl leading-[1.05] md:text-6xl">
-                Jobs and opportunities for people who work on what matters
+                Remote jobs for people who work on what matters
               </h1>
               <p className="mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
                 Humanitarian response, global health, climate, education,
-                governance and human rights roles from organisations across the
-                sector — gathered daily, in one place.
+                governance and human rights roles you can do from anywhere —
+                fully remote only, updated daily.
               </p>
             </div>
 

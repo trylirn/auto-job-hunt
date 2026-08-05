@@ -66,7 +66,7 @@ export function Footer() {
               <li><Link to="/opportunities" className="hover:text-foreground">Opportunities</Link></li>
               <li><Link to="/jobs/in" className="hover:text-foreground">Jobs by location</Link></li>
               <li><Link to="/guides/un-careers" className="hover:text-foreground">UN careers guide</Link></li>
-              <li><Link to="/submit" className="hover:text-foreground">Post a job</Link></li>
+              <li><Link to="/submit" className="hover:text-foreground">Post a remote job</Link></li>
             </ul>
           </nav>
 
