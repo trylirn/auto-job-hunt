@@ -507,9 +507,10 @@ async function fetchReliefWebUSJobs(): Promise<NormalizedJob[]> {
     const url = `https://api.reliefweb.int/v2/jobs?appname=${encodeURIComponent(appname)}`;
     const body = {
       profile: "full",
-      limit: 50,
+      limit: 100,
       sort: ["date.created:desc"],
-      filter: { field: "country.name", value: "United States of America" },
+      // Worldwide now — the remote-only gate below decides what we keep.
+      query: { value: "remote OR telecommute OR \"home-based\"", operator: "OR" },
     };
     const res = await timedFetch(url, {
       method: "POST",
