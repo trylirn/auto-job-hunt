@@ -50,13 +50,13 @@ export function Header() {
             </NavLink>
           ))}
           <Button asChild size="sm" className="h-8 rounded-sm">
-            <Link to="/submit">Post a job</Link>
+            <Link to="/submit">Post a remote job</Link>
           </Button>
         </nav>
 
         <div className="flex items-center gap-2 md:hidden">
           <Button asChild size="sm" variant="outline" className="h-8 rounded-sm">
-            <Link to="/submit">Post a job</Link>
+            <Link to="/submit">Post a remote job</Link>
           </Button>
           <button
             type="button"
