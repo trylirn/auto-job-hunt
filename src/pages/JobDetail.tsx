@@ -444,8 +444,17 @@ const JobDetail = () => {
 
   const displayDescription = job.clean_description || job.description;
 
+  // Recruiters may collect applications by email only — we store that as a
+  // mailto: link in apply_url so the same Apply button works for both.
+  const isEmailApply = !!applyUrl && applyUrl.toLowerCase().startsWith("mailto:");
+  const applyEmail = isEmailApply
+    ? decodeURIComponent(applyUrl!.slice(7).split("?")[0])
+    : null;
+
   const handleApply = () => {
-    if (applyUrl) {
+    if (isEmailApply) {
+      window.location.href = applyUrl!;
+    } else if (applyUrl) {
       window.open(applyUrl, "_blank", "noopener,noreferrer");
     } else {
       descriptionRef.current?.scrollIntoView({ behavior: "smooth" });
