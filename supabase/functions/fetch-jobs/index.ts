@@ -740,7 +740,20 @@ Deno.serve(async (req) => {
       `Fetched source counts: YesHub=${yeshubJobs.length}, GlobalSouth=${globalSouthJobs.length}, OFY=${ofy4Jobs.length}, YuthAxis=${yuthAxisJobs.length}, NGOAfrica=${ngoJobsAfrica.length}, Remotive=${remotiveJobs.length}, JobsToApply=${jobsToApplyJobs.length}, ReliefWeb=${reliefwebJobs.length}`
     );
 
-    const allJobs = [...yeshubJobs, ...globalSouthJobs, ...ofy4Jobs, ...yuthAxisJobs, ...ngoJobsAfrica, ...remotiveJobs, ...jobsToApplyJobs, ...reliefwebJobs];
+    const fetchedJobs = [...yeshubJobs, ...globalSouthJobs, ...ofy4Jobs, ...yuthAxisJobs, ...ngoJobsAfrica, ...remotiveJobs, ...jobsToApplyJobs, ...reliefwebJobs];
+
+    // Remote-only board: keep a listing only when it is explicitly flagged
+    // remote or clearly described as remote/home-based in its own text.
+    const REMOTE_RE = /\b(remote|work from home|work-from-home|home[- ]based|telecommut\w*|distributed team|anywhere in the world|fully remote|virtual position)\b/i;
+    const NOT_REMOTE_RE = /\b(hybrid|on[- ]?site|onsite|in[- ]person|must relocate|relocation required)\b/i;
+
+    const allJobs = fetchedJobs.filter((j: any) => {
+      const haystack = `${j.title ?? ""} ${j.location ?? ""} ${j.job_type ?? ""} ${j.description ?? ""}`;
+      if (NOT_REMOTE_RE.test(`${j.title ?? ""} ${j.location ?? ""}`)) return false;
+      return j.is_remote === true || REMOTE_RE.test(haystack);
+    }).map((j: any) => ({ ...j, is_remote: true }));
+
+    console.log(`Remote-only filter kept ${allJobs.length} of ${fetchedJobs.length} listings`);
 
     let inserted = 0;
     let skipped = 0;
