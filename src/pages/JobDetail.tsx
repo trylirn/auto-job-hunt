@@ -28,7 +28,7 @@ import { Footer } from "@/components/Footer";
 import { ShareButtons } from "@/components/ShareButtons";
 import { SimilarJobs } from "@/components/SimilarJobs";
 import { EmailSubscriber } from "@/components/EmailSubscriber";
-import { sanitizeHtml } from "@/lib/sanitize";
+import { renderDescriptionHtml } from "@/lib/sanitize";
 import { formatDistanceToNow } from "date-fns";
 
 function extractApplyUrl(description: string | null): string | null {
