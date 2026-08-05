@@ -541,12 +541,13 @@ const JobDetail = () => {
                 <div
                   className="prose prose-sm max-w-none text-muted-foreground leading-relaxed
                     prose-headings:text-foreground prose-headings:font-display
+                    prose-p:my-4
                     prose-a:text-primary prose-a:no-underline hover:prose-a:underline
                     prose-li:marker:text-muted-foreground
                     prose-strong:text-foreground
                     break-words overflow-hidden [overflow-wrap:anywhere]
                     [word-break:break-word]"
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayDescription) }}
+                  dangerouslySetInnerHTML={{ __html: renderDescriptionHtml(displayDescription) }}
                 />
               </div>
             )}
