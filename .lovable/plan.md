@@ -1,60 +1,59 @@
-## Eplicant — full frontend rebuild
+# Paragraph spacing, email-only applications, and the remote-only pivot
 
-Backend stays completely untouched: the jobs database, source updater, newsletter generator, cleanup/archive functions and their schedules keep running exactly as they do today. Everything below replaces the *website* only.
+## 1. Job descriptions lose paragraph breaks
 
-### First, the honest part about SEO
+When a recruiter types a description into the Post a Job form, it is saved as plain text with newline characters. The job detail page renders descriptions as HTML, and HTML collapses newlines into single spaces — so every paragraph runs together.
 
-Lovable builds React + Vite. There is no server rendering. The reason Google struggles today is that every URL initially serves the same bare HTML shell, and the real title/description/content only appear after JavaScript runs.
+Fix: detect plain-text descriptions (no HTML tags present) and convert blank-line-separated blocks into real paragraphs before rendering, and single newlines into line breaks. Descriptions that already contain HTML keep rendering as they do today. Sanitisation stays in place.
 
-The rebuild does not remove that constraint — it fixes it properly with a **site-wide bot prerender layer at the Netlify edge**. Today that layer only covers job pages. After the rebuild, every route (home, opportunities, country hubs, city hubs, guides, legal pages, job/opportunity detail) is served to crawlers as complete, real HTML with correct title, description, canonical, and structured data, generated at request time from the live database. Humans still get the fast React app.
+Also improve the submit form itself: a short hint under the description field ("Leave a blank line between paragraphs"), and preserve the recruiter's line breaks exactly as typed.
 
-That is the maximum achievable on this stack, and it is a genuine step up from where the site is now. If you ever want true SSR for every visitor, that requires moving off Lovable — worth revisiting only if this doesn't move the needle.
+## 2. Applications by email only
 
-### Design direction — editorial & calm
+The form currently requires an application URL. Change it to a choice:
 
-- Palette: ink `#12100E`, paper `#F7F4EF`, deep green `#1F6F5C` (primary), rust `#C2410C` (accent/deadline urgency), all as HSL semantic tokens.
-- Type: serif display headings (Instrument Serif) + clean sans body (Work Sans). No Inter, no gradients.
-- Feel: generous whitespace, hairline rules instead of heavy borders, quiet cards, restrained motion. Reads like a trusted sector publication, not a startup SaaS page.
-- Full light/dark token set, WCAG AA contrast throughout.
+- Apply by link (current behaviour, URL required)
+- Apply by email (an application email address required instead)
 
-### Pages being rebuilt
+When email is chosen, the job stores a `mailto:` application target with a prefilled subject line ("Application - {job title}"), so the Apply button on the job page opens the recruiter's mail client. The detail page shows "Apply by email" with the address instead of "Apply on company site". Validation adapts to whichever mode is selected, and at least one of the two is always required.
 
-- **Home / Jobs** — hero with search, quick filters (Remote, US, this week), region and type filters, grid/list toggle, pagination in the URL, live counts, FAQ.
-- **Opportunities** — same shell, opportunity-specific filters.
-- **Job / Opportunity detail** — clean reading layout, deadline urgency notice, apply CTA, share buttons, similar listings, sanitized description.
-- **Post a Job** — free submission form writing to the existing submissions path, with validation and confirmation.
-- **Newsletter** — archive plus subscribe, unchanged generator behind it.
-- **Subscribe form** — same Plunk integration, "join over 10,000 subscribers" copy, no spam wording.
-- **Country hubs, city hubs, jobs index, UN careers guide** — all preserved, redesigned.
-- **About, Terms, Privacy, Contact** — same content, new layout.
-- **404** — proper noindex, useful navigation.
+## 3. Remote-only pivot
 
-Existing behaviour that carries over unchanged: pagination memory when returning from a listing, browser-back returning to where you were, no aggregator/source attribution anywhere, deadline handling, direct application links.
+Decisions confirmed: existing non-remote jobs keep showing until they age out (45 days), and the Opportunities section will be phased out gradually and removed once fewer than 20 remain.
 
-### SEO work
+### Source fetching
+Every source adapter gets a remote gate before insert: a listing is kept only if the source flags it remote, or the title/location/description clearly indicates remote, work-from-home, distributed, or telecommute. Anything hybrid or on-site is dropped. Remotive is already fully remote and passes through untouched; the WordPress-based sources and ReliefWeb are the ones that need the filter. The updater schedule, dedupe, and cleaning pipeline are not otherwise touched.
 
-- Per-route metadata: unique title, description, canonical, Open Graph, Twitter — for every route, driven by a single shared helper so nothing can be missed.
-- Structured data: Organization + WebSite on the shell, `JobPosting` (with `applicantLocationRequirements`, `validThrough`, `identifier`) on detail pages, `BreadcrumbList` on hubs, `FAQPage` on home, `ItemList` on listing pages.
-- Semantic HTML: single H1 per page, correct heading order, real `<nav>`/`<main>`/`<article>`, alt text everywhere, internal linking between hubs and listings.
-- Apex-host canonicalisation and `.lovable.app` noindex preserved.
-- 410 Gone for deleted/expired listings and 301 for legacy `/job/id/:uuid` preserved and extended to opportunities.
-- Sitemap and `llms.txt` regenerated from the same route registry so they can't drift.
-- Performance: font preload with `display: swap`, lazy images with dimensions, code-split routes, small initial bundle.
+Also drop the current "United States only" restriction on ReliefWeb/Remotive so remote roles worldwide are captured.
 
-### Technical notes
+### Messaging and UI
+- Homepage headline, subheadline, meta title/description, and Open Graph copy reframed around remote international-development roles.
+- Post a Job page states clearly that only remote roles are accepted, with a remote confirmation checkbox that must be ticked.
+- The "Remote" work-mode filter becomes redundant once the board is remote-only; it stays for now while legacy non-remote rows age out, then can be removed.
+- Location filters and city hub pages get reframed as "remote roles open to candidates in X" rather than "jobs in X".
+- Footer, About, and newsletter copy updated to the remote-only positioning.
+- Newsletter generation groups remote roles by region eligibility rather than office location.
 
-- New design tokens in `index.css` and `tailwind.config.ts`; every component uses semantic tokens only.
-- A single `src/lib/seo.ts` + `<Seo>` component as the one source of head metadata, consumed by both React and the edge prerenderer.
-- A route registry (`src/lib/routes.ts`) feeding the router, sitemap, and prerender layer.
-- `netlify/edge-functions/` extended from job-only prerendering to all routes, reusing the existing read-only database queries.
-- Data hooks (`useJobs`, `useFilterOptions`, `useListingStats`) keep their current query shapes so the backend contract is identical.
-- Old page and component files are deleted, not layered over.
+### Opportunities phase-out
+Nothing removed yet. Add a soft notice on the Opportunities page and stop linking it from the primary navigation, keeping it reachable from the footer. When the count drops below 20, the route, sitemap entries, and remaining links get removed in a follow-up change.
 
-### Sequence
+## 4. Where to source remote roles
 
-1. Design system and tokens.
-2. Layout shell, header, footer, SEO helper, route registry.
-3. Listing pages and detail pages.
-4. Post a job, newsletter, subscribe, legal/about pages, hubs and guide.
-5. Edge prerender layer, sitemap, robots, llms.txt.
-6. Verify in the preview: every route renders, filters and pagination work, submissions and subscriptions succeed, and bot-fetched HTML contains real metadata.
+Recommended, all with usable public APIs or feeds:
+
+- **Remotive** (already integrated) — remote-only, broad.
+- **Remote OK** — public JSON feed, remote-only.
+- **Working Nomads** — remote-only feed.
+- **Himalayas** — remote-only, public JSON.
+- **ReliefWeb** — keep, filtered to remote/home-based; this is where genuine international-development remote roles live.
+- **Idealist and DevelopmentAid** — sector-relevant; only worth adding if a feed is available without scraping.
+
+### Breezy HR
+There is no global Breezy job search API. Breezy exposes a public JSON endpoint per company (`https://{company}.breezy.hr/json`), so roles can only be pulled company by company. A practical approach is to maintain a list of development-sector organisations that use Breezy and poll each of their endpoints, filtering for remote roles. That is a separate piece of work; it needs the organisation list first. The same pattern applies to Greenhouse, Lever, and Ashby, which are far more common in this sector and would give better coverage for the same effort.
+
+## Technical notes
+
+- Description rendering: a small helper that checks for HTML tags and, when absent, splits on blank lines into `<p>` blocks before sanitising; used by the job detail page and any description preview.
+- Submit form: schema becomes a discriminated choice on apply method; the `apply_url` column stores either the https URL or a `mailto:` link, so no schema change is required.
+- Remote filter lives in the shared normalisation step of the fetch function so every adapter inherits it.
+- No database migration needed for any part of this.
