@@ -147,10 +147,15 @@ const Submit = () => {
             <Briefcase className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="font-display text-2xl font-bold md:text-3xl">Post a Job</h1>
+            <h1 className="font-display text-2xl font-bold md:text-3xl">Post a Remote Job</h1>
             <p className="text-sm text-muted-foreground">Free for everyone — your listing goes live immediately.</p>
           </div>
         </div>
+
+        <p className="mb-6 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
+          Eplicant lists <span className="font-medium text-foreground">fully remote roles only</span>.
+          Hybrid and on-site postings are removed.
+        </p>
 
         <form onSubmit={onSubmit} className="space-y-5 rounded-xl border bg-card p-5 md:p-6">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -163,8 +168,8 @@ const Submit = () => {
               <Input id="company" value={form.company} onChange={(e) => update("company", e.target.value)} placeholder="Acme Foundation" required />
             </div>
             <div>
-              <Label htmlFor="location">Location *</Label>
-              <Input id="location" value={form.location} onChange={(e) => update("location", e.target.value)} placeholder="Nairobi, Kenya" required />
+              <Label htmlFor="location">Candidate location *</Label>
+              <Input id="location" value={form.location} onChange={(e) => update("location", e.target.value)} placeholder="Remote — worldwide, or Remote — Kenya" required />
             </div>
             <div>
               <Label htmlFor="job_type">Type *</Label>
@@ -198,17 +203,48 @@ const Submit = () => {
               <Label htmlFor="salary">Salary (optional)</Label>
               <Input id="salary" value={form.salary} onChange={(e) => update("salary", e.target.value)} placeholder="$60k–$80k" />
             </div>
+
             <div className="sm:col-span-2">
-              <Label htmlFor="apply_url">Application URL *</Label>
-              <Input id="apply_url" type="url" value={form.apply_url} onChange={(e) => update("apply_url", e.target.value)} placeholder="https://..." required />
+              <Label htmlFor="apply_method">How should people apply? *</Label>
+              <Select
+                value={form.apply_method}
+                onValueChange={(v) => update("apply_method", v as "url" | "email")}
+              >
+                <SelectTrigger id="apply_method"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="url">Through an application link</SelectItem>
+                  <SelectItem value="email">By email only</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="sm:col-span-2 flex items-center gap-2">
-              <Checkbox id="is_remote" checked={form.is_remote} onCheckedChange={(v) => update("is_remote", !!v)} />
-              <Label htmlFor="is_remote" className="cursor-pointer">This role is remote</Label>
+
+            {form.apply_method === "url" ? (
+              <div className="sm:col-span-2">
+                <Label htmlFor="apply_url">Application URL *</Label>
+                <Input id="apply_url" type="url" value={form.apply_url} onChange={(e) => update("apply_url", e.target.value)} placeholder="https://..." required />
+              </div>
+            ) : (
+              <div className="sm:col-span-2">
+                <Label htmlFor="apply_email">Application email *</Label>
+                <Input id="apply_email" type="email" value={form.apply_email} onChange={(e) => update("apply_email", e.target.value)} placeholder="jobs@organisation.org" required />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Applicants will see an "Apply by email" button that opens a message to this address.
+                </p>
+              </div>
+            )}
+
+            <div className="sm:col-span-2 flex items-start gap-2">
+              <Checkbox id="is_remote" className="mt-0.5" checked={form.is_remote} onCheckedChange={(v) => update("is_remote", !!v)} />
+              <Label htmlFor="is_remote" className="cursor-pointer font-normal">
+                I confirm this role is fully remote *
+              </Label>
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="description">Job description *</Label>
-              <Textarea id="description" rows={8} value={form.description} onChange={(e) => update("description", e.target.value)} placeholder="Describe the role, responsibilities, requirements..." required />
+              <Textarea id="description" rows={10} value={form.description} onChange={(e) => update("description", e.target.value)} placeholder={"Describe the role, responsibilities, requirements...\n\nLeave a blank line between paragraphs."} required />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Leave a blank line between paragraphs — your formatting is kept exactly as you type it.
+              </p>
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="submitter_email">Your email *</Label>
