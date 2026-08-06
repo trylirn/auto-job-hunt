@@ -26,7 +26,6 @@ ${entries
 
 const STATIC_PAGES: SitemapEntry[] = [
   { loc: `${SITE_URL}/`, changefreq: "daily", priority: "1.0" },
-  { loc: `${SITE_URL}/opportunities`, changefreq: "daily", priority: "0.9" },
   { loc: `${SITE_URL}/jobs/in`, changefreq: "daily", priority: "0.8" },
   { loc: `${SITE_URL}/newsletter`, changefreq: "weekly", priority: "0.7" },
   { loc: `${SITE_URL}/submit`, changefreq: "monthly", priority: "0.6" },

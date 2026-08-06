@@ -22,29 +22,35 @@ const FAQS = [
   {
     question: "What is Eplicant?",
     answer:
-      "Eplicant is a job board for international development professionals. It brings together roles, fellowships, scholarships, grants and other opportunities from across the sector so you can find them all in one place.",
+      "Eplicant is a job board for international development professionals. Every listing is a fully remote role you can do from anywhere — humanitarian, global health, climate, education, governance and human rights work.",
+  },
+  {
+    question: "Are all the jobs really remote?",
+    answer:
+      "Yes. Eplicant only publishes fully remote roles. Hybrid and on-site positions are filtered out, so everything you see can be done from wherever you are based.",
   },
   {
     question: "How often are jobs updated?",
     answer:
-      "New jobs and opportunities are added every day, so it is worth checking back regularly or subscribing to the weekly newsletter.",
+      "New remote roles are published every day. Subscribe to the weekly digest if you would rather have them delivered to your inbox.",
   },
   {
     question: "Are these jobs legitimate?",
     answer:
-      "Yes. Listings come from established organisations working in international development. Outdated or suspicious postings are removed to keep the board trustworthy.",
+      "Listings come from established organisations and employers hiring in the sector. Expired or suspicious postings are removed to keep the board trustworthy.",
   },
   {
     question: "How do I apply for a job?",
     answer:
-      "Open any listing to read the full details, then use the Apply button to go straight to the employer's application page. You apply directly to the organisation hiring.",
+      "Open any listing to read the full details, then use the Apply button to go straight to the employer's application page or application email address. You apply directly to the organisation hiring.",
   },
   {
-    question: "What is the difference between Jobs and Opportunities?",
+    question: "Can I post a remote role?",
     answer:
-      "Jobs are employment roles — full-time, part-time or contract. Opportunities cover fellowships, scholarships, grants, conferences and other programmes designed to advance your career.",
+      "Yes — posting is free. Use the Post a remote job link in the header, fill in the details and your role goes live alongside every other listing.",
   },
 ];
+
 
 const Index = () => {
   const { data: stats } = useListingStats();
@@ -84,7 +90,7 @@ const Index = () => {
             <dl className="flex gap-10 border-l border-rule pl-6 md:flex-col md:gap-5">
               <div>
                 <dt className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Live jobs
+                  Live remote jobs
                 </dt>
                 <dd className="font-display text-4xl">
                   {stats ? stats.jobs.toLocaleString() : "—"}
@@ -92,30 +98,29 @@ const Index = () => {
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Opportunities
+                  Updated
                 </dt>
-                <dd className="font-display text-4xl">
-                  {stats ? stats.opportunities.toLocaleString() : "—"}
-                </dd>
+                <dd className="font-display text-4xl">Daily</dd>
               </div>
             </dl>
           </div>
         </div>
       </section>
 
+      <div className="container pt-8 md:pt-10">
+        <NewsletterSignup id="home-newsletter" />
+      </div>
+
       <div className="container py-10 md:py-14">
         <ListingBrowser
-          mode="jobs"
           basePath="/"
-          heading="Latest jobs"
+          heading="Latest remote jobs"
           resultNoun="job"
-          searchPlaceholder="Search jobs by title, organisation or keyword"
+          searchPlaceholder="Search remote jobs by title, organisation or keyword"
         />
       </div>
 
-      <div className="container pb-14">
-        <NewsletterSignup id="home-newsletter" />
-      </div>
+
 
       {/* FAQ */}
       <section className="border-t border-rule bg-card">

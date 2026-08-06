@@ -18,8 +18,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Instrument Serif", "Georgia", "serif"],
-        body: ["Work Sans", "system-ui", "sans-serif"],
+        display: ["Space Grotesk", "system-ui", "sans-serif"],
+        body: ["DM Sans", "system-ui", "sans-serif"],
       },
       maxWidth: {
         prose: "68ch",

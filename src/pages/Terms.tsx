@@ -27,9 +27,10 @@ const Terms = () => (
 
       <h2 className="font-display text-xl font-semibold mt-8">1. About Eplicant</h2>
       <p>
-        Eplicant publishes jobs and opportunities for the international development sector. We are
-        a job board: we display openings and link applicants to the organisations advertising
-        them. We are not the employer for any role listed and we are not party to any application,
+        Eplicant publishes fully remote jobs for the international development sector. Every
+        listing is a role that can be performed from anywhere; hybrid and on-site positions are
+        not published. We are a job board: we display openings and link applicants to the
+        organisations advertising them. We are not the employer for any role listed and we are not party to any application,
         interview, offer, contract, or employment relationship that may result from your use of
         the Service.
       </p>
@@ -43,9 +44,22 @@ const Terms = () => (
 
       <h2 className="font-display text-xl font-semibold mt-8">3. Use of the Service</h2>
       <p>
-        You may browse listings, use search and filters, subscribe to our newsletter, and follow
-        external links to apply directly with the listed organisation. The Service is provided for
-        personal, non-commercial use by individuals exploring career opportunities.
+        You may browse listings, search the board, subscribe to our newsletter, and follow the
+        application link or application email address to apply directly with the listed
+        organisation. The Service is provided for personal, non-commercial use by individuals
+        exploring remote roles.
+      </p>
+
+      <h2 className="font-display text-xl font-semibold mt-8">3a. Posting a Job</h2>
+      <p>
+        Employers may submit a role free of charge. By submitting, you confirm that (a) you are
+        authorised to advertise the role, (b) the role is genuinely and fully remote, (c) the
+        details, application link or application email address are accurate, and (d) the role
+        involves no fee of any kind charged to applicants. We may edit listings for clarity,
+        decline them, or remove them at any time — for example when a role is filled, expired,
+        duplicated, not remote, or misleading. Submitted contact emails are used only to
+        administer the listing and are never displayed publicly unless you include them as the
+        application address.
       </p>
 
       <h2 className="font-display text-xl font-semibold mt-8">4. User Conduct</h2>

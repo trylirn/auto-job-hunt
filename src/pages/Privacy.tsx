@@ -26,7 +26,7 @@ const Privacy = () => (
 
       <h2 className="font-display text-xl font-semibold mt-8">1. Who We Are</h2>
       <p>
-        Eplicant is a job board for the international development sector. We operate the website
+        Eplicant is a remote-only job board for the international development sector. We operate the website
         eplicant.com and a related weekly email newsletter. For privacy questions, please reach
         us via the <a href="/contact" className="text-primary">contact page</a>.
       </p>
@@ -37,6 +37,9 @@ const Privacy = () => (
       <ul>
         <li><strong>Email address</strong> — when you subscribe to the newsletter or contact us.</li>
         <li><strong>Message content</strong> — when you reach out through the contact page.</li>
+        <li><strong>Job submission details</strong> — when an employer posts a role, we collect the
+        listing details and a contact email so we can administer the listing. The contact email is
+        not shown publicly unless you supply it as the application address.</li>
       </ul>
       <h3 className="font-display text-base font-semibold mt-4">Information collected automatically</h3>
       <ul>
@@ -66,7 +69,8 @@ const Privacy = () => (
       <p>
         We retain newsletter email addresses until you unsubscribe or request deletion. Contact
         messages are retained for as long as needed to handle your request and for a reasonable
-        period afterwards for record-keeping. Server logs are typically retained for up to 90 days.
+        period afterwards for record-keeping. Job listings and the associated submitter email are
+        removed when the listing expires or is deleted. Server logs are typically retained for up to 90 days.
       </p>
 
       <h2 className="font-display text-xl font-semibold mt-8">6. Sharing &amp; Third-Party Services</h2>

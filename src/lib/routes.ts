@@ -24,15 +24,6 @@ export const STATIC_ROUTES: StaticRoute[] = [
     priority: 1.0,
   },
   {
-    path: "/opportunities",
-    title: "Fellowships, Scholarships & Grants",
-    description:
-      "Fellowships, scholarships, grants, conferences and programmes for international development professionals.",
-    indexable: true,
-    changefreq: "daily",
-    priority: 0.9,
-  },
-  {
     path: "/jobs/in",
     title: "Jobs by Country & City",
     description:
@@ -81,7 +72,7 @@ export const STATIC_ROUTES: StaticRoute[] = [
     path: "/contact",
     title: "Contact",
     description:
-      "Contact the Eplicant team for partnerships, feedback, or questions about jobs and opportunities.",
+      "Contact the Eplicant team for partnerships, feedback, or questions about remote jobs in international development.",
     indexable: true,
     changefreq: "yearly",
     priority: 0.3,

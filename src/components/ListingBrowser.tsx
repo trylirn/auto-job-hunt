@@ -1,24 +1,14 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useJobs } from "@/hooks/useJobs";
-import { useFilterOptions } from "@/hooks/useFilterOptions";
 import { ListingCard, ListingCardSkeleton } from "@/components/ListingCard";
-import { ListingToolbar, type FilterState } from "@/components/ListingToolbar";
+import { ListingToolbar } from "@/components/ListingToolbar";
 import { Pager } from "@/components/Pager";
 import { Compass } from "lucide-react";
 import type { Job } from "@/types/job";
 
-const EMPTY_FILTERS: FilterState = {
-  region: "",
-  workMode: "",
-  category: "",
-  location: "",
-  dateRange: "",
-};
-
 interface ListingBrowserProps {
-  mode: "jobs" | "opportunities";
   basePath: string;
   heading: string;
   resultNoun: string;
@@ -28,7 +18,6 @@ interface ListingBrowserProps {
 }
 
 export function ListingBrowser({
-  mode,
   basePath,
   heading,
   resultNoun,
@@ -39,11 +28,9 @@ export function ListingBrowser({
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
 
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [view, setView] = useState<"grid" | "list">("grid");
 
   const debouncedSearch = useDebounce(search, 300);
-  const { data: filterOptions } = useFilterOptions();
 
   const setPage = useCallback(
     (p: number) => {
@@ -72,14 +59,6 @@ export function ListingBrowser({
     );
   }, [setSearchParams]);
 
-  const handleFilterChange = useCallback(
-    (key: keyof FilterState, value: string) => {
-      setFilters((prev) => ({ ...prev, [key]: value }));
-      resetPage();
-    },
-    [resetPage]
-  );
-
   const handleSearchChange = useCallback(
     (v: string) => {
       setSearch(v);
@@ -88,35 +67,15 @@ export function ListingBrowser({
     [resetPage]
   );
 
-  const clearFilters = useCallback(() => {
-    setFilters(EMPTY_FILTERS);
-    resetPage();
-  }, [resetPage]);
-
-  const hasActiveFilters = useMemo(
-    () => Object.values(filters).some(Boolean),
-    [filters]
-  );
-
   const { data, isLoading } = useJobs({
     search: debouncedSearch,
-    jobType: mode === "jobs" ? filters.workMode : "",
-    opportunityCategory: mode === "opportunities" ? filters.category : "",
-    location: filters.location,
-    dateRange: filters.dateRange as "24h" | "week" | "month" | "",
-    region: filters.region as "us" | "non-us" | "",
     page,
     pageSize: 24,
-    listingType: mode,
+    listingType: "jobs",
   });
 
   const jobs = data?.jobs ?? [];
   if (onResults && jobs.length) onResults(jobs);
-
-  const locations =
-    (mode === "jobs"
-      ? filterOptions?.jobLocations
-      : filterOptions?.opportunityLocations) ?? [];
 
   return (
     <>
@@ -124,12 +83,6 @@ export function ListingBrowser({
         search={search}
         onSearchChange={handleSearchChange}
         searchPlaceholder={searchPlaceholder}
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        onClear={clearFilters}
-        hasActiveFilters={hasActiveFilters}
-        locations={locations}
-        mode={mode}
         view={view}
         onViewChange={setView}
         resultCount={data?.totalCount}
@@ -178,8 +131,7 @@ export function ListingBrowser({
             />
             <h3 className="mt-4 font-display text-2xl">Nothing matches yet</h3>
             <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-              Try a broader search or clear a filter — new listings are added
-              every day.
+              Try a broader search — new remote roles are added every day.
             </p>
           </div>
         )}

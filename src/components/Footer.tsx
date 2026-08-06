@@ -52,8 +52,8 @@ export function Footer() {
               <span className="font-display text-xl">Eplicant</span>
             </Link>
             <p className="max-w-xs text-sm text-muted-foreground">
-              A job board for the international development sector — roles,
-              fellowships, scholarships and grants, in one place.
+              Fully remote jobs for international development professionals —
+              humanitarian, global health, climate, education and governance roles.
             </p>
           </div>
 
@@ -63,7 +63,6 @@ export function Footer() {
             </h2>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link to="/" className="hover:text-foreground">Jobs</Link></li>
-              <li><Link to="/opportunities" className="hover:text-foreground">Opportunities</Link></li>
               <li><Link to="/jobs/in" className="hover:text-foreground">Jobs by location</Link></li>
               <li><Link to="/guides/un-careers" className="hover:text-foreground">UN careers guide</Link></li>
               <li><Link to="/submit" className="hover:text-foreground">Post a remote job</Link></li>

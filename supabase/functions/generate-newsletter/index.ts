@@ -139,23 +139,9 @@ Deno.serve(async (req) => {
       .limit(120);
     if (jobsErr) throw jobsErr;
 
-    // Fetch OPPORTUNITIES — keep small
-    const { data: oppsRaw, error: oppsErr } = await supabase
-      .from("jobs")
-      .select(
-        "title, company, location, job_type, slug, listing_type, is_remote, posted_at",
-      )
-      .eq("listing_type", "opportunity")
-      .is("archived_at", null)
-      .gte("created_at", oneWeekAgo)
-      .order("created_at", { ascending: false })
-      .limit(10);
-    if (oppsErr) throw oppsErr;
-
     const jobs = (jobsRaw || []) as Listing[];
-    const opps = (oppsRaw || []) as Listing[];
 
-    if (jobs.length === 0 && opps.length === 0) {
+    if (jobs.length === 0) {
       return new Response(
         JSON.stringify({ success: true, message: "No new listings this week" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -193,14 +179,9 @@ Deno.serve(async (req) => {
       jobsBlock += "\n";
     }
 
-    const oppsBlock = opps.length
-      ? `\n## Opportunities (${opps.length})\n${opps.map(fmtListing).join("\n")}\n`
-      : "";
-
     const userContent =
       `Generate this week's newsletter titled "Jobs of the Week" from the listings below.\n\n` +
-      `=== JOBS (${jobs.length} total) — grouped by region ===\n${jobsBlock}\n` +
-      `=== OPPORTUNITIES (${opps.length} total) ===\n${oppsBlock}`;
+      `=== JOBS (${jobs.length} total) — grouped by region ===\n${jobsBlock}\n`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -214,7 +195,7 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content:
-              `You are the newsletter writer for Eplicant, a job board for international development professionals. ` +
+              `You are the newsletter writer for Eplicant, a remote job board for international development professionals. ` +
               `Write a weekly HTML newsletter with a warm, professional tone.\n\n` +
               `STRUCTURE (in this exact order):\n` +
               `1. A short intro paragraph (2-3 sentences).\n` +
@@ -222,10 +203,8 @@ Deno.serve(async (req) => {
               `(Remote, Americas, Europe, Sub-Saharan Africa, MENA, Asia, Oceania, Global / Multi-region). ` +
               `Skip any region that has zero listings. Include EVERY job listed under each region — do not truncate or summarise. ` +
               `Render each job as: <strong><a href="LINK">Title</a></strong> — Company · Location · Type.\n` +
-              `3. A smaller "Opportunities" section at the bottom (fellowships, scholarships, grants), only if any are provided. Keep it brief.\n` +
-              `4. A short closing CTA pointing readers to https://eplicant.com.\n\n` +
+              `3. A short closing CTA pointing readers to https://eplicant.com.\n\n` +
               `RULES:\n` +
-              `- Jobs MUST significantly outweigh opportunities visually and in count.\n` +
               `- Use clean HTML with simple inline styles. Use <h2> for region headings and <ul><li> for listings.\n` +
               `- Do NOT include <html>, <head>, or <body> tags.\n` +
               `- Do NOT mention AI, aggregation, scraping, or data sources.\n` +
@@ -263,13 +242,12 @@ Deno.serve(async (req) => {
     if (insertError) throw insertError;
 
     console.log(
-      `Newsletter generated: ${jobs.length} jobs, ${opps.length} opportunities`,
+      `Newsletter generated: ${jobs.length} jobs`,
     );
     return new Response(
       JSON.stringify({
         success: true,
         jobs_count: jobs.length,
-        opportunities_count: opps.length,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
