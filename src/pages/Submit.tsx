@@ -186,15 +186,6 @@ const Submit = () => {
               </Select>
             </div>
             <div>
-              <Label htmlFor="listing_type">Listing</Label>
-              <Select value={form.listing_type} onValueChange={(v) => update("listing_type", v as "job" | "opportunity")}>
-                <SelectTrigger id="listing_type"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="job">Job</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
               <Label htmlFor="category">Category</Label>
               <Input id="category" value={form.category} onChange={(e) => update("category", e.target.value)} placeholder="Public Health" />
             </div>
