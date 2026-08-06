@@ -90,7 +90,7 @@ const Index = () => {
             <dl className="flex gap-10 border-l border-rule pl-6 md:flex-col md:gap-5">
               <div>
                 <dt className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Live jobs
+                  Live remote jobs
                 </dt>
                 <dd className="font-display text-4xl">
                   {stats ? stats.jobs.toLocaleString() : "—"}
@@ -98,30 +98,29 @@ const Index = () => {
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Opportunities
+                  Updated
                 </dt>
-                <dd className="font-display text-4xl">
-                  {stats ? stats.opportunities.toLocaleString() : "—"}
-                </dd>
+                <dd className="font-display text-4xl">Daily</dd>
               </div>
             </dl>
           </div>
         </div>
       </section>
 
+      <div className="container pt-8 md:pt-10">
+        <NewsletterSignup id="home-newsletter" />
+      </div>
+
       <div className="container py-10 md:py-14">
         <ListingBrowser
-          mode="jobs"
           basePath="/"
-          heading="Latest jobs"
+          heading="Latest remote jobs"
           resultNoun="job"
-          searchPlaceholder="Search jobs by title, organisation or keyword"
+          searchPlaceholder="Search remote jobs by title, organisation or keyword"
         />
       </div>
 
-      <div className="container pb-14">
-        <NewsletterSignup id="home-newsletter" />
-      </div>
+
 
       {/* FAQ */}
       <section className="border-t border-rule bg-card">
