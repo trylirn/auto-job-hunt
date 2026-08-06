@@ -1,6 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { mirrorUpsert } from "../_shared/eplicant-client.ts";
 import { requireCronAuth } from "../_shared/require-cron.ts";
+import {
+  GREENHOUSE_COMPANIES,
+  LEVER_COMPANIES,
+  ASHBY_COMPANIES,
+  BREEZY_COMPANIES,
+} from "./ats-companies.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -455,22 +461,17 @@ const NGOJOBS_CATEGORY_MAP: Record<number, string> = {
   1: "opportunity",
 };
 
-async function fetchRemotiveUSJobs(): Promise<NormalizedJob[]> {
+async function fetchRemotiveJobs(): Promise<NormalizedJob[]> {
   try {
-    const res = await timedFetch("https://remotive.com/api/remote-jobs?limit=50");
+    const res = await timedFetch("https://remotive.com/api/remote-jobs?limit=200");
     if (!res.ok) return [];
     const json = await res.json();
     const jobs: any[] = json.jobs || [];
 
-    return jobs
-      .filter((j: any) => {
-        const loc = (j.candidate_required_location || "").toLowerCase();
-        return loc.includes("usa") || loc.includes("united states") || loc.includes("u.s.a") || loc.includes("north america") || loc === "worldwide";
-      })
-      .map((j: any) => ({
+    return jobs.map((j: any) => ({
         title: j.title || "Untitled",
         company: j.company_name || "Unknown",
-        location: "United States",
+        location: j.candidate_required_location || "Remote",
         job_type: "Remote",
         category: (j.category || "jobs").toLowerCase(),
         listing_type: "job",
@@ -703,6 +704,253 @@ async function fetchGlobalSouthJobs(): Promise<NormalizedJob[]> {
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// Remote-first job feeds
+// ---------------------------------------------------------------------------
+
+async function fetchWorkingNomadsJobs(): Promise<NormalizedJob[]> {
+  try {
+    const res = await timedFetch("https://www.workingnomads.com/api/exposed_jobs/", {}, 12000);
+    if (!res.ok) {
+      console.error(`WorkingNomads ${res.status}`);
+      return [];
+    }
+    const jobs: any[] = await res.json();
+    return jobs.slice(0, 300).map((j: any) => ({
+      title: j.title || "Untitled",
+      company: j.company_name || "Unknown",
+      location: j.location || "Remote",
+      job_type: "Remote",
+      category: (j.category_name || "jobs").toLowerCase(),
+      listing_type: "job",
+      description: j.description || null,
+      url: j.url,
+      source: "workingnomads",
+      external_id: String(j.id ?? j.slug ?? j.url),
+      posted_at: j.pub_date || null,
+      salary: null,
+      tags: j.tags ? String(j.tags).split(",").map((t: string) => t.trim()).filter(Boolean) : null,
+      company_logo: null,
+      is_remote: true,
+    }));
+  } catch (e) {
+    console.error("WorkingNomads fetch error:", e);
+    return [];
+  }
+}
+
+async function fetchHimalayasJobs(): Promise<NormalizedJob[]> {
+  try {
+    const res = await timedFetch("https://himalayas.app/jobs/api?limit=100", {}, 12000);
+    if (!res.ok) {
+      console.error(`Himalayas ${res.status}`);
+      return [];
+    }
+    const json = await res.json();
+    const jobs: any[] = json.jobs || json.data || [];
+    return jobs.map((j: any) => ({
+      title: j.title || "Untitled",
+      company: j.companyName || j.company || "Unknown",
+      location: Array.isArray(j.locationRestrictions) && j.locationRestrictions.length
+        ? j.locationRestrictions.join(", ")
+        : "Remote",
+      job_type: "Remote",
+      category: (Array.isArray(j.categories) ? j.categories[0] : j.category) || "jobs",
+      listing_type: "job",
+      description: j.description || j.excerpt || null,
+      url: j.applicationLink || j.guid || j.url,
+      source: "himalayas",
+      external_id: String(j.guid ?? j.id ?? j.applicationLink),
+      posted_at: j.pubDate ? new Date(Number(j.pubDate) * 1000).toISOString() : null,
+      salary: j.minSalary && j.maxSalary ? `${j.minSalary}-${j.maxSalary} ${j.salaryCurrency ?? ""}`.trim() : null,
+      tags: Array.isArray(j.categories) ? j.categories : null,
+      company_logo: j.companyLogo || null,
+      is_remote: true,
+    }));
+  } catch (e) {
+    console.error("Himalayas fetch error:", e);
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Curated ATS company boards (Greenhouse, Lever, Ashby, Breezy HR)
+// ---------------------------------------------------------------------------
+
+/** Run tasks with bounded concurrency so 300 board calls never stall a cron run. */
+async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R[]>): Promise<R[]> {
+  const out: R[] = [];
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (cursor < items.length) {
+      const item = items[cursor++];
+      try {
+        out.push(...(await fn(item)));
+      } catch (_e) {
+        // individual board failures are logged inside fn
+      }
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+async function fetchGreenhouseBoards(): Promise<NormalizedJob[]> {
+  return mapLimit(GREENHOUSE_COMPANIES, 8, async (c) => {
+    try {
+      const res = await timedFetch(
+        `https://boards-api.greenhouse.io/v1/boards/${c.slug}/jobs?content=true`,
+        {},
+        8000
+      );
+      if (!res.ok) {
+        console.log(`Greenhouse skip ${c.slug} (${res.status})`);
+        return [];
+      }
+      const json = await res.json();
+      return (json.jobs || []).map((j: any) => ({
+        title: j.title || "Untitled",
+        company: c.name,
+        location: j.location?.name || "Remote",
+        job_type: null,
+        category: "jobs",
+        listing_type: "job",
+        description: j.content ? stripHtml(j.content) : null,
+        url: j.absolute_url,
+        source: "greenhouse",
+        external_id: `${c.slug}-${j.id}`,
+        posted_at: j.updated_at || null,
+        salary: null,
+        tags: null,
+        company_logo: null,
+        is_remote: false,
+      }));
+    } catch (e) {
+      console.log(`Greenhouse error ${c.slug}: ${(e as Error).message}`);
+      return [];
+    }
+  });
+}
+
+async function fetchLeverBoards(): Promise<NormalizedJob[]> {
+  return mapLimit(LEVER_COMPANIES, 8, async (c) => {
+    try {
+      const res = await timedFetch(
+        `https://api.lever.co/v0/postings/${c.slug}?mode=json`,
+        {},
+        8000
+      );
+      if (!res.ok) {
+        console.log(`Lever skip ${c.slug} (${res.status})`);
+        return [];
+      }
+      const postings = await res.json();
+      if (!Array.isArray(postings)) return [];
+      return postings.map((j: any) => ({
+        title: j.text || "Untitled",
+        company: c.name,
+        location: j.categories?.location || "Remote",
+        job_type: j.categories?.commitment || null,
+        category: "jobs",
+        listing_type: "job",
+        description: j.descriptionPlain || (j.description ? stripHtml(j.description) : null),
+        url: j.hostedUrl || j.applyUrl,
+        source: "lever",
+        external_id: `${c.slug}-${j.id}`,
+        posted_at: j.createdAt ? new Date(j.createdAt).toISOString() : null,
+        salary: null,
+        tags: j.categories?.team ? [j.categories.team] : null,
+        company_logo: null,
+        is_remote: /remote/i.test(j.workplaceType || j.categories?.location || ""),
+      }));
+    } catch (e) {
+      console.log(`Lever error ${c.slug}: ${(e as Error).message}`);
+      return [];
+    }
+  });
+}
+
+async function fetchAshbyBoards(): Promise<NormalizedJob[]> {
+  return mapLimit(ASHBY_COMPANIES, 8, async (c) => {
+    try {
+      const res = await timedFetch(
+        `https://api.ashbyhq.com/posting-api/job-board/${c.slug}?includeCompensation=true`,
+        {},
+        8000
+      );
+      if (!res.ok) {
+        console.log(`Ashby skip ${c.slug} (${res.status})`);
+        return [];
+      }
+      const json = await res.json();
+      return (json.jobs || []).map((j: any) => ({
+        title: j.title || "Untitled",
+        company: c.name,
+        location: j.location || "Remote",
+        job_type: j.employmentType || null,
+        category: "jobs",
+        listing_type: "job",
+        description: j.descriptionPlain || (j.descriptionHtml ? stripHtml(j.descriptionHtml) : null),
+        url: j.applyUrl || j.jobUrl,
+        source: "ashby",
+        external_id: `${c.slug}-${j.id}`,
+        posted_at: j.publishedAt || null,
+        salary: j.compensation?.compensationTierSummary || null,
+        tags: j.department ? [j.department] : null,
+        company_logo: null,
+        is_remote: j.isRemote === true,
+      }));
+    } catch (e) {
+      console.log(`Ashby error ${c.slug}: ${(e as Error).message}`);
+      return [];
+    }
+  });
+}
+
+async function fetchBreezyBoards(): Promise<NormalizedJob[]> {
+  return mapLimit(BREEZY_COMPANIES, 8, async (c) => {
+    try {
+      const res = await timedFetch(`https://${c.slug}.breezy.hr/json`, {}, 8000);
+      if (!res.ok) {
+        console.log(`Breezy skip ${c.slug} (${res.status})`);
+        return [];
+      }
+      const postings = await res.json();
+      if (!Array.isArray(postings)) return [];
+      return postings.map((j: any) => {
+        const loc = [j.location?.city, j.location?.country?.name]
+          .filter(Boolean)
+          .join(", ");
+        return {
+          title: j.name || j.position || "Untitled",
+          company: c.name,
+          location: j.location?.is_remote ? "Remote" : loc || "Remote",
+          job_type: j.type?.name || null,
+          category: "jobs",
+          listing_type: "job",
+          description: j.description ? stripHtml(j.description) : null,
+          url: j.url,
+          source: "breezy",
+          external_id: `${c.slug}-${j.id}`,
+          posted_at: j.published_date || j.creation_date || null,
+          salary: null,
+          tags: j.department ? [j.department] : null,
+          company_logo: null,
+          is_remote: j.location?.is_remote === true,
+        };
+      });
+    } catch (e) {
+      console.log(`Breezy error ${c.slug}: ${(e as Error).message}`);
+      return [];
+    }
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -726,21 +974,33 @@ Deno.serve(async (req) => {
       remotiveJobs,
       jobsToApplyJobs,
       reliefwebJobs,
+      workingNomadsJobs,
+      himalayasJobs,
+      greenhouseJobs,
+      leverJobs,
+      ashbyJobs,
+      breezyJobs,
     ] = await Promise.all([
       fetchYeshubJobs(),
       fetchGlobalSouthJobs(),
       fetchOpportunitiesForYouthJobs(),
       fetchYuthAxisJobs(),
       fetchNgoJobsInAfricaJobs(),
-      fetchRemotiveUSJobs(),
+      fetchRemotiveJobs(),
       fetchJobsToApplyJobs(),
       fetchReliefWebUSJobs(),
+      fetchWorkingNomadsJobs(),
+      fetchHimalayasJobs(),
+      fetchGreenhouseBoards(),
+      fetchLeverBoards(),
+      fetchAshbyBoards(),
+      fetchBreezyBoards(),
     ]);
     console.log(
-      `Fetched source counts: YesHub=${yeshubJobs.length}, GlobalSouth=${globalSouthJobs.length}, OFY=${ofy4Jobs.length}, YuthAxis=${yuthAxisJobs.length}, NGOAfrica=${ngoJobsAfrica.length}, Remotive=${remotiveJobs.length}, JobsToApply=${jobsToApplyJobs.length}, ReliefWeb=${reliefwebJobs.length}`
+      `Fetched source counts: YesHub=${yeshubJobs.length}, GlobalSouth=${globalSouthJobs.length}, OFY=${ofy4Jobs.length}, YuthAxis=${yuthAxisJobs.length}, NGOAfrica=${ngoJobsAfrica.length}, Remotive=${remotiveJobs.length}, JobsToApply=${jobsToApplyJobs.length}, ReliefWeb=${reliefwebJobs.length}, WorkingNomads=${workingNomadsJobs.length}, Himalayas=${himalayasJobs.length}, Greenhouse=${greenhouseJobs.length}, Lever=${leverJobs.length}, Ashby=${ashbyJobs.length}, Breezy=${breezyJobs.length}`
     );
 
-    const fetchedJobs = [...yeshubJobs, ...globalSouthJobs, ...ofy4Jobs, ...yuthAxisJobs, ...ngoJobsAfrica, ...remotiveJobs, ...jobsToApplyJobs, ...reliefwebJobs];
+    const fetchedJobs = [...yeshubJobs, ...globalSouthJobs, ...ofy4Jobs, ...yuthAxisJobs, ...ngoJobsAfrica, ...remotiveJobs, ...jobsToApplyJobs, ...reliefwebJobs, ...workingNomadsJobs, ...himalayasJobs, ...greenhouseJobs, ...leverJobs, ...ashbyJobs, ...breezyJobs];
 
     // Remote-only board: keep a listing only when it is explicitly flagged
     // remote or clearly described as remote/home-based in its own text.
@@ -751,7 +1011,7 @@ Deno.serve(async (req) => {
       const haystack = `${j.title ?? ""} ${j.location ?? ""} ${j.job_type ?? ""} ${j.description ?? ""}`;
       if (NOT_REMOTE_RE.test(`${j.title ?? ""} ${j.location ?? ""}`)) return false;
       return j.is_remote === true || REMOTE_RE.test(haystack);
-    }).map((j: any) => ({ ...j, is_remote: true }));
+    }).map((j: any) => ({ ...j, is_remote: true, listing_type: "job" }));
 
     console.log(`Remote-only filter kept ${allJobs.length} of ${fetchedJobs.length} listings`);
 
@@ -809,7 +1069,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        fetched: { yeshub: yeshubJobs.length, globalsouth: globalSouthJobs.length, opportunitiesforyouth: ofy4Jobs.length, yuthaxis: yuthAxisJobs.length, ngojobsinafrica: ngoJobsAfrica.length, remotive: remotiveJobs.length, jobstoapply: jobsToApplyJobs.length, reliefweb: reliefwebJobs.length, total: allJobs.length },
+        fetched: { yeshub: yeshubJobs.length, globalsouth: globalSouthJobs.length, opportunitiesforyouth: ofy4Jobs.length, yuthaxis: yuthAxisJobs.length, ngojobsinafrica: ngoJobsAfrica.length, remotive: remotiveJobs.length, jobstoapply: jobsToApplyJobs.length, reliefweb: reliefwebJobs.length, workingnomads: workingNomadsJobs.length, himalayas: himalayasJobs.length, greenhouse: greenhouseJobs.length, lever: leverJobs.length, ashby: ashbyJobs.length, breezy: breezyJobs.length, total: allJobs.length },
         inserted,
         skipped,
       }),
