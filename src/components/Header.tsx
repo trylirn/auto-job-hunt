@@ -6,7 +6,6 @@ import { useState } from "react";
 
 const NAV = [
   { to: "/", label: "Jobs", end: true },
-  { to: "/opportunities", label: "Opportunities", end: false },
   { to: "/jobs/in", label: "Locations", end: false },
   { to: "/guides/un-careers", label: "Guide", end: false },
 ];
@@ -23,7 +22,7 @@ export function Header() {
     );
 
   return (
-    <header className="sticky top-0 z-50 border-b border-rule bg-background/85 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-rule bg-card">
       <div className="container flex h-16 items-center justify-between gap-4">
         <Link to="/" className="flex shrink-0 items-center gap-2.5">
           <img

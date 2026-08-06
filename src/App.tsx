@@ -2,11 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useParams, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import Index from "./pages/Index";
 import JobDetail, { JobIdRedirect } from "./pages/JobDetail";
-import Opportunities from "./pages/Opportunities";
 import Newsletter from "./pages/Newsletter";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -41,7 +40,8 @@ const App = () => (
           <PostHogPageview />
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/opportunities" element={<Opportunities />} />
+            <Route path="/opportunities" element={<Navigate to="/" replace />} />
+            <Route path="/opportunity/:slug" element={<Navigate to="/" replace />} />
             <Route path="/newsletter" element={<Newsletter />} />
             <Route path="/job/:slug" element={<JobDetail />} />
             <Route path="/job/id/:id" element={<JobIdRedirect />} />
