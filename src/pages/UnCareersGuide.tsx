@@ -129,7 +129,6 @@ const UnCareersGuide = () => {
           </p>
           <ul>
             <li><Link to="/">All open jobs</Link></li>
-            <li><Link to="/opportunities">Fellowships, scholarships and other opportunities</Link></li>
             <li><Link to="/jobs/in">Browse by country</Link></li>
           </ul>
 

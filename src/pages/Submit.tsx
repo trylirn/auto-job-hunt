@@ -191,7 +191,6 @@ const Submit = () => {
                 <SelectTrigger id="listing_type"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="job">Job</SelectItem>
-                  <SelectItem value="opportunity">Opportunity (fellowship/grant/etc.)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

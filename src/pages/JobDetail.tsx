@@ -389,7 +389,7 @@ const JobDetail = () => {
     if (window.history.length > 1 && document.referrer && new URL(document.referrer, window.location.origin).origin === window.location.origin) {
       navigate(-1);
     } else {
-      navigate(job?.listing_type === "opportunity" ? "/opportunities" : "/");
+      navigate("/");
     }
   };
 
