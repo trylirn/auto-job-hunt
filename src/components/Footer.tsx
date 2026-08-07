@@ -52,8 +52,8 @@ export function Footer() {
               <span className="font-display text-xl">Eplicant</span>
             </Link>
             <p className="max-w-xs text-sm text-muted-foreground">
-              Fully remote jobs for international development professionals —
-              humanitarian, global health, climate, education and governance roles.
+              Fully remote jobs across every industry — engineering, design, marketing,
+              support, operations, finance and more. Work from anywhere.
             </p>
           </div>
 
@@ -63,19 +63,18 @@ export function Footer() {
             </h2>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link to="/" className="hover:text-foreground">Jobs</Link></li>
-              <li><Link to="/jobs/in" className="hover:text-foreground">Jobs by location</Link></li>
-              <li><Link to="/guides/un-careers" className="hover:text-foreground">UN careers guide</Link></li>
+              <li><Link to="/jobs/in" className="hover:text-foreground">Remote jobs by country</Link></li>
               <li><Link to="/submit" className="hover:text-foreground">Post a remote job</Link></li>
             </ul>
           </nav>
 
           <nav aria-label="Jobs by country">
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              By country
+              Remote by country
             </h2>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link to="/jobs/in/united-states" className="hover:text-foreground">United States</Link></li>
-              <li><Link to="/jobs/in/usa-global" className="hover:text-foreground">USA / Global (Remote)</Link></li>
+              <li><Link to="/jobs/in/usa-global" className="hover:text-foreground">Worldwide (Remote)</Link></li>
               <li><Link to="/jobs/in/united-kingdom" className="hover:text-foreground">United Kingdom</Link></li>
               <li><Link to="/jobs/in/kenya" className="hover:text-foreground">Kenya</Link></li>
               <li><Link to="/jobs/in/nigeria" className="hover:text-foreground">Nigeria</Link></li>

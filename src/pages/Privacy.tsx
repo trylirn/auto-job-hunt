@@ -26,7 +26,7 @@ const Privacy = () => (
 
       <h2 className="font-display text-xl font-semibold mt-8">1. Who We Are</h2>
       <p>
-        Eplicant is a remote-only job board for the international development sector. We operate the website
+        Eplicant is a remote-only job board covering every industry. We operate the website
         eplicant.com and a related weekly email newsletter. For privacy questions, please reach
         us via the <a href="/contact" className="text-primary">contact page</a>.
       </p>

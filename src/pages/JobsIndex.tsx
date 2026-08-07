@@ -5,8 +5,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRY_HUBS } from "@/data/countryHubs";
-import { CITY_HUBS } from "@/data/cityHubs";
-import { MapPin, Globe } from "lucide-react";
+import { Globe } from "lucide-react";
 
 const SITE = "https://eplicant.com";
 
@@ -26,13 +25,7 @@ function useHubCounts() {
       const countries = await Promise.all(
         COUNTRY_HUBS.map(async (h) => ({ ...h, count: await countFor(h.locationQuery) }))
       );
-      const cities = await Promise.all(
-        CITY_HUBS.map(async (h) => ({ ...h, count: await countFor(h.locationQuery) }))
-      );
-      return {
-        countries: countries.filter((c) => c.count > 0),
-        cities: cities.filter((c) => c.count > 0),
-      };
+      return { countries: countries.filter((c) => c.count > 0) };
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -41,20 +34,18 @@ function useHubCounts() {
 export default function JobsIndex() {
   const { data, isLoading } = useHubCounts();
 
-  // Sort: USA + USA/Global first, then alphabetical.
+  // Sort: worldwide remote first, then alphabetical.
   const countries = (data?.countries ?? []).slice().sort((a, b) => {
-    const order = (s: string) =>
-      s === "united-states" ? 0 : s === "usa-global" ? 1 : 2;
+    const order = (s: string) => (s === "usa-global" ? 0 : 1);
     const oa = order(a.slug);
     const ob = order(b.slug);
     if (oa !== ob) return oa - ob;
     return a.name.localeCompare(b.name);
   });
-  const cities = (data?.cities ?? []).slice().sort((a, b) => a.city.localeCompare(b.city));
 
-  const title = "Jobs by country & city — International Development | Eplicant";
+  const title = "Remote jobs by country — work from anywhere | Eplicant";
   const description =
-    "Browse international development, UN, and NGO jobs by country and city — U.S. roles first, then opportunities across every region.";
+    "Browse fully remote jobs by country. Find work-from-anywhere roles open to candidates in your location — no commute, no relocation.";
   const canonical = `${SITE}/jobs/in`;
 
   return (
@@ -77,14 +68,14 @@ export default function JobsIndex() {
           <nav className="text-xs text-muted-foreground mb-3" aria-label="Breadcrumb">
             <Link to="/" className="hover:text-foreground">Home</Link>
             <span className="mx-1.5">/</span>
-            <span>Jobs by location</span>
+            <span>Remote jobs by country</span>
           </nav>
           <h1 className="font-display text-2xl font-bold tracking-tight md:text-4xl">
-            Browse jobs by country & city
+            Browse remote jobs by country
           </h1>
           <p className="mt-3 max-w-3xl text-base text-muted-foreground md:text-lg">
-            U.S. roles first, then international development jobs across every country and city
-            with at least one live opening on Eplicant.
+            Every role on Eplicant is fully remote. Pick a country to see work-from-anywhere
+            jobs open to candidates there.
           </p>
         </div>
       </section>
@@ -115,35 +106,6 @@ export default function JobsIndex() {
           )}
         </section>
 
-        <section>
-          <h2 className="font-display text-xl font-semibold mb-4 flex items-center gap-2">
-            <MapPin className="h-5 w-5" /> By city
-          </h2>
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : cities.length ? (
-            <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {cities.map((h) => (
-                <li key={h.slug}>
-                  <Link
-                    to={`/jobs/in/cities/${h.slug}`}
-                    className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm hover:border-primary/40"
-                  >
-                    <span className="truncate">
-                      {h.city}
-                      <span className="text-muted-foreground"> · {h.country}</span>
-                    </span>
-                    <span className="text-xs text-muted-foreground ml-2">{h.count}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No cities with enough live jobs to feature right now.
-            </p>
-          )}
-        </section>
       </main>
 
       <Footer />

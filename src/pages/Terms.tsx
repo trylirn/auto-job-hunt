@@ -27,7 +27,7 @@ const Terms = () => (
 
       <h2 className="font-display text-xl font-semibold mt-8">1. About Eplicant</h2>
       <p>
-        Eplicant publishes fully remote jobs for the international development sector. Every
+        Eplicant publishes fully remote jobs across every industry. Every
         listing is a role that can be performed from anywhere; hybrid and on-site positions are
         not published. We are a job board: we display openings and link applicants to the
         organisations advertising them. We are not the employer for any role listed and we are not party to any application,

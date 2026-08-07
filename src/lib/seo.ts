@@ -76,7 +76,7 @@ export const organizationJsonLd = {
   url: SITE_URL,
   logo: SITE_LOGO,
   description:
-    "A job board for international development professionals — roles, fellowships, scholarships and grants in one place.",
+    "A remote-only job board — fully remote jobs across every industry, in one place.",
 };
 
 export const websiteJsonLd = {

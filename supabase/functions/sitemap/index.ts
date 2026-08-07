@@ -29,7 +29,6 @@ const STATIC_PAGES: SitemapEntry[] = [
   { loc: `${SITE_URL}/jobs/in`, changefreq: "daily", priority: "0.8" },
   { loc: `${SITE_URL}/newsletter`, changefreq: "weekly", priority: "0.7" },
   { loc: `${SITE_URL}/submit`, changefreq: "monthly", priority: "0.6" },
-  { loc: `${SITE_URL}/guides/un-careers`, changefreq: "monthly", priority: "0.7" },
   { loc: `${SITE_URL}/about`, changefreq: "monthly", priority: "0.5" },
   { loc: `${SITE_URL}/contact`, changefreq: "monthly", priority: "0.5" },
 ];
@@ -77,31 +76,6 @@ const COUNTRY_HUBS: { slug: string; query: string }[] = [
   { slug: "asia-pacific", query: "Asia-Pacific" },
 ];
 
-// City hubs — kept in sync with src/data/cityHubs.ts.
-const CITY_HUBS: { slug: string; query: string }[] = [
-  { slug: "nairobi", query: "Nairobi" },
-  { slug: "new-york", query: "New York" },
-  { slug: "geneva", query: "Geneva" },
-  { slug: "washington-dc", query: "Washington" },
-  { slug: "london", query: "London" },
-  { slug: "addis-ababa", query: "Addis Ababa" },
-  { slug: "bangkok", query: "Bangkok" },
-  { slug: "dakar", query: "Dakar" },
-  { slug: "lagos", query: "Lagos" },
-  { slug: "abuja", query: "Abuja" },
-  { slug: "brussels", query: "Brussels" },
-  { slug: "rome", query: "Rome" },
-  { slug: "vienna", query: "Vienna" },
-  { slug: "copenhagen", query: "Copenhagen" },
-  { slug: "kampala", query: "Kampala" },
-  { slug: "amman", query: "Amman" },
-  { slug: "manila", query: "Manila" },
-  { slug: "delhi", query: "Delhi" },
-  { slug: "berlin", query: "Berlin" },
-  { slug: "bonn", query: "Bonn" },
-  { slug: "paris", query: "Paris" },
-];
-
 async function hubsWithJobs(
   supabase: ReturnType<typeof createClient>,
   hubs: { slug: string; query: string }[],
@@ -139,7 +113,7 @@ Deno.serve(async () => {
 
     const today = new Date().toISOString().slice(0, 10);
 
-    const [{ data: jobs, error }, countryEntries, cityEntries] = await Promise.all([
+    const [{ data: jobs, error }, countryEntries] = await Promise.all([
       supabase
         .from("jobs")
         .select("id, slug, updated_at, created_at, apply_before_date")
@@ -148,12 +122,11 @@ Deno.serve(async () => {
         .order("updated_at", { ascending: false })
         .limit(45000),
       hubsWithJobs(supabase, COUNTRY_HUBS, "/jobs/in", today),
-      hubsWithJobs(supabase, CITY_HUBS, "/jobs/in/cities", today),
     ]);
 
     if (error) {
       console.error("sitemap query error:", error.message);
-      return new Response(buildXml([...STATIC_PAGES, ...countryEntries, ...cityEntries]), {
+      return new Response(buildXml([...STATIC_PAGES, ...countryEntries]), {
         headers: {
           "Content-Type": "application/xml",
           "Cache-Control": "public, max-age=300",
@@ -172,7 +145,7 @@ Deno.serve(async () => {
     });
 
     return new Response(
-      buildXml([...STATIC_PAGES, ...countryEntries, ...cityEntries, ...jobEntries]),
+      buildXml([...STATIC_PAGES, ...countryEntries, ...jobEntries]),
       {
         headers: {
           "Content-Type": "application/xml",

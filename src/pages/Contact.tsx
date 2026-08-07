@@ -7,10 +7,10 @@ const Contact = () => (
   <div className="min-h-screen bg-background">
     <Helmet>
       <title>Contact — Eplicant</title>
-      <meta name="description" content="Contact the Eplicant team for partnerships, feedback, or questions about jobs and opportunities in international development." />
+      <meta name="description" content="Contact the Eplicant team for partnerships, feedback, or questions about remote jobs." />
       <link rel="canonical" href="https://eplicant.com/contact" />
       <meta property="og:title" content="Contact — Eplicant" />
-      <meta property="og:description" content="Contact the Eplicant team for partnerships, feedback, or questions about jobs and opportunities in international development." />
+      <meta property="og:description" content="Contact the Eplicant team for partnerships, feedback, or questions about remote jobs." />
       <meta property="og:type" content="website" />
       <meta property="og:url" content="https://eplicant.com/contact" />
     </Helmet>
