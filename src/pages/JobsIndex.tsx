@@ -106,35 +106,6 @@ export default function JobsIndex() {
           )}
         </section>
 
-        <section>
-          <h2 className="font-display text-xl font-semibold mb-4 flex items-center gap-2">
-            <MapPin className="h-5 w-5" /> By city
-          </h2>
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : cities.length ? (
-            <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {cities.map((h) => (
-                <li key={h.slug}>
-                  <Link
-                    to={`/jobs/in/cities/${h.slug}`}
-                    className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm hover:border-primary/40"
-                  >
-                    <span className="truncate">
-                      {h.city}
-                      <span className="text-muted-foreground"> · {h.country}</span>
-                    </span>
-                    <span className="text-xs text-muted-foreground ml-2">{h.count}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No cities with enough live jobs to feature right now.
-            </p>
-          )}
-        </section>
       </main>
 
       <Footer />
