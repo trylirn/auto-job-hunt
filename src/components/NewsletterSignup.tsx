@@ -127,7 +127,7 @@ export function NewsletterSignup({
             </h2>
             <p className="mt-1.5 text-sm text-muted-foreground">
               Join over 10,000 subscribers receiving a curated digest of jobs and
-              remote roles across international development.
+              fully remote roles across every industry.
             </p>
           </div>
           <div className="md:w-[26rem]">

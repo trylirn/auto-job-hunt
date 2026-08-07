@@ -7,7 +7,6 @@ import { useState } from "react";
 const NAV = [
   { to: "/", label: "Jobs", end: true },
   { to: "/jobs/in", label: "Locations", end: false },
-  { to: "/guides/un-careers", label: "Guide", end: false },
 ];
 
 export function Header() {
@@ -27,7 +26,7 @@ export function Header() {
         <Link to="/" className="flex shrink-0 items-center gap-2.5">
           <img
             src="/logo.png"
-            alt="Eplicant — International Development Jobs"
+            alt="Eplicant — Remote Jobs"
             width={32}
             height={32}
             fetchPriority="high"

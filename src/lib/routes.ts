@@ -54,7 +54,7 @@ export const STATIC_ROUTES: StaticRoute[] = [
     path: "/about",
     title: "About",
     description:
-      "Eplicant is a remote job board for international development professionals — connecting talent with mission-driven roles worldwide.",
+      "Eplicant is a remote-only job board — every listing is a fully remote role you can do from anywhere.",
     indexable: true,
     changefreq: "yearly",
     priority: 0.4,
@@ -63,7 +63,7 @@ export const STATIC_ROUTES: StaticRoute[] = [
     path: "/contact",
     title: "Contact",
     description:
-      "Contact the Eplicant team for partnerships, feedback, or questions about remote jobs in international development.",
+      "Contact the Eplicant team for partnerships, feedback, or questions about remote jobs.",
     indexable: true,
     changefreq: "yearly",
     priority: 0.3,
