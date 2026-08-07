@@ -5,8 +5,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRY_HUBS } from "@/data/countryHubs";
-import { CITY_HUBS } from "@/data/cityHubs";
-import { MapPin, Globe } from "lucide-react";
+import { Globe } from "lucide-react";
 
 const SITE = "https://eplicant.com";
 
