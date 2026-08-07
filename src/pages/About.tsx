@@ -6,10 +6,10 @@ const About = () => (
   <div className="min-h-screen bg-background">
     <Helmet>
       <title>About — Eplicant</title>
-      <meta name="description" content="Eplicant is a job board for international development professionals — connecting talent with mission-driven roles worldwide." />
+      <meta name="description" content="Eplicant is a remote-only job board — fully remote roles across every industry, updated daily." />
       <link rel="canonical" href="https://eplicant.com/about" />
       <meta property="og:title" content="About — Eplicant" />
-      <meta property="og:description" content="Eplicant is a job board for international development professionals — connecting talent with mission-driven roles worldwide." />
+      <meta property="og:description" content="Eplicant is a remote-only job board — fully remote roles across every industry, updated daily." />
       <meta property="og:type" content="website" />
       <meta property="og:url" content="https://eplicant.com/about" />
     </Helmet>
@@ -18,50 +18,42 @@ const About = () => (
       <h1 className="font-display text-3xl font-bold mb-6">About Eplicant</h1>
 
       <p>
-        Eplicant is a job board built for the international development community. We bring together
-        roles, fellowships, scholarships, grants, internships, and conferences from organisations
-        working on the issues that shape our world — humanitarian response, global health, climate,
-        education, governance, human rights, and economic development.
+        Eplicant is a remote-only job board. Every role we publish can be done from
+        anywhere — no office, no commute, no relocation. We cover every industry:
+        engineering, design, product, marketing, sales, customer support, operations,
+        finance, writing and more.
       </p>
 
       <h2 className="font-display text-xl font-semibold mt-8">Our Mission</h2>
       <p>
-        We exist to make it easier for people who want to do meaningful work to find it. The
-        international development sector is large, fragmented, and difficult to navigate. Roles
-        are spread across hundreds of agencies, NGOs, foundations, multilaterals, social
-        enterprises, and research institutions. Our mission is to bring those opportunities into
-        one clear, searchable place — so applicants spend less time hunting and more time doing
-        the work that matters.
+        Remote work is spread thin across hundreds of company career pages and general
+        job boards where it sits buried under on-site listings. Our mission is to bring
+        genuinely remote roles into one clear, fast, searchable place — so you spend less
+        time filtering and more time applying.
       </p>
 
       <h2 className="font-display text-xl font-semibold mt-8">What We Do</h2>
       <p>
-        Eplicant is a focused job board. We publish open roles and opportunities from across the
-        sector and present them in a clean, fast interface designed around how job seekers
-        actually search — by location, remote eligibility, deadline, type of work, and the kind
-        of organisation behind the role.
+        We publish open remote roles and present them in a clean, fast interface built
+        around how people actually search — by keyword, by the country you can work from,
+        and by deadline. Hybrid and on-site positions are filtered out.
       </p>
       <p>
-        Every listing links to the original employer, so you apply directly to the organisation
-        hiring. We do not stand between you and the opportunity.
+        Every listing links to the original employer, so you apply directly to the company
+        hiring. We do not stand between you and the role.
       </p>
 
       <h2 className="font-display text-xl font-semibold mt-8">Who We Serve</h2>
       <p>
-        Our audience is the global community of international development professionals: programme
-        managers, M&amp;E specialists, policy advisors, public health practitioners, climate and
-        environment experts, humanitarian responders, researchers, consultants, communications and
-        operations staff, and the next generation of professionals entering the field through
-        fellowships, internships, and graduate programmes.
+        Anyone who wants to work remotely — experienced professionals looking for their next
+        role, people moving out of office-based work, and teams hiring talent wherever it is.
       </p>
 
-      <h2 className="font-display text-xl font-semibold mt-8">Why International Development</h2>
+      <h2 className="font-display text-xl font-semibold mt-8">Why Remote Only</h2>
       <p>
-        Mission-driven work deserves mission-driven infrastructure. Generic job boards bury
-        development roles under tech, finance, and retail listings. Specialist platforms are often
-        slow, outdated, or paywalled. Eplicant focuses entirely on this sector so the experience
-        — the filters, the categories, the deadlines, the language — is built for the people who
-        actually use it.
+        "Remote" on most job boards means hybrid, remote-in-one-city, or occasionally remote.
+        We only keep roles that are genuinely location-independent, so what you see is what
+        you get.
       </p>
 
       <h2 className="font-display text-xl font-semibold mt-8">Our Values</h2>
@@ -74,9 +66,9 @@ const About = () => (
 
       <h2 className="font-display text-xl font-semibold mt-8">Get Involved</h2>
       <p>
-        Subscribe to our weekly newsletter to receive a hand-picked digest of new roles and
-        opportunities. If you have feedback, spot a broken listing, or want to suggest an
-        organisation we should cover, please reach us via the <a href="/contact" className="text-primary">contact page</a>.
+        Subscribe to our weekly newsletter to receive a hand-picked digest of new remote
+        roles. If you have feedback, spot a broken listing, or want to suggest a company we
+        should cover, please reach us via the <a href="/contact" className="text-primary">contact page</a>.
       </p>
     </main>
     <Footer />

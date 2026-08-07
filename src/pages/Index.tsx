@@ -22,7 +22,7 @@ const FAQS = [
   {
     question: "What is Eplicant?",
     answer:
-      "Eplicant is a job board for international development professionals. Every listing is a fully remote role you can do from anywhere — humanitarian, global health, climate, education, governance and human rights work.",
+      "Eplicant is a remote-only job board. Every listing is a fully remote role you can do from anywhere — engineering, design, marketing, sales, support, operations, finance and more.",
   },
   {
     question: "Are all the jobs really remote?",
@@ -37,7 +37,7 @@ const FAQS = [
   {
     question: "Are these jobs legitimate?",
     answer:
-      "Listings come from established organisations and employers hiring in the sector. Expired or suspicious postings are removed to keep the board trustworthy.",
+      "Listings come from established employers hiring remotely. Expired or suspicious postings are removed to keep the board trustworthy.",
   },
   {
     question: "How do I apply for a job?",
@@ -75,15 +75,15 @@ const Index = () => {
           <div className="grid gap-10 md:grid-cols-[1.7fr_1fr] md:items-end">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                The remote international development job board
+                The remote-only job board
               </p>
               <h1 className="mt-4 max-w-3xl font-display text-4xl leading-[1.05] md:text-6xl">
-                Remote jobs for people who work on what matters
+                Remote jobs you can do from anywhere
               </h1>
               <p className="mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
-                Humanitarian response, global health, climate, education,
-                governance and human rights roles you can do from anywhere —
-                fully remote only, updated daily.
+                Engineering, design, marketing, support, operations, finance
+                and more — fully remote roles only, updated daily. No commute,
+                no relocation.
               </p>
             </div>
 
