@@ -1,12 +1,13 @@
 # Eplicant
 
-> Eplicant is a job board for international development professionals — aggregating verified jobs, fellowships, scholarships, grants, internships, and conferences from across the sector in one searchable place.
+> Eplicant is a remote-only job board — fully remote roles across every industry in one searchable place.
 
-Eplicant focuses entirely on the international development sector: humanitarian response, global health, climate, education, governance, human rights, and economic development. Every listing links directly to the original employer or program.
+Eplicant publishes only fully remote jobs: engineering, design, product, marketing, sales, customer support, operations, finance and more. Hybrid and on-site roles are excluded. Every listing links directly to the original employer.
 
 ## Pages
 
-- [Jobs](/): Browse current jobs in international development — full-time, part-time, contract, and remote roles.
+- [Jobs](/): Browse current fully remote jobs — full-time, part-time and contract.
+- [Remote jobs by country](/jobs/in): Remote roles grouped by the country you can work from.
 - [Newsletter](/newsletter): Weekly curated digest of new remote jobs.
 - [About](/about): Our mission, what we do, and who we serve.
 - [Submit](/submit): Post a job for free — no account required.
