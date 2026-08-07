@@ -25,13 +25,7 @@ function useHubCounts() {
       const countries = await Promise.all(
         COUNTRY_HUBS.map(async (h) => ({ ...h, count: await countFor(h.locationQuery) }))
       );
-      const cities = await Promise.all(
-        CITY_HUBS.map(async (h) => ({ ...h, count: await countFor(h.locationQuery) }))
-      );
-      return {
-        countries: countries.filter((c) => c.count > 0),
-        cities: cities.filter((c) => c.count > 0),
-      };
+      return { countries: countries.filter((c) => c.count > 0) };
     },
     staleTime: 5 * 60 * 1000,
   });
