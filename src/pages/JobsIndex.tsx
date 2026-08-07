@@ -34,20 +34,18 @@ function useHubCounts() {
 export default function JobsIndex() {
   const { data, isLoading } = useHubCounts();
 
-  // Sort: USA + USA/Global first, then alphabetical.
+  // Sort: worldwide remote first, then alphabetical.
   const countries = (data?.countries ?? []).slice().sort((a, b) => {
-    const order = (s: string) =>
-      s === "united-states" ? 0 : s === "usa-global" ? 1 : 2;
+    const order = (s: string) => (s === "usa-global" ? 0 : 1);
     const oa = order(a.slug);
     const ob = order(b.slug);
     if (oa !== ob) return oa - ob;
     return a.name.localeCompare(b.name);
   });
-  const cities = (data?.cities ?? []).slice().sort((a, b) => a.city.localeCompare(b.city));
 
-  const title = "Jobs by country & city — International Development | Eplicant";
+  const title = "Remote jobs by country — work from anywhere | Eplicant";
   const description =
-    "Browse international development, UN, and NGO jobs by country and city — U.S. roles first, then opportunities across every region.";
+    "Browse fully remote jobs by country. Find work-from-anywhere roles open to candidates in your location — no commute, no relocation.";
   const canonical = `${SITE}/jobs/in`;
 
   return (
