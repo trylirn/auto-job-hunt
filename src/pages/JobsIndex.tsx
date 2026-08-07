@@ -68,14 +68,14 @@ export default function JobsIndex() {
           <nav className="text-xs text-muted-foreground mb-3" aria-label="Breadcrumb">
             <Link to="/" className="hover:text-foreground">Home</Link>
             <span className="mx-1.5">/</span>
-            <span>Jobs by location</span>
+            <span>Remote jobs by country</span>
           </nav>
           <h1 className="font-display text-2xl font-bold tracking-tight md:text-4xl">
-            Browse jobs by country & city
+            Browse remote jobs by country
           </h1>
           <p className="mt-3 max-w-3xl text-base text-muted-foreground md:text-lg">
-            U.S. roles first, then international development jobs across every country and city
-            with at least one live opening on Eplicant.
+            Every role on Eplicant is fully remote. Pick a country to see work-from-anywhere
+            jobs open to candidates there.
           </p>
         </div>
       </section>
