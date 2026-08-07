@@ -16,36 +16,27 @@ export interface StaticRoute {
 export const STATIC_ROUTES: StaticRoute[] = [
   {
     path: "/",
-    title: "Remote International Development Jobs",
+    title: "Remote Jobs — Work From Anywhere",
     description:
-      "Browse remote jobs for international development professionals — NGO, UN, humanitarian and global health roles, updated daily.",
+      "Browse fully remote jobs across every industry — engineering, design, marketing, support, operations and more. Updated daily, no commute, no relocation.",
     indexable: true,
     changefreq: "daily",
     priority: 1.0,
   },
   {
     path: "/jobs/in",
-    title: "Jobs by Country & City",
+    title: "Remote Jobs by Country",
     description:
-      "Browse remote international development, UN and NGO jobs by country and region — every location with a live opening.",
+      "Browse fully remote jobs by country and region — work-from-anywhere roles open to candidates in your location.",
     indexable: true,
     changefreq: "daily",
     priority: 0.8,
   },
   {
-    path: "/guides/un-careers",
-    title: "UN Careers Guide",
-    description:
-      "How UN recruitment works — job grades, Inspira, the Personal History Profile, JPO and YPP routes.",
-    indexable: true,
-    changefreq: "monthly",
-    priority: 0.7,
-  },
-  {
     path: "/newsletter",
     title: "Weekly Newsletter",
     description:
-      "A weekly digest of new remote jobs across the international development sector.",
+      "A weekly digest of new fully remote jobs, delivered to your inbox.",
     indexable: true,
     changefreq: "weekly",
     priority: 0.6,
@@ -54,7 +45,7 @@ export const STATIC_ROUTES: StaticRoute[] = [
     path: "/submit",
     title: "Post a Remote Job — Free",
     description:
-      "Post a remote role for international development professionals. Free, no account needed, live immediately.",
+      "Post a fully remote role for free. No account needed, live immediately.",
     indexable: true,
     changefreq: "monthly",
     priority: 0.6,
