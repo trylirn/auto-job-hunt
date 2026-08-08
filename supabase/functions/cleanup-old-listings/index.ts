@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
 
   console.log(`Deleting expired listings (cutoff ${cutoffISO}, today ${todayISO})`);
 
-  // Two passes: (1) anything older than 45 days, (2) anything whose deadline
+  // Two passes: (1) anything older than 15 days, (2) anything whose deadline
   // has already passed. Separate calls because PostgREST's .or() on .delete()
   // chokes on ISO timestamps with colons.
   const [{ data: byAge, error: ageErr }, { data: byDeadline, error: dlErr }] =
