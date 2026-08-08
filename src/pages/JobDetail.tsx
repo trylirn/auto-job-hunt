@@ -349,13 +349,19 @@ const JobDetailSidebar = ({
           </div>
         )}
 
-        {/* Apply Button */}
-        <Button size="lg" className="gap-2 w-full" onClick={onApply}>
-          {applyUrl?.toLowerCase().startsWith("mailto:") ? "Apply by email" : "Apply now"}
-          {applyUrl && !applyUrl.toLowerCase().startsWith("mailto:") && (
-            <ExternalLink className="h-4 w-4" />
-          )}
-        </Button>
+        {/* Apply Button — only when we actually have a destination */}
+        {applyUrl ? (
+          <Button size="lg" className="gap-2 w-full" onClick={onApply}>
+            {applyUrl.toLowerCase().startsWith("mailto:") ? "Apply by email" : "Apply now"}
+            {!applyUrl.toLowerCase().startsWith("mailto:") && (
+              <ExternalLink className="h-4 w-4" />
+            )}
+          </Button>
+        ) : (
+          <p className="rounded-md border border-dashed px-3 py-2 text-center text-xs text-muted-foreground">
+            No application link was provided for this role.
+          </p>
+        )}
       </CardContent>
     </Card>
 
@@ -565,14 +571,16 @@ const JobDetail = () => {
 
             {/* Share & Apply (mobile) */}
             <div className="mt-6 border-t pt-4 space-y-4 lg:hidden">
-              <Button size="lg" className="gap-2 w-full" onClick={handleApply}>
-                {isEmailApply
-                  ? "Apply by email"
-                  : job.listing_type === "opportunity"
-                    ? "Apply now"
-                    : "Apply for this position"}
-                {applyUrl && !isEmailApply && <ExternalLink className="h-4 w-4" />}
-              </Button>
+              {applyUrl ? (
+                <Button size="lg" className="gap-2 w-full" onClick={handleApply}>
+                  {isEmailApply ? "Apply by email" : "Apply for this position"}
+                  {!isEmailApply && <ExternalLink className="h-4 w-4" />}
+                </Button>
+              ) : (
+                <p className="rounded-md border border-dashed px-3 py-2 text-center text-xs text-muted-foreground">
+                  No application link was provided for this role.
+                </p>
+              )}
               {applyEmail && (
                 <p className="text-center text-xs text-muted-foreground">
                   Send your application to{" "}

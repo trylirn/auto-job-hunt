@@ -11,15 +11,15 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // 1.5 months = ~45 days
+  // Listings are hard-deleted after 15 days.
   const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 45);
+  cutoff.setDate(cutoff.getDate() - 15);
   const cutoffISO = cutoff.toISOString();
   const todayISO = new Date().toISOString().slice(0, 10);
 
   console.log(`Deleting expired listings (cutoff ${cutoffISO}, today ${todayISO})`);
 
-  // Two passes: (1) anything older than 45 days, (2) anything whose deadline
+  // Two passes: (1) anything older than 15 days, (2) anything whose deadline
   // has already passed. Separate calls because PostgREST's .or() on .delete()
   // chokes on ISO timestamps with colons.
   const [{ data: byAge, error: ageErr }, { data: byDeadline, error: dlErr }] =
