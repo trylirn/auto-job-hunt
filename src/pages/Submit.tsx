@@ -100,6 +100,17 @@ const Submit = () => {
         ? `mailto:${d.apply_email}?subject=${encodeURIComponent(`Application - ${d.title}`)}`
         : d.apply_url!;
 
+    // Store the description as clean plain text: normalised newlines, no raw
+    // markup, no stray escaped entities — so it renders as readable paragraphs.
+    const cleanDescription = d.description
+      .replace(/\r\n/g, "\n")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/<[^>]+>/g, "")
+      .replace(/[ \t]+/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+
     const { error } = await supabase.from("jobs").insert({
       title: d.title,
       company: d.company,
@@ -109,7 +120,7 @@ const Submit = () => {
       salary: d.salary || null,
       apply_url: applyTarget,
       url: applyTarget,
-      description: d.description,
+      description: cleanDescription,
       submitter_email: d.submitter_email,
       is_remote: true,
       listing_type: d.listing_type,
