@@ -11,9 +11,9 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // 1.5 months = ~45 days
+  // Listings are hard-deleted after 15 days.
   const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 45);
+  cutoff.setDate(cutoff.getDate() - 15);
   const cutoffISO = cutoff.toISOString();
   const todayISO = new Date().toISOString().slice(0, 10);
 
