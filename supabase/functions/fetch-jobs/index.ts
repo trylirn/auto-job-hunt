@@ -724,8 +724,8 @@ async function fetchWorkingNomadsJobs(): Promise<NormalizedJob[]> {
       job_type: "Remote",
       category: (j.category_name || "jobs").toLowerCase(),
       listing_type: "job",
-      description: j.description || null,
-      url: j.url,
+      description: j.description ? htmlToText(j.description) : null,
+      url: absoluteUrl(j.url, "https://www.workingnomads.com"),
       source: "workingnomads",
       external_id: String(j.id ?? j.slug ?? j.url),
       posted_at: j.pub_date || null,
@@ -758,8 +758,10 @@ async function fetchHimalayasJobs(): Promise<NormalizedJob[]> {
       job_type: "Remote",
       category: (Array.isArray(j.categories) ? j.categories[0] : j.category) || "jobs",
       listing_type: "job",
-      description: j.description || j.excerpt || null,
-      url: j.applicationLink || j.guid || j.url,
+      description: htmlToText(j.description || j.excerpt || "") || null,
+      url:
+        absoluteUrl(j.applicationLink || j.url || j.guid, "https://himalayas.app") ||
+        (j.slug ? `https://himalayas.app/jobs/${j.slug}` : null),
       source: "himalayas",
       external_id: String(j.guid ?? j.id ?? j.applicationLink),
       posted_at: j.pubDate ? new Date(Number(j.pubDate) * 1000).toISOString() : null,
@@ -796,8 +798,74 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
   return out;
 }
 
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", ndash: "\u2013",
+  mdash: "\u2014", hellip: "\u2026", rsquo: "\u2019", lsquo: "\u2018",
+  ldquo: "\u201c", rdquo: "\u201d", bull: "\u2022", middot: "\u00b7", eacute: "\u00e9",
+};
+
+/** Decode numeric + common named HTML entities (runs twice for double-escaped feeds). */
+function decodeEntities(input: string): string {
+  let out = input;
+  for (let pass = 0; pass < 2; pass++) {
+    out = out
+      .replace(/&#x([0-9a-f]+);/gi, (_m, h) => String.fromCodePoint(parseInt(h, 16)))
+      .replace(/&#(\d+);/g, (_m, d) => String.fromCodePoint(parseInt(d, 10)))
+      .replace(/&([a-z]+);/gi, (m, name) => NAMED_ENTITIES[String(name).toLowerCase()] ?? m);
+  }
+  return out;
+}
+
+/**
+ * Convert feed HTML into readable plain text: entities decoded, block elements
+ * turned into real line breaks, list items bulleted, scripts/styles dropped.
+ * Fixes the "unreadable string with no spacing" listings.
+ */
+function htmlToText(input: string): string {
+  if (!input) return "";
+  // Feeds sometimes ship escaped markup (&lt;p&gt;) — decode before stripping.
+  let s = decodeEntities(input);
+  s = s
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|section|article|h[1-6]|tr|ul|ol|blockquote)>/gi, "\n\n")
+    .replace(/<li[^>]*>/gi, "\n\u2022 ")
+    .replace(/<\/(td|th)>/gi, " ")
+    .replace(/<[^>]+>/g, " ");
+  s = decodeEntities(s);
+  return s
+    .replace(/\r/g, "")
+    .replace(/[ \t\u00a0]+/g, " ")
+    .replace(/ ?\n ?/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/** Back-compat alias — every source now goes through the readable converter. */
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  return htmlToText(html);
+}
+
+/** Resolve possibly-relative feed URLs against their source origin. */
+function absoluteUrl(url: string | null | undefined, base: string): string | null {
+  if (!url) return null;
+  const v = String(url).trim();
+  if (!v) return null;
+  if (/^mailto:/i.test(v)) return v;
+  try {
+    return new URL(v, base).toString();
+  } catch {
+    return null;
+  }
+}
+
+/** A listing is only publishable if it has a working link and readable content. */
+function isPublishable(j: any): boolean {
+  const url = typeof j.url === "string" ? j.url.trim() : "";
+  const hasLink = /^https?:\/\//i.test(url) || /^mailto:/i.test(url);
+  const desc = typeof j.description === "string" ? j.description.trim() : "";
+  const words = desc.split(/\s+/).filter(Boolean).length;
+  return hasLink && desc.length >= 200 && words >= 40;
 }
 
 async function fetchGreenhouseBoards(): Promise<NormalizedJob[]> {
@@ -1015,12 +1083,18 @@ Deno.serve(async (req) => {
 
     console.log(`Remote-only filter kept ${allJobs.length} of ${fetchedJobs.length} listings`);
 
+    // Quality gate: never publish empty shells or listings with no apply link.
+    const publishable = allJobs.filter(isPublishable);
+    console.log(
+      `Quality gate kept ${publishable.length} of ${allJobs.length} (dropped empty descriptions / missing links)`
+    );
+
     let inserted = 0;
     let skipped = 0;
 
     const batchSize = 50;
-    for (let i = 0; i < allJobs.length; i += batchSize) {
-      const batch = allJobs.slice(i, i + batchSize);
+    for (let i = 0; i < publishable.length; i += batchSize) {
+      const batch = publishable.slice(i, i + batchSize);
       const { error } = await supabase
         .from("jobs")
         .upsert(batch, { onConflict: "source,external_id", ignoreDuplicates: true });
@@ -1069,7 +1143,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        fetched: { yeshub: yeshubJobs.length, globalsouth: globalSouthJobs.length, opportunitiesforyouth: ofy4Jobs.length, yuthaxis: yuthAxisJobs.length, ngojobsinafrica: ngoJobsAfrica.length, remotive: remotiveJobs.length, jobstoapply: jobsToApplyJobs.length, reliefweb: reliefwebJobs.length, workingnomads: workingNomadsJobs.length, himalayas: himalayasJobs.length, greenhouse: greenhouseJobs.length, lever: leverJobs.length, ashby: ashbyJobs.length, breezy: breezyJobs.length, total: allJobs.length },
+        fetched: { yeshub: yeshubJobs.length, globalsouth: globalSouthJobs.length, opportunitiesforyouth: ofy4Jobs.length, yuthaxis: yuthAxisJobs.length, ngojobsinafrica: ngoJobsAfrica.length, remotive: remotiveJobs.length, jobstoapply: jobsToApplyJobs.length, reliefweb: reliefwebJobs.length, workingnomads: workingNomadsJobs.length, himalayas: himalayasJobs.length, greenhouse: greenhouseJobs.length, lever: leverJobs.length, ashby: ashbyJobs.length, breezy: breezyJobs.length, total: publishable.length },
         inserted,
         skipped,
       }),
