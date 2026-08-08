@@ -12,6 +12,17 @@ export function sanitizeHtml(html: string | null | undefined): string {
   });
 }
 
+const ESCAPED_TAG = /&lt;\/?[a-z][\s\S]*?&gt;/i;
+
+/** Some feeds ship double-escaped markup ("&lt;p&gt;Text&lt;/p&gt;") which would
+ * otherwise render as literal, unreadable text. Decode it back to real HTML. */
+function decodeEscapedMarkup(value: string): string {
+  if (!ESCAPED_TAG.test(value)) return value;
+  const el = document.createElement("textarea");
+  el.innerHTML = value;
+  return el.value;
+}
+
 const HTML_TAG = /<\/?(p|div|br|ul|ol|li|h[1-6]|table|section|article|span|strong|em|blockquote|pre)\b[^>]*>/i;
 
 function escapeHtml(text: string): string {
@@ -32,7 +43,7 @@ export function renderDescriptionHtml(
   content: string | null | undefined
 ): string {
   if (!content) return "";
-  const value = content.trim();
+  const value = decodeEscapedMarkup(content).trim();
   if (!value) return "";
 
   if (HTML_TAG.test(value)) return sanitizeHtml(value);
