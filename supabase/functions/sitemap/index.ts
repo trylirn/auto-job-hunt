@@ -1,5 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Sources temporarily hidden from the public board.
+const HIDDEN_SOURCE_FILTER = "source.is.null,source.neq.himalayas";
+
 const SITE_URL = "https://eplicant.com";
 
 interface SitemapEntry {
@@ -90,6 +93,7 @@ async function hubsWithJobs(
         .select("id", { count: "exact", head: true })
         .is("archived_at", null)
         .or(`apply_before_date.is.null,apply_before_date.gte.${today}`)
+        .or(HIDDEN_SOURCE_FILTER)
         .ilike("location", `%${h.query}%`);
       return { hub: h, count: count ?? 0 };
     })
@@ -119,6 +123,7 @@ Deno.serve(async () => {
         .select("id, slug, updated_at, created_at, apply_before_date")
         .is("archived_at", null)
         .or(`apply_before_date.is.null,apply_before_date.gte.${today}`)
+        .or(HIDDEN_SOURCE_FILTER)
         .order("updated_at", { ascending: false })
         .limit(45000),
       hubsWithJobs(supabase, COUNTRY_HUBS, "/jobs/in", today),
