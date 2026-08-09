@@ -46,11 +46,13 @@ Deno.serve(async (req) => {
 
   const ageIds = (byAge ?? []).map((r: { id: string }) => r.id);
   const dlIds = (byDeadline ?? []).map((r: { id: string }) => r.id);
-  const deletedIds = Array.from(new Set([...ageIds, ...dlIds]));
+  const postedIds = (byPosted ?? []).map((r: { id: string }) => r.id);
+  const deletedIds = Array.from(new Set([...ageIds, ...dlIds, ...postedIds]));
   const count = deletedIds.length;
   console.log(
-    `Deleted ${count} old listings from primary DB (${ageIds.length} by age, ${dlIds.length} by deadline)`
+    `Deleted ${count} old listings from primary DB (${ageIds.length} by age, ${dlIds.length} by deadline, ${postedIds.length} by posted date)`
   );
+
 
   // Mirror delete to Eplicant
   if (count > 0) {
