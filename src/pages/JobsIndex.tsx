@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRY_HUBS } from "@/data/countryHubs";
+import { HIDDEN_SOURCE_FILTER } from "@/hooks/useJobs";
 import { Globe } from "lucide-react";
 
 const SITE = "https://eplicant.com";
