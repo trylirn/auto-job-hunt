@@ -3,6 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { PUBLIC_JOB_COLUMNS, type Job } from "@/types/job";
 import { subDays } from "date-fns";
 
+/**
+ * Sources temporarily hidden from the public board (data is kept in the
+ * database so they can be restored by removing the entry below).
+ */
+export const HIDDEN_SOURCES = ["himalayas"];
+export const HIDDEN_SOURCE_FILTER = [
+  "source.is.null",
+  ...HIDDEN_SOURCES.map((s) => `source.neq.${s}`),
+].join(",");
+
 interface UseJobsParams {
   search?: string;
   jobType?: string;
