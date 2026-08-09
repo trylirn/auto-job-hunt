@@ -1042,43 +1042,29 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log("Fetching jobs from all sources...");
+    // Active sources: Greenhouse, Lever, Ashby, Breezy (+ Himalayas, paused).
+    // All legacy aggregator sources are retired.
+    const HIMALAYAS_PAUSED = true;
+
+    console.log("Fetching jobs from ATS sources...");
     const [
-      yeshubJobs,
-      globalSouthJobs,
-      ofy4Jobs,
-      yuthAxisJobs,
-      ngoJobsAfrica,
-      remotiveJobs,
-      jobsToApplyJobs,
-      reliefwebJobs,
-      workingNomadsJobs,
       himalayasJobs,
       greenhouseJobs,
       leverJobs,
       ashbyJobs,
       breezyJobs,
     ] = await Promise.all([
-      fetchYeshubJobs(),
-      fetchGlobalSouthJobs(),
-      fetchOpportunitiesForYouthJobs(),
-      fetchYuthAxisJobs(),
-      fetchNgoJobsInAfricaJobs(),
-      fetchRemotiveJobs(),
-      fetchJobsToApplyJobs(),
-      fetchReliefWebUSJobs(),
-      fetchWorkingNomadsJobs(),
-      fetchHimalayasJobs(),
+      HIMALAYAS_PAUSED ? Promise.resolve([] as NormalizedJob[]) : fetchHimalayasJobs(),
       fetchGreenhouseBoards(),
       fetchLeverBoards(),
       fetchAshbyBoards(),
       fetchBreezyBoards(),
     ]);
     console.log(
-      `Fetched source counts: YesHub=${yeshubJobs.length}, GlobalSouth=${globalSouthJobs.length}, OFY=${ofy4Jobs.length}, YuthAxis=${yuthAxisJobs.length}, NGOAfrica=${ngoJobsAfrica.length}, Remotive=${remotiveJobs.length}, JobsToApply=${jobsToApplyJobs.length}, ReliefWeb=${reliefwebJobs.length}, WorkingNomads=${workingNomadsJobs.length}, Himalayas=${himalayasJobs.length}, Greenhouse=${greenhouseJobs.length}, Lever=${leverJobs.length}, Ashby=${ashbyJobs.length}, Breezy=${breezyJobs.length}`
+      `Fetched source counts: Himalayas=${himalayasJobs.length}${HIMALAYAS_PAUSED ? " (paused)" : ""}, Greenhouse=${greenhouseJobs.length}, Lever=${leverJobs.length}, Ashby=${ashbyJobs.length}, Breezy=${breezyJobs.length}`
     );
 
-    const fetchedJobs = [...yeshubJobs, ...globalSouthJobs, ...ofy4Jobs, ...yuthAxisJobs, ...ngoJobsAfrica, ...remotiveJobs, ...jobsToApplyJobs, ...reliefwebJobs, ...workingNomadsJobs, ...himalayasJobs, ...greenhouseJobs, ...leverJobs, ...ashbyJobs, ...breezyJobs];
+    const fetchedJobs = [...himalayasJobs, ...greenhouseJobs, ...leverJobs, ...ashbyJobs, ...breezyJobs];
 
     // Remote-only board: keep a listing only when it is explicitly flagged
     // remote or clearly described as remote/home-based in its own text.

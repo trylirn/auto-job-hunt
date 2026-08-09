@@ -9,7 +9,7 @@ export function formatLocation(loc: string | null | undefined): string {
   if (!loc) return "";
   const v = loc.trim();
   if (!v) return "";
-  if (v.toLowerCase() === "global") return "USA / Global";
+  if (v.toLowerCase() === "global") return "Remote";
   return v;
 }
 

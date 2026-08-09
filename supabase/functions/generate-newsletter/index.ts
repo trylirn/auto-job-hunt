@@ -133,6 +133,7 @@ Deno.serve(async (req) => {
         "title, company, location, job_type, slug, listing_type, is_remote, posted_at",
       )
       .eq("listing_type", "job")
+      .or("source.is.null,source.neq.himalayas")
       .is("archived_at", null)
       .gte("created_at", oneWeekAgo)
       .order("created_at", { ascending: false })
