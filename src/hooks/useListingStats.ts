@@ -7,8 +7,9 @@ export function useListingStats() {
     queryFn: async () => {
       const { count } = await supabase
         .from("jobs")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .is("archived_at", null);
+
       return { jobs: count ?? 0 };
     },
     staleTime: 1000 * 60 * 5,

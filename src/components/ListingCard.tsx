@@ -5,10 +5,12 @@ import type { Job } from "@/types/job";
 import { getDeadlineInfo } from "@/lib/deadline";
 import { formatLocation } from "@/lib/locationLabel";
 import { cn } from "@/lib/utils";
+import { stripSourceAttribution } from "@/lib/sanitize";
+
 
 /** Strip markup and residual promo boilerplate from preview text. */
 export function previewText(job: Job, length = 170): string {
-  return (job.clean_description || job.description || "")
+  return stripSourceAttribution(job.clean_description || job.description || "")
     .replace(/<[^>]*>/g, " ")
     .replace(/\s+/g, " ")
     .replace(
@@ -18,6 +20,7 @@ export function previewText(job: Job, length = 170): string {
     .trim()
     .slice(0, length);
 }
+
 
 interface ListingCardProps {
   job: Job;

@@ -19,15 +19,25 @@ Deno.serve(async (req) => {
 
   console.log(`Deleting expired listings (cutoff ${cutoffISO}, today ${todayISO})`);
 
-  // Two passes: (1) anything older than 15 days, (2) anything whose deadline
-  // has already passed. Separate calls because PostgREST's .or() on .delete()
+  // Three passes: (1) anything older than 15 days, (2) anything whose deadline
+  // has already passed, (3) anything posted more than 30 days ago (stale ATS
+  // imports). Separate calls because PostgREST's .or() on .delete()
   // chokes on ISO timestamps with colons.
-  const [{ data: byAge, error: ageErr }, { data: byDeadline, error: dlErr }] =
-    await Promise.all([
-      supabase.from("jobs").delete().lt("created_at", cutoffISO).select("id"),
-      supabase.from("jobs").delete().lt("apply_before_date", todayISO).select("id"),
-    ]);
-  const error = ageErr || dlErr;
+  const staleCutoff = new Date();
+  staleCutoff.setDate(staleCutoff.getDate() - 30);
+  const staleISO = staleCutoff.toISOString();
+
+  const [
+    { data: byAge, error: ageErr },
+    { data: byDeadline, error: dlErr },
+    { data: byPosted, error: postedErr },
+  ] = await Promise.all([
+    supabase.from("jobs").delete().lt("created_at", cutoffISO).select("id"),
+    supabase.from("jobs").delete().lt("apply_before_date", todayISO).select("id"),
+    supabase.from("jobs").delete().lt("posted_at", staleISO).select("id"),
+  ]);
+  const error = ageErr || dlErr || postedErr;
+
 
   if (error) {
     console.error("Primary delete error:", error.message);
@@ -36,11 +46,13 @@ Deno.serve(async (req) => {
 
   const ageIds = (byAge ?? []).map((r: { id: string }) => r.id);
   const dlIds = (byDeadline ?? []).map((r: { id: string }) => r.id);
-  const deletedIds = Array.from(new Set([...ageIds, ...dlIds]));
+  const postedIds = (byPosted ?? []).map((r: { id: string }) => r.id);
+  const deletedIds = Array.from(new Set([...ageIds, ...dlIds, ...postedIds]));
   const count = deletedIds.length;
   console.log(
-    `Deleted ${count} old listings from primary DB (${ageIds.length} by age, ${dlIds.length} by deadline)`
+    `Deleted ${count} old listings from primary DB (${ageIds.length} by age, ${dlIds.length} by deadline, ${postedIds.length} by posted date)`
   );
+
 
   // Mirror delete to Eplicant
   if (count > 0) {

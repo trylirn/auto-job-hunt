@@ -448,7 +448,9 @@ const JobDetail = () => {
 
   const applyUrl =
     job.apply_url ||
-    extractApplyUrl(job.clean_description || job.description);
+    extractApplyUrl(job.clean_description || job.description) ||
+    (job.url && /^(https?:|mailto:)/i.test(job.url) ? job.url : null);
+
 
   const displayDescription = job.clean_description || job.description;
 

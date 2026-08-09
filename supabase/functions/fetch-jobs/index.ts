@@ -859,14 +859,24 @@ function absoluteUrl(url: string | null | undefined, base: string): string | nul
   }
 }
 
+/** Listings older than 30 days are stale — we never import them. */
+const MAX_AGE_DAYS = 30;
+function isFresh(postedAt: unknown): boolean {
+  if (typeof postedAt !== "string" || !postedAt) return true; // unknown date -> treated as new
+  const t = Date.parse(postedAt);
+  if (Number.isNaN(t)) return true;
+  return Date.now() - t <= MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+}
+
 /** A listing is only publishable if it has a working link and readable content. */
 function isPublishable(j: any): boolean {
   const url = typeof j.url === "string" ? j.url.trim() : "";
   const hasLink = /^https?:\/\//i.test(url) || /^mailto:/i.test(url);
   const desc = typeof j.description === "string" ? j.description.trim() : "";
   const words = desc.split(/\s+/).filter(Boolean).length;
-  return hasLink && desc.length >= 200 && words >= 40;
+  return hasLink && desc.length >= 200 && words >= 40 && isFresh(j.posted_at);
 }
+
 
 async function fetchGreenhouseBoards(): Promise<NormalizedJob[]> {
   return mapLimit(GREENHOUSE_COMPANIES, 8, async (c) => {
