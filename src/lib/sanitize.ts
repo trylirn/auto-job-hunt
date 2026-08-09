@@ -59,8 +59,9 @@ export function renderDescriptionHtml(
   content: string | null | undefined
 ): string {
   if (!content) return "";
-  const value = decodeEscapedMarkup(content).trim();
+  const value = stripSourceAttribution(decodeEscapedMarkup(content)).trim();
   if (!value) return "";
+
 
   if (HTML_TAG.test(value)) return sanitizeHtml(value);
 
