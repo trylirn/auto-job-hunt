@@ -35,6 +35,7 @@ export function useJobs({
         .from("jobs")
         .select(PUBLIC_JOB_COLUMNS, { count: "exact" })
         .is("archived_at", null)
+        .or(HIDDEN_SOURCE_FILTER)
         .order("is_featured", { ascending: false })
         .order(sortBy, { ascending: false, nullsFirst: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
