@@ -14,6 +14,21 @@ export function sanitizeHtml(html: string | null | undefined): string {
 
 const ESCAPED_TAG = /&lt;\/?[a-z][\s\S]*?&gt;/i;
 
+/** Feeds append their own credit line ("Originally posted on <a>Himalayas</a>").
+ * We never surface aggregator attribution, so strip those trailers. */
+export function stripSourceAttribution(value: string): string {
+  return value
+    .replace(
+      /<p[^>]*>\s*(?:originally\s+posted|first\s+posted|posted|apply|view\s+this\s+job|source)[^<]{0,40}on\b[\s\S]{0,300}?<\/p>/gi,
+      ""
+    )
+    .replace(
+      /(?:originally\s+posted|first\s+posted)\s+on\s+(?:<a[^>]*>[\s\S]*?<\/a>|[A-Za-z0-9.\- ]{0,40})/gi,
+      ""
+    )
+    .trim();
+}
+
 /** Some feeds ship double-escaped markup ("&lt;p&gt;Text&lt;/p&gt;") which would
  * otherwise render as literal, unreadable text. Decode it back to real HTML. */
 function decodeEscapedMarkup(value: string): string {
@@ -22,6 +37,7 @@ function decodeEscapedMarkup(value: string): string {
   el.innerHTML = value;
   return el.value;
 }
+
 
 const HTML_TAG = /<\/?(p|div|br|ul|ol|li|h[1-6]|table|section|article|span|strong|em|blockquote|pre)\b[^>]*>/i;
 
