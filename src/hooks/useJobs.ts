@@ -157,6 +157,7 @@ export function useSimilarJobs(job: Job | undefined) {
         .select(PUBLIC_JOB_COLUMNS)
         .neq("id", job.id)
         .is("archived_at", null)
+        .or(HIDDEN_SOURCE_FILTER)
         .order("posted_at", { ascending: false, nullsFirst: false })
         .limit(6);
 
