@@ -19,6 +19,7 @@ function useHubCounts() {
           .from("jobs")
           .select("id", { count: "exact", head: true })
           .is("archived_at", null)
+          .or(HIDDEN_SOURCE_FILTER)
           .ilike("location", `%${q}%`);
         return count ?? 0;
       };
