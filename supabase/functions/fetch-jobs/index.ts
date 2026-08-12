@@ -42,6 +42,15 @@ async function timedFetch(input: string | URL, init: RequestInit = {}, timeoutMs
   }
 }
 
+// Best-effort company logo for curated ATS boards (Greenhouse/Lever/Ashby/Breezy).
+// None of those public APIs return a logo field, so this guesses the company's
+// domain from its board slug and asks Google's favicon service for an icon.
+// Wrong for companies whose slug isn't their domain (rare) — in that case the
+// service just falls back to a generic globe icon, it never throws.
+function atsCompanyLogo(slug: string): string {
+  return `https://www.google.com/s2/favicons?domain=${slug}.com&sz=128`;
+}
+
 const OPPORTUNITY_CATEGORIES = new Set([
   "fellowship",
   "scholarship",
