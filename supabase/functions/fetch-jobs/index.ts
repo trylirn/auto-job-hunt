@@ -914,7 +914,7 @@ async function fetchGreenhouseBoards(): Promise<NormalizedJob[]> {
         posted_at: j.updated_at || null,
         salary: null,
         tags: null,
-        company_logo: null,
+        company_logo: atsCompanyLogo(c.slug),
         is_remote: false,
       }));
     } catch (e) {
@@ -952,7 +952,7 @@ async function fetchLeverBoards(): Promise<NormalizedJob[]> {
         posted_at: j.createdAt ? new Date(j.createdAt).toISOString() : null,
         salary: null,
         tags: j.categories?.team ? [j.categories.team] : null,
-        company_logo: null,
+        company_logo: atsCompanyLogo(c.slug),
         is_remote: /remote/i.test(j.workplaceType || j.categories?.location || ""),
       }));
     } catch (e) {
@@ -989,7 +989,7 @@ async function fetchAshbyBoards(): Promise<NormalizedJob[]> {
         posted_at: j.publishedAt || null,
         salary: j.compensation?.compensationTierSummary || null,
         tags: j.department ? [j.department] : null,
-        company_logo: null,
+        company_logo: atsCompanyLogo(c.slug),
         is_remote: j.isRemote === true,
       }));
     } catch (e) {
@@ -1027,7 +1027,7 @@ async function fetchBreezyBoards(): Promise<NormalizedJob[]> {
           posted_at: j.published_date || j.creation_date || null,
           salary: null,
           tags: j.department ? [j.department] : null,
-          company_logo: null,
+          company_logo: atsCompanyLogo(c.slug),
           is_remote: j.location?.is_remote === true,
         };
       });
