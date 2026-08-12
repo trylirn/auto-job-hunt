@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { Fragment, useCallback, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useJobs } from "@/hooks/useJobs";
@@ -7,6 +7,7 @@ import { ListingToolbar } from "@/components/ListingToolbar";
 import { Pager } from "@/components/Pager";
 import { Compass } from "lucide-react";
 import type { Job } from "@/types/job";
+import AdsterraNativeAd from "@/components/AdsterraNativeAd";
 
 interface ListingBrowserProps {
   basePath: string;
