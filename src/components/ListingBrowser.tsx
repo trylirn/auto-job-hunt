@@ -5,9 +5,9 @@ import { useJobs } from "@/hooks/useJobs";
 import { ListingCard, ListingCardSkeleton } from "@/components/ListingCard";
 import { ListingToolbar } from "@/components/ListingToolbar";
 import { Pager } from "@/components/Pager";
+import AdsterraNativeAd from "@/components/AdsterraNativeAd";
 import { Compass } from "lucide-react";
 import type { Job } from "@/types/job";
-import AdsterraNativeAd from "@/components/AdsterraNativeAd";
 
 interface ListingBrowserProps {
   basePath: string;
@@ -103,14 +103,30 @@ export function ListingBrowser({
           <>
             {view === "grid" ? (
               <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {jobs.map((job) => (
-                  <ListingCard key={job.id} job={job} />
+                {jobs.map((job, index) => (
+                  <Fragment key={job.id}>
+                    <ListingCard job={job} />
+
+                    {index === 4 && (
+                      <div className="col-span-full">
+                        <AdsterraNativeAd />
+                      </div>
+                    )}
+                  </Fragment>
                 ))}
               </div>
             ) : (
               <div className="border-t border-rule">
-                {jobs.map((job) => (
-                  <ListingCard key={job.id} job={job} variant="row" />
+                {jobs.map((job, index) => (
+                  <Fragment key={job.id}>
+                    <ListingCard job={job} variant="row" />
+
+                    {index === 4 && (
+                      <div className="py-4">
+                        <AdsterraNativeAd />
+                      </div>
+                    )}
+                  </Fragment>
                 ))}
               </div>
             )}
