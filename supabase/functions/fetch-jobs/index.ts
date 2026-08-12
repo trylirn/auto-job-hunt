@@ -1148,7 +1148,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        fetched: { yeshub: yeshubJobs.length, globalsouth: globalSouthJobs.length, opportunitiesforyouth: ofy4Jobs.length, yuthaxis: yuthAxisJobs.length, ngojobsinafrica: ngoJobsAfrica.length, remotive: remotiveJobs.length, jobstoapply: jobsToApplyJobs.length, reliefweb: reliefwebJobs.length, workingnomads: workingNomadsJobs.length, himalayas: himalayasJobs.length, greenhouse: greenhouseJobs.length, lever: leverJobs.length, ashby: ashbyJobs.length, breezy: breezyJobs.length, total: publishable.length },
+        fetched: { himalayas: himalayasJobs.length, greenhouse: greenhouseJobs.length, lever: leverJobs.length, ashby: ashbyJobs.length, breezy: breezyJobs.length, total: publishable.length },
         inserted,
         skipped,
       }),
