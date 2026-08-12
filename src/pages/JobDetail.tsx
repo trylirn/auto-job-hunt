@@ -30,6 +30,7 @@ import { SimilarJobs } from "@/components/SimilarJobs";
 import { EmailSubscriber } from "@/components/EmailSubscriber";
 import { renderDescriptionHtml } from "@/lib/sanitize";
 import { formatDistanceToNow } from "date-fns";
+import AdsterraNativeAd from "@/components/AdsterraNativeAd";
 
 function extractApplyUrl(description: string | null): string | null {
   if (!description) return null;
