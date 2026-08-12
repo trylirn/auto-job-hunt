@@ -632,6 +632,10 @@ const JobDetail = () => {
           <EmailSubscriber />
         </div>
 
+        <div className="my-8">
+          <AdsterraNativeAd />
+        </div>
+
         <SimilarJobs job={job} />
       </div>
       <Footer />
