@@ -119,19 +119,19 @@
     </noscript>
     <div id="root"></div>
     <script>
-      // Canonical-host enforcement: apex eplicant.com is the only indexable host.
-      // - lovable.app mirror → noindex
-      // - www.eplicant.com → client redirect to apex (backup; Netlify primary handles it server-side)
       (function () {
         try {
           var h = location.hostname;
+
           if (h.endsWith('.lovable.app')) {
-            var m = document.createElement('meta');
-            m.name = 'robots';
-            m.content = 'noindex, nofollow';
-            document.head.appendChild(m);
+            window.location.replace('https://eplicant.com');
           } else if (h === 'www.eplicant.com') {
-            location.replace('https://eplicant.com' + location.pathname + location.search + location.hash);
+            window.location.replace(
+              'https://eplicant.com' +
+              location.pathname +
+              location.search +
+              location.hash
+            );
           }
         } catch (e) {}
       })();
