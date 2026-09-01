@@ -5,6 +5,7 @@ import { Link, useLocation } from "react-router-dom";
 import type { Job } from "@/types/job";
 import { getDeadlineInfo } from "@/lib/deadline";
 import { formatLocation } from "@/lib/locationLabel";
+import { CompanyLogo } from "@/components/CompanyLogo";
 
 interface JobListItemProps {
   job: Job;
@@ -25,18 +26,11 @@ export function JobListItem({ job }: JobListItemProps) {
       state={{ from: listingPath }}
       className={`group flex items-center gap-3 rounded-lg border bg-card p-3 transition-all hover:shadow-md hover:border-primary/30 overflow-hidden ${isFeaturedActive ? "ring-1 ring-amber-400/40" : ""}`}
     >
-      {job.company_logo ? (
-        <img
-          src={job.company_logo}
-          alt={`${job.company} company logo`}
-          loading="lazy"
-          className="h-10 w-10 shrink-0 rounded-lg border object-contain bg-card"
-        />
-      ) : (
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-muted">
-          <Building2 className="h-5 w-5 text-muted-foreground" />
-        </div>
-      )}
+      <CompanyLogo
+        company={job.company}
+        logo={job.company_logo}
+        className="h-10 w-10 rounded-lg border bg-card"
+      />
 
       <div className="min-w-0 flex-1">
         <h3 className="font-display font-semibold text-sm leading-tight text-foreground group-hover:text-primary transition-colors truncate">

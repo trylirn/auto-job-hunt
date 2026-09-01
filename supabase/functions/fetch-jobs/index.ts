@@ -6,6 +6,7 @@ import {
   LEVER_COMPANIES,
   ASHBY_COMPANIES,
   BREEZY_COMPANIES,
+  type AtsCompany,
 } from "./ats-companies.ts";
 
 const corsHeaders = {
@@ -887,8 +888,8 @@ function isPublishable(j: any): boolean {
 }
 
 
-async function fetchGreenhouseBoards(): Promise<NormalizedJob[]> {
-  return mapLimit(GREENHOUSE_COMPANIES, 8, async (c) => {
+async function fetchGreenhouseBoards(companies: AtsCompany[]): Promise<NormalizedJob[]> {
+  return mapLimit(companies, 6, async (c) => {
     try {
       const res = await timedFetch(
         `https://boards-api.greenhouse.io/v1/boards/${c.slug}/jobs?content=true`,
@@ -914,7 +915,7 @@ async function fetchGreenhouseBoards(): Promise<NormalizedJob[]> {
         posted_at: j.updated_at || null,
         salary: null,
         tags: null,
-        company_logo: atsCompanyLogo(c.slug),
+        company_logo: null,
         is_remote: false,
       }));
     } catch (e) {
@@ -924,8 +925,8 @@ async function fetchGreenhouseBoards(): Promise<NormalizedJob[]> {
   });
 }
 
-async function fetchLeverBoards(): Promise<NormalizedJob[]> {
-  return mapLimit(LEVER_COMPANIES, 8, async (c) => {
+async function fetchLeverBoards(companies: AtsCompany[]): Promise<NormalizedJob[]> {
+  return mapLimit(companies, 6, async (c) => {
     try {
       const res = await timedFetch(
         `https://api.lever.co/v0/postings/${c.slug}?mode=json`,
@@ -952,7 +953,7 @@ async function fetchLeverBoards(): Promise<NormalizedJob[]> {
         posted_at: j.createdAt ? new Date(j.createdAt).toISOString() : null,
         salary: null,
         tags: j.categories?.team ? [j.categories.team] : null,
-        company_logo: atsCompanyLogo(c.slug),
+        company_logo: null,
         is_remote: /remote/i.test(j.workplaceType || j.categories?.location || ""),
       }));
     } catch (e) {
@@ -962,8 +963,8 @@ async function fetchLeverBoards(): Promise<NormalizedJob[]> {
   });
 }
 
-async function fetchAshbyBoards(): Promise<NormalizedJob[]> {
-  return mapLimit(ASHBY_COMPANIES, 8, async (c) => {
+async function fetchAshbyBoards(companies: AtsCompany[]): Promise<NormalizedJob[]> {
+  return mapLimit(companies, 6, async (c) => {
     try {
       const res = await timedFetch(
         `https://api.ashbyhq.com/posting-api/job-board/${c.slug}?includeCompensation=true`,
@@ -989,7 +990,7 @@ async function fetchAshbyBoards(): Promise<NormalizedJob[]> {
         posted_at: j.publishedAt || null,
         salary: j.compensation?.compensationTierSummary || null,
         tags: j.department ? [j.department] : null,
-        company_logo: atsCompanyLogo(c.slug),
+        company_logo: null,
         is_remote: j.isRemote === true,
       }));
     } catch (e) {
@@ -999,8 +1000,8 @@ async function fetchAshbyBoards(): Promise<NormalizedJob[]> {
   });
 }
 
-async function fetchBreezyBoards(): Promise<NormalizedJob[]> {
-  return mapLimit(BREEZY_COMPANIES, 8, async (c) => {
+async function fetchBreezyBoards(companies: AtsCompany[]): Promise<NormalizedJob[]> {
+  return mapLimit(companies, 6, async (c) => {
     try {
       const res = await timedFetch(`https://${c.slug}.breezy.hr/json`, {}, 8000);
       if (!res.ok) {
@@ -1027,7 +1028,7 @@ async function fetchBreezyBoards(): Promise<NormalizedJob[]> {
           posted_at: j.published_date || j.creation_date || null,
           salary: null,
           tags: j.department ? [j.department] : null,
-          company_logo: atsCompanyLogo(c.slug),
+          company_logo: null,
           is_remote: j.location?.is_remote === true,
         };
       });
@@ -1055,68 +1056,72 @@ Deno.serve(async (req) => {
     // All legacy aggregator sources are retired.
     const HIMALAYAS_PAUSED = true;
 
-    console.log("Fetching jobs from ATS sources...");
-    const [
-      himalayasJobs,
-      greenhouseJobs,
-      leverJobs,
-      ashbyJobs,
-      breezyJobs,
-    ] = await Promise.all([
-      HIMALAYAS_PAUSED ? Promise.resolve([] as NormalizedJob[]) : fetchHimalayasJobs(),
-      fetchGreenhouseBoards(),
-      fetchLeverBoards(),
-      fetchAshbyBoards(),
-      fetchBreezyBoards(),
-    ]);
-    console.log(
-      `Fetched source counts: Himalayas=${himalayasJobs.length}${HIMALAYAS_PAUSED ? " (paused)" : ""}, Greenhouse=${greenhouseJobs.length}, Lever=${leverJobs.length}, Ashby=${ashbyJobs.length}, Breezy=${breezyJobs.length}`
-    );
-
-    const fetchedJobs = [...himalayasJobs, ...greenhouseJobs, ...leverJobs, ...ashbyJobs, ...breezyJobs];
+    // ~600 company boards cannot be polled in one invocation without hitting
+    // the worker memory/CPU ceiling. Each run handles one rotating slice, so
+    // every board is still polled once per hour while runs stay small.
+    const SLICES = 4;
+    const url = new URL(req.url);
+    const requested = Number(url.searchParams.get("slice"));
+    const sliceIndex = Number.isInteger(requested) && requested >= 0
+      ? requested % SLICES
+      : Math.floor(new Date().getUTCMinutes() / 15) % SLICES;
+    const slice = <T,>(list: T[]) => list.filter((_, i) => i % SLICES === sliceIndex);
 
     // Remote-only board: keep a listing only when it is explicitly flagged
     // remote or clearly described as remote/home-based in its own text.
     const REMOTE_RE = /\b(remote|work from home|work-from-home|home[- ]based|telecommut\w*|distributed team|anywhere in the world|fully remote|virtual position)\b/i;
     const NOT_REMOTE_RE = /\b(hybrid|on[- ]?site|onsite|in[- ]person|must relocate|relocation required)\b/i;
 
-    const allJobs = fetchedJobs.filter((j: any) => {
-      const haystack = `${j.title ?? ""} ${j.location ?? ""} ${j.job_type ?? ""} ${j.description ?? ""}`;
-      if (NOT_REMOTE_RE.test(`${j.title ?? ""} ${j.location ?? ""}`)) return false;
-      return j.is_remote === true || REMOTE_RE.test(haystack);
-    }).map((j: any) => ({ ...j, is_remote: true, listing_type: "job" }));
-
-    console.log(`Remote-only filter kept ${allJobs.length} of ${fetchedJobs.length} listings`);
-
-    // Quality gate: never publish empty shells or listings with no apply link.
-    const publishable = allJobs.filter(isPublishable);
-    console.log(
-      `Quality gate kept ${publishable.length} of ${allJobs.length} (dropped empty descriptions / missing links)`
-    );
-
+    let fetched = 0;
     let inserted = 0;
     let skipped = 0;
+    const perSource: Record<string, number> = {};
 
-    const batchSize = 50;
-    for (let i = 0; i < publishable.length; i += batchSize) {
-      const batch = publishable.slice(i, i + batchSize);
-      const { error } = await supabase
-        .from("jobs")
-        .upsert(batch, { onConflict: "source,external_id", ignoreDuplicates: true });
+    /** Filter, quality-gate and upsert one source's batch, then release it. */
+    const publish = async (label: string, jobs: NormalizedJob[]) => {
+      fetched += jobs.length;
+      const remote = jobs.filter((j: any) => {
+        const haystack = `${j.title ?? ""} ${j.location ?? ""} ${j.job_type ?? ""} ${j.description ?? ""}`;
+        if (NOT_REMOTE_RE.test(`${j.title ?? ""} ${j.location ?? ""}`)) return false;
+        return j.is_remote === true || REMOTE_RE.test(haystack);
+      }).map((j: any) => ({ ...j, is_remote: true, listing_type: "job" }));
 
-      if (error) {
-        console.error("Upsert error:", error);
-        skipped += batch.length;
-      } else {
-        inserted += batch.length;
-        // Mirror to Eplicant (fire-and-forget, non-blocking)
-        mirrorUpsert("jobs", batch as unknown as Record<string, unknown>[], "source,external_id").catch(e =>
-          console.error("Eplicant mirror error:", e)
-        );
+      const publishable = remote.filter(isPublishable);
+      perSource[label] = publishable.length;
+      console.log(
+        `${label}: fetched ${jobs.length}, remote ${remote.length}, publishable ${publishable.length}`
+      );
+
+      const batchSize = 50;
+      for (let i = 0; i < publishable.length; i += batchSize) {
+        const batch = publishable.slice(i, i + batchSize);
+        const { error } = await supabase
+          .from("jobs")
+          .upsert(batch, { onConflict: "source,external_id", ignoreDuplicates: true });
+
+        if (error) {
+          console.error("Upsert error:", error);
+          skipped += batch.length;
+        } else {
+          inserted += batch.length;
+          mirrorUpsert("jobs", batch as unknown as Record<string, unknown>[], "source,external_id").catch(e =>
+            console.error("Eplicant mirror error:", e)
+          );
+        }
       }
-    }
+    };
 
-    console.log(`Done: ${inserted} processed, ${skipped} skipped`);
+    console.log(`Fetching ATS slice ${sliceIndex + 1}/${SLICES}...`);
+
+    if (!HIMALAYAS_PAUSED) {
+      await publish("himalayas", await fetchHimalayasJobs());
+    }
+    await publish("greenhouse", await fetchGreenhouseBoards(slice(GREENHOUSE_COMPANIES)));
+    await publish("lever", await fetchLeverBoards(slice(LEVER_COMPANIES)));
+    await publish("ashby", await fetchAshbyBoards(slice(ASHBY_COMPANIES)));
+    await publish("breezy", await fetchBreezyBoards(slice(BREEZY_COMPANIES)));
+
+    console.log(`Done: ${inserted} processed, ${skipped} skipped (of ${fetched} fetched)`);
 
     // Fire-and-forget: trigger AI cleanup without awaiting
     fetch(
@@ -1131,24 +1136,11 @@ Deno.serve(async (req) => {
     ).then(r => r.json().then(d => console.log("AI cleanup result:", d)))
      .catch(e => console.error("AI cleanup trigger error:", e));
 
-    // Fire-and-forget: trigger AI title + company extraction for new jobs
-    fetch(
-      `${supabaseUrl}/functions/v1/fix-company-names`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${supabaseKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ mode: "all" }),
-      }
-    ).then(r => r.json().then(d => console.log("AI title/company fix result:", d)))
-     .catch(e => console.error("AI title/company fix trigger error:", e));
-
     return new Response(
       JSON.stringify({
         success: true,
-        fetched: { himalayas: himalayasJobs.length, greenhouse: greenhouseJobs.length, lever: leverJobs.length, ashby: ashbyJobs.length, breezy: breezyJobs.length, total: publishable.length },
+        slice: sliceIndex,
+        fetched: perSource,
         inserted,
         skipped,
       }),

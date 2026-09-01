@@ -6,6 +6,7 @@ import { getDeadlineInfo } from "@/lib/deadline";
 import { formatLocation } from "@/lib/locationLabel";
 import { cn } from "@/lib/utils";
 import { stripSourceAttribution } from "@/lib/sanitize";
+import { CompanyLogo } from "@/components/CompanyLogo";
 
 
 /** Strip markup and residual promo boilerplate from preview text. */
@@ -39,19 +40,12 @@ export function ListingCard({ job, variant = "card" }: ListingCardProps) {
   const place = formatLocation(job.location);
   const to = `/job/${job.slug || job.id}`;
 
-  const logo = job.company_logo ? (
-    <img
-      src={job.company_logo}
-      alt={`${job.company} logo`}
-      loading="lazy"
-      width={40}
-      height={40}
-      className="h-10 w-10 shrink-0 rounded-sm border border-rule bg-background object-contain"
+  const logo = (
+    <CompanyLogo
+      company={job.company}
+      logo={job.company_logo}
+      className="h-10 w-10 rounded-sm border border-rule bg-background"
     />
-  ) : (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm border border-rule bg-muted">
-      <Building2 className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-    </div>
   );
 
   if (variant === "row") {

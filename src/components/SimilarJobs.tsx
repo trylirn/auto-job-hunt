@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Building2, MapPin, ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Job } from "@/types/job";
+import { CompanyLogo } from "@/components/CompanyLogo";
 
 interface SimilarJobsProps {
   job: Job;
@@ -42,17 +43,12 @@ export const SimilarJobs = ({ job }: SimilarJobsProps) => {
             to={`/job/${similarJob.slug || similarJob.id}`}
             className="group flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:shadow-md hover:border-primary/20"
           >
-            {similarJob.company_logo ? (
-              <img
-                src={similarJob.company_logo}
-                alt={similarJob.company}
-                className="h-11 w-11 rounded-xl border object-contain bg-background shrink-0 p-1"
-              />
-            ) : (
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl border bg-muted shrink-0">
-                <Building2 className="h-5 w-5 text-muted-foreground" />
-              </div>
-            )}
+            <CompanyLogo
+              company={similarJob.company}
+              logo={similarJob.company_logo}
+              size={44}
+              className="h-11 w-11 rounded-xl border bg-background p-1"
+            />
 
             <div className="min-w-0 flex-1">
               <h3 className="font-medium text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">
