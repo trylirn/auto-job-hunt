@@ -6,6 +6,7 @@ import {
   LEVER_COMPANIES,
   ASHBY_COMPANIES,
   BREEZY_COMPANIES,
+  type AtsCompany,
 } from "./ats-companies.ts";
 
 const corsHeaders = {
