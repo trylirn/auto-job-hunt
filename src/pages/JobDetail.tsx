@@ -31,6 +31,7 @@ import { EmailSubscriber } from "@/components/EmailSubscriber";
 import { renderDescriptionHtml } from "@/lib/sanitize";
 import { formatDistanceToNow } from "date-fns";
 import AdsterraNativeAd from "@/components/AdsterraNativeAd";
+import { CompanyLogo } from "@/components/CompanyLogo";
 
 function extractApplyUrl(description: string | null): string | null {
   if (!description) return null;
@@ -247,17 +248,12 @@ const JobDetailSidebar = ({
       <CardContent className="p-5 space-y-4">
         {/* Company & Title */}
         <div className="flex flex-col items-center text-center gap-3">
-          {job.company_logo ? (
-            <img
-              src={job.company_logo}
-              alt={`${job.company} company logo`}
-              className="h-14 w-14 rounded-xl border object-contain bg-card"
-            />
-          ) : (
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl border bg-muted">
-              <Building2 className="h-7 w-7 text-muted-foreground" />
-            </div>
-          )}
+          <CompanyLogo
+            company={job.company}
+            logo={job.company_logo}
+            size={56}
+            className="h-14 w-14 rounded-xl border bg-card"
+          />
           <div>
             <h2 className="font-display font-bold text-base">{job.title}</h2>
             <p className="text-sm text-muted-foreground">@{job.company}</p>

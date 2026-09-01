@@ -6,6 +6,7 @@ import { Link, useLocation } from "react-router-dom";
 import type { Job } from "@/types/job";
 import { getDeadlineInfo } from "@/lib/deadline";
 import { formatLocation } from "@/lib/locationLabel";
+import { CompanyLogo } from "@/components/CompanyLogo";
 
 interface JobCardProps {
   job: Job;
@@ -47,18 +48,11 @@ export function JobCard({ job }: JobCardProps) {
             </div>
           )}
           <div className="flex items-start gap-3 min-w-0">
-            {job.company_logo ? (
-              <img
-                src={job.company_logo}
-                alt={`${job.company} company logo`}
-                loading="lazy"
-                className="h-10 w-10 md:h-11 md:w-11 shrink-0 rounded-lg border object-contain bg-card"
-              />
-            ) : (
-              <div className="flex h-10 w-10 md:h-11 md:w-11 shrink-0 items-center justify-center rounded-lg border bg-muted">
-                <Building2 className="h-5 w-5 text-muted-foreground" />
-              </div>
-            )}
+            <CompanyLogo
+              company={job.company}
+              logo={job.company_logo}
+              className="h-10 w-10 md:h-11 md:w-11 rounded-lg border bg-card"
+            />
             <div className="min-w-0 flex-1">
               <h3 className="font-display font-semibold leading-tight text-foreground group-hover:text-primary transition-colors line-clamp-2 break-words">
                 {job.title}
