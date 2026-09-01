@@ -1056,9 +1056,9 @@ Deno.serve(async (req) => {
     // All legacy aggregator sources are retired.
     const HIMALAYAS_PAUSED = true;
 
-    // ~600 company boards cannot be polled in one invocation without hitting
-    // the worker memory/CPU ceiling. Each run handles one rotating slice, so
-    // every board is still polled once per hour while runs stay small.
+    // ~300 verified company boards are split across rotating slices so a single
+    // invocation stays under the worker memory/CPU ceiling. With 4 slices and a
+    // 15-minute cron, every board is polled once per hour.
     const SLICES = 4;
     const url = new URL(req.url);
     const requested = Number(url.searchParams.get("slice"));
@@ -1066,6 +1066,7 @@ Deno.serve(async (req) => {
       ? requested % SLICES
       : Math.floor(new Date().getUTCMinutes() / 15) % SLICES;
     const slice = <T,>(list: T[]) => list.filter((_, i) => i % SLICES === sliceIndex);
+
 
     // Remote-only board: keep a listing only when it is explicitly flagged
     // remote or clearly described as remote/home-based in its own text.
