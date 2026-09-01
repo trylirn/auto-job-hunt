@@ -887,8 +887,8 @@ function isPublishable(j: any): boolean {
 }
 
 
-async function fetchGreenhouseBoards(): Promise<NormalizedJob[]> {
-  return mapLimit(GREENHOUSE_COMPANIES, 8, async (c) => {
+async function fetchGreenhouseBoards(companies: AtsCompany[]): Promise<NormalizedJob[]> {
+  return mapLimit(companies, 6, async (c) => {
     try {
       const res = await timedFetch(
         `https://boards-api.greenhouse.io/v1/boards/${c.slug}/jobs?content=true`,
@@ -914,7 +914,7 @@ async function fetchGreenhouseBoards(): Promise<NormalizedJob[]> {
         posted_at: j.updated_at || null,
         salary: null,
         tags: null,
-        company_logo: atsCompanyLogo(c.slug),
+        company_logo: null,
         is_remote: false,
       }));
     } catch (e) {
@@ -924,8 +924,8 @@ async function fetchGreenhouseBoards(): Promise<NormalizedJob[]> {
   });
 }
 
-async function fetchLeverBoards(): Promise<NormalizedJob[]> {
-  return mapLimit(LEVER_COMPANIES, 8, async (c) => {
+async function fetchLeverBoards(companies: AtsCompany[]): Promise<NormalizedJob[]> {
+  return mapLimit(companies, 6, async (c) => {
     try {
       const res = await timedFetch(
         `https://api.lever.co/v0/postings/${c.slug}?mode=json`,
@@ -952,7 +952,7 @@ async function fetchLeverBoards(): Promise<NormalizedJob[]> {
         posted_at: j.createdAt ? new Date(j.createdAt).toISOString() : null,
         salary: null,
         tags: j.categories?.team ? [j.categories.team] : null,
-        company_logo: atsCompanyLogo(c.slug),
+        company_logo: null,
         is_remote: /remote/i.test(j.workplaceType || j.categories?.location || ""),
       }));
     } catch (e) {
@@ -962,8 +962,8 @@ async function fetchLeverBoards(): Promise<NormalizedJob[]> {
   });
 }
 
-async function fetchAshbyBoards(): Promise<NormalizedJob[]> {
-  return mapLimit(ASHBY_COMPANIES, 8, async (c) => {
+async function fetchAshbyBoards(companies: AtsCompany[]): Promise<NormalizedJob[]> {
+  return mapLimit(companies, 6, async (c) => {
     try {
       const res = await timedFetch(
         `https://api.ashbyhq.com/posting-api/job-board/${c.slug}?includeCompensation=true`,
@@ -989,7 +989,7 @@ async function fetchAshbyBoards(): Promise<NormalizedJob[]> {
         posted_at: j.publishedAt || null,
         salary: j.compensation?.compensationTierSummary || null,
         tags: j.department ? [j.department] : null,
-        company_logo: atsCompanyLogo(c.slug),
+        company_logo: null,
         is_remote: j.isRemote === true,
       }));
     } catch (e) {
@@ -999,8 +999,8 @@ async function fetchAshbyBoards(): Promise<NormalizedJob[]> {
   });
 }
 
-async function fetchBreezyBoards(): Promise<NormalizedJob[]> {
-  return mapLimit(BREEZY_COMPANIES, 8, async (c) => {
+async function fetchBreezyBoards(companies: AtsCompany[]): Promise<NormalizedJob[]> {
+  return mapLimit(companies, 6, async (c) => {
     try {
       const res = await timedFetch(`https://${c.slug}.breezy.hr/json`, {}, 8000);
       if (!res.ok) {
@@ -1027,7 +1027,7 @@ async function fetchBreezyBoards(): Promise<NormalizedJob[]> {
           posted_at: j.published_date || j.creation_date || null,
           salary: null,
           tags: j.department ? [j.department] : null,
-          company_logo: atsCompanyLogo(c.slug),
+          company_logo: null,
           is_remote: j.location?.is_remote === true,
         };
       });
