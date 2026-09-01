@@ -1057,9 +1057,9 @@ Deno.serve(async (req) => {
     const HIMALAYAS_PAUSED = true;
 
     // ~300 verified company boards are split across rotating slices so a single
-    // invocation stays under the worker memory/CPU ceiling. With 2 slices and a
-    // 15-minute cron, every board is polled twice per hour.
-    const SLICES = 2;
+    // invocation stays under the worker memory/CPU ceiling. With 4 slices and a
+    // 15-minute cron, every board is polled once per hour.
+    const SLICES = 4;
     const url = new URL(req.url);
     const requested = Number(url.searchParams.get("slice"));
     const sliceIndex = Number.isInteger(requested) && requested >= 0
