@@ -1000,8 +1000,39 @@ async function fetchAshbyBoards(companies: AtsCompany[]): Promise<NormalizedJob[
   });
 }
 
+// Breezy's /json board feed omits job descriptions, so each posting page is
+// fetched and its JobPosting JSON-LD description is used instead.
+async function fetchBreezyDescription(url: string): Promise<string | null> {
+  try {
+    const res = await timedFetch(url, {}, 8000);
+    if (!res.ok) return null;
+    const html = await res.text();
+    const blocks = html.match(
+      /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+    );
+    if (!blocks) return null;
+    for (const block of blocks) {
+      const raw = block.replace(/^<script[^>]*>/i, "").replace(/<\/script>$/i, "");
+      try {
+        const parsed = JSON.parse(raw);
+        const nodes = Array.isArray(parsed) ? parsed : [parsed];
+        for (const n of nodes) {
+          if (n && n["@type"] === "JobPosting" && n.description) {
+            return stripHtml(String(n.description));
+          }
+        }
+      } catch (_) {
+        // ignore malformed JSON-LD blocks
+      }
+    }
+    return null;
+  } catch (_) {
+    return null;
+  }
+}
+
 async function fetchBreezyBoards(companies: AtsCompany[]): Promise<NormalizedJob[]> {
-  return mapLimit(companies, 6, async (c) => {
+  const jobs = await mapLimit(companies, 6, async (c) => {
     try {
       const res = await timedFetch(`https://${c.slug}.breezy.hr/json`, {}, 8000);
       if (!res.ok) {
@@ -1037,7 +1068,21 @@ async function fetchBreezyBoards(companies: AtsCompany[]): Promise<NormalizedJob
       return [];
     }
   });
+
+  // Hydrate thin descriptions from each posting page (bounded work per run).
+  const needsDetail = jobs
+    .filter((j) => j.url && (j.description || "").length < 200)
+    .slice(0, 250);
+  const hydrated = await mapLimit(needsDetail, 6, async (j) => {
+    const desc = await fetchBreezyDescription(j.url as string);
+    if (desc) j.description = desc;
+    return [];
+  });
+  void hydrated;
+
+  return jobs;
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
