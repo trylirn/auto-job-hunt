@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
   // Ping IndexNow + Google so search engines drop the dead URLs quickly.
   if (deletedIds.length > 0) {
     try {
-      const urlList = deletedIds.map((id) => `https://eplicant.com/job/${id}`);
+      const urlList = deletedIds.map((id) => `https://eplicant.com/job/${slugById.get(id) || id}`);
       // Best-effort; do not block on failures.
       await Promise.allSettled([
         fetch("https://api.indexnow.org/indexnow", {
