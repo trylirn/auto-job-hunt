@@ -100,6 +100,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (record.listing_type === "opportunity") {
+      return new Response(
+        JSON.stringify({ success: true, skipped: "opportunity_listing" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const message = formatPostMessage({
       title: record.title,
       company: record.company,
