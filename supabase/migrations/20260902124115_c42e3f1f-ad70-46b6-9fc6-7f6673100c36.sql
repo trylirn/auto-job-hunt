@@ -1,0 +1,3 @@
+REVOKE SELECT ON TABLE public.jobs FROM anon, authenticated;
+GRANT SELECT (id, title, company, company_logo, location, is_remote, job_type, employment_type, category, listing_type, description, clean_description, salary, skills, tags, source, external_id, url, apply_url, slug, posted_at, apply_before, apply_before_date, is_featured, featured_until, archived_at, created_at, updated_at)
+ON public.jobs TO anon, authenticated;
