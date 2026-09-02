@@ -32,9 +32,9 @@ Deno.serve(async (req) => {
     { data: byDeadline, error: dlErr },
     { data: byPosted, error: postedErr },
   ] = await Promise.all([
-    supabase.from("jobs").delete().lt("created_at", cutoffISO).select("id"),
-    supabase.from("jobs").delete().lt("apply_before_date", todayISO).select("id"),
-    supabase.from("jobs").delete().lt("posted_at", staleISO).select("id"),
+    supabase.from("jobs").delete().lt("created_at", cutoffISO).is("apply_before_date", null).select("id, slug"),
+    supabase.from("jobs").delete().lt("apply_before_date", todayISO).select("id, slug"),
+    supabase.from("jobs").delete().lt("posted_at", staleISO).is("apply_before_date", null).select("id, slug"),
   ]);
   const error = ageErr || dlErr || postedErr;
 
