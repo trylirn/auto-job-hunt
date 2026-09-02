@@ -48,6 +48,7 @@ export default function LocationPage() {
     location: hub?.locationQuery ?? "",
     page,
     pageSize: 24,
+    listingType: "jobs",
   });
 
   if (!hub) return <Navigate to="/jobs/in" replace />;
