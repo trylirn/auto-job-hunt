@@ -49,6 +49,13 @@ Deno.serve(async (req) => {
   const postedIds = (byPosted ?? []).map((r: { id: string }) => r.id);
   const deletedIds = Array.from(new Set([...ageIds, ...dlIds, ...postedIds]));
   const count = deletedIds.length;
+  const slugById = new Map<string, string | null>();
+  for (const r of [...(byAge ?? []), ...(byDeadline ?? []), ...(byPosted ?? [])] as {
+    id: string;
+    slug: string | null;
+  }[]) {
+    slugById.set(r.id, r.slug ?? null);
+  }
   console.log(
     `Deleted ${count} old listings from primary DB (${ageIds.length} by age, ${dlIds.length} by deadline, ${postedIds.length} by posted date)`
   );
