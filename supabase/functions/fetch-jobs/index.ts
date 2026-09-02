@@ -1001,7 +1001,26 @@ async function fetchAshbyBoards(companies: AtsCompany[]): Promise<NormalizedJob[
 }
 
 // Breezy's /json board feed omits job descriptions, so each posting page is
-// fetched and its JobPosting JSON-LD description is used instead.
+// fetched: first the JobPosting JSON-LD block, then the rendered
+// `<div class="description">` body as a fallback.
+function extractDescriptionDiv(html: string): string | null {
+  const open = html.search(/<div[^>]*class="description"[^>]*>/i);
+  if (open === -1) return null;
+  const startTag = html.slice(open).match(/<div[^>]*class="description"[^>]*>/i)!;
+  let i = open + startTag[0].length;
+  let depth = 1;
+  const tag = /<\/?div\b[^>]*>/gi;
+  tag.lastIndex = i;
+  let m: RegExpExecArray | null;
+  while ((m = tag.exec(html))) {
+    depth += m[0].startsWith("</") ? -1 : 1;
+    if (depth === 0) {
+      return html.slice(i, m.index);
+    }
+  }
+  return null;
+}
+
 async function fetchBreezyDescription(url: string): Promise<string | null> {
   try {
     const res = await timedFetch(url, {}, 8000);
@@ -1010,26 +1029,32 @@ async function fetchBreezyDescription(url: string): Promise<string | null> {
     const blocks = html.match(
       /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
     );
-    if (!blocks) return null;
-    for (const block of blocks) {
+    for (const block of blocks || []) {
       const raw = block.replace(/^<script[^>]*>/i, "").replace(/<\/script>$/i, "");
       try {
         const parsed = JSON.parse(raw);
         const nodes = Array.isArray(parsed) ? parsed : [parsed];
         for (const n of nodes) {
           if (n && n["@type"] === "JobPosting" && n.description) {
-            return stripHtml(String(n.description));
+            const text = stripHtml(String(n.description));
+            if (text.length >= 200) return text;
           }
         }
       } catch (_) {
         // ignore malformed JSON-LD blocks
       }
     }
+    const div = extractDescriptionDiv(html);
+    if (div) {
+      const text = stripHtml(div);
+      if (text.length >= 200) return text;
+    }
     return null;
   } catch (_) {
     return null;
   }
 }
+
 
 async function fetchBreezyBoards(companies: AtsCompany[]): Promise<NormalizedJob[]> {
   const jobs = await mapLimit(companies, 6, async (c) => {
