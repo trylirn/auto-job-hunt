@@ -1000,8 +1000,64 @@ async function fetchAshbyBoards(companies: AtsCompany[]): Promise<NormalizedJob[
   });
 }
 
+// Breezy's /json board feed omits job descriptions, so each posting page is
+// fetched: first the JobPosting JSON-LD block, then the rendered
+// `<div class="description">` body as a fallback.
+function extractDescriptionDiv(html: string): string | null {
+  const open = html.search(/<div[^>]*class="description"[^>]*>/i);
+  if (open === -1) return null;
+  const startTag = html.slice(open).match(/<div[^>]*class="description"[^>]*>/i)!;
+  let i = open + startTag[0].length;
+  let depth = 1;
+  const tag = /<\/?div\b[^>]*>/gi;
+  tag.lastIndex = i;
+  let m: RegExpExecArray | null;
+  while ((m = tag.exec(html))) {
+    depth += m[0].startsWith("</") ? -1 : 1;
+    if (depth === 0) {
+      return html.slice(i, m.index);
+    }
+  }
+  return null;
+}
+
+async function fetchBreezyDescription(url: string): Promise<string | null> {
+  try {
+    const res = await timedFetch(url, {}, 8000);
+    if (!res.ok) return null;
+    const html = await res.text();
+    const blocks = html.match(
+      /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+    );
+    for (const block of blocks || []) {
+      const raw = block.replace(/^<script[^>]*>/i, "").replace(/<\/script>$/i, "");
+      try {
+        const parsed = JSON.parse(raw);
+        const nodes = Array.isArray(parsed) ? parsed : [parsed];
+        for (const n of nodes) {
+          if (n && n["@type"] === "JobPosting" && n.description) {
+            const text = stripHtml(String(n.description));
+            if (text.length >= 200) return text;
+          }
+        }
+      } catch (_) {
+        // ignore malformed JSON-LD blocks
+      }
+    }
+    const div = extractDescriptionDiv(html);
+    if (div) {
+      const text = stripHtml(div);
+      if (text.length >= 200) return text;
+    }
+    return null;
+  } catch (_) {
+    return null;
+  }
+}
+
+
 async function fetchBreezyBoards(companies: AtsCompany[]): Promise<NormalizedJob[]> {
-  return mapLimit(companies, 6, async (c) => {
+  const jobs = await mapLimit(companies, 6, async (c) => {
     try {
       const res = await timedFetch(`https://${c.slug}.breezy.hr/json`, {}, 8000);
       if (!res.ok) {
@@ -1037,7 +1093,21 @@ async function fetchBreezyBoards(companies: AtsCompany[]): Promise<NormalizedJob
       return [];
     }
   });
+
+  // Hydrate thin descriptions from each posting page (bounded work per run).
+  const needsDetail = jobs
+    .filter((j) => j.url && (j.description || "").length < 200)
+    .slice(0, 250);
+  const hydrated = await mapLimit(needsDetail, 6, async (j) => {
+    const desc = await fetchBreezyDescription(j.url as string);
+    if (desc) j.description = desc;
+    return [];
+  });
+  void hydrated;
+
+  return jobs;
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {

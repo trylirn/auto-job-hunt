@@ -34,7 +34,10 @@ const STATIC_PAGES: SitemapEntry[] = [
   { loc: `${SITE_URL}/submit`, changefreq: "monthly", priority: "0.6" },
   { loc: `${SITE_URL}/about`, changefreq: "monthly", priority: "0.5" },
   { loc: `${SITE_URL}/contact`, changefreq: "monthly", priority: "0.5" },
+  { loc: `${SITE_URL}/terms`, changefreq: "yearly", priority: "0.3" },
+  { loc: `${SITE_URL}/privacy`, changefreq: "yearly", priority: "0.3" },
 ];
+
 
 // Country hubs — kept in sync with src/data/countryHubs.ts.
 const COUNTRY_HUBS: { slug: string; query: string }[] = [
