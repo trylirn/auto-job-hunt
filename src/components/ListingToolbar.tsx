@@ -1,6 +1,15 @@
 import { Search, LayoutGrid, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+
+export const ALL_COUNTRIES = "all";
 
 interface ListingToolbarProps {
   search: string;
@@ -10,6 +19,10 @@ interface ListingToolbarProps {
   onViewChange: (v: "grid" | "list") => void;
   resultCount?: number;
   resultNoun: string;
+  /** Country/region options, already de-duplicated and sorted. */
+  countries?: { value: string; label: string }[];
+  country?: string;
+  onCountryChange?: (v: string) => void;
 }
 
 export function ListingToolbar({
@@ -20,6 +33,9 @@ export function ListingToolbar({
   onViewChange,
   resultCount,
   resultNoun,
+  countries,
+  country = ALL_COUNTRIES,
+  onCountryChange,
 }: ListingToolbarProps) {
   return (
     <div className="space-y-4">
@@ -40,6 +56,41 @@ export function ListingToolbar({
           className="h-12 rounded-sm border-rule bg-card pl-10 text-base"
         />
       </div>
+
+      {countries && countries.length > 0 && onCountryChange && (
+        <div className="flex flex-wrap items-center gap-3">
+          <label htmlFor="country-filter" className="sr-only">
+            Filter by country
+          </label>
+          <Select value={country} onValueChange={onCountryChange}>
+            <SelectTrigger
+              id="country-filter"
+              className="h-11 w-full rounded-sm border-rule bg-card sm:w-72"
+              aria-label="Filter by country"
+            >
+              <SelectValue placeholder="All countries" />
+            </SelectTrigger>
+            <SelectContent className="max-h-80">
+              <SelectItem value={ALL_COUNTRIES}>All countries</SelectItem>
+              {countries.map((c) => (
+                <SelectItem key={c.value} value={c.value}>
+                  {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {country !== ALL_COUNTRIES && (
+            <button
+              type="button"
+              onClick={() => onCountryChange(ALL_COUNTRIES)}
+              className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center justify-between gap-4">
         {resultCount !== undefined ? (

@@ -1,9 +1,11 @@
-import { Fragment, useCallback, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useJobs } from "@/hooks/useJobs";
+import { useFilterOptions } from "@/hooks/useFilterOptions";
+import { formatLocation } from "@/lib/locationLabel";
 import { ListingCard, ListingCardSkeleton } from "@/components/ListingCard";
-import { ListingToolbar } from "@/components/ListingToolbar";
+import { ListingToolbar, ALL_COUNTRIES } from "@/components/ListingToolbar";
 import { Pager } from "@/components/Pager";
 import AdsterraNativeAd from "@/components/AdsterraNativeAd";
 import { Compass } from "lucide-react";
@@ -68,8 +70,41 @@ export function ListingBrowser({
     [resetPage]
   );
 
+  const country = searchParams.get("country") || ALL_COUNTRIES;
+
+  const handleCountryChange = useCallback(
+    (v: string) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("page");
+          if (!v || v === ALL_COUNTRIES) next.delete("country");
+          else next.set("country", v);
+          return next;
+        },
+        { replace: false }
+      );
+    },
+    [setSearchParams]
+  );
+
+  const { data: filterOptions } = useFilterOptions();
+
+  const countries = useMemo(() => {
+    const seen = new Map<string, string>();
+    (filterOptions?.jobLocations ?? []).forEach((loc) => {
+      const label = formatLocation(loc);
+      if (!label) return;
+      if (!seen.has(loc)) seen.set(loc, label);
+    });
+    return Array.from(seen, ([value, label]) => ({ value, label })).sort((a, b) =>
+      a.label.localeCompare(b.label)
+    );
+  }, [filterOptions]);
+
   const { data, isLoading } = useJobs({
     search: debouncedSearch,
+    location: country === ALL_COUNTRIES ? "" : country,
     page,
     pageSize: 24,
     listingType: "jobs",
@@ -88,7 +123,11 @@ export function ListingBrowser({
         onViewChange={setView}
         resultCount={data?.totalCount}
         resultNoun={resultNoun}
+        countries={countries}
+        country={country}
+        onCountryChange={handleCountryChange}
       />
+
 
       <section aria-label={heading} className="mt-8">
         <h2 className="sr-only">{heading}</h2>

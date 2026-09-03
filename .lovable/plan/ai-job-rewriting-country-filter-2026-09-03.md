@@ -11,8 +11,9 @@ Changes:
 
 - **Rewrite the AI instructions** for the current site. The prompt still talks about WordPress aggregator blogs, disclaimers and social-channel stripping from sources that no longer exist. Replace with instructions for ATS-sourced remote jobs: produce clean, well-structured HTML (Overview, Responsibilities, Requirements, Benefits, Location, How to Apply), keep facts faithful (no invented content), and keep extracting country, work mode, employment type, deadline, skills and apply URL.
 - **Add a dedicated schedule**: run the cleaner every 10 minutes with the cron token, processing a batch per run and looping inside its time budget so it clears many jobs per run rather than 20.
-- **Backfill the 5,101 uncleaned jobs**: the schedule works through the backlog automatically; I'll also kick off runs manually after deploy so it drains within hours instead of days.
+- **Dont Backfill the 5,101 uncleaned jobs**: I'll dont also kick off runs manually after deploy so it drains within hours instead of days. Only focus on the latest 100.
 - The job detail page already prefers `clean_description`, so listings improve as they're processed — no UI change needed.
+- Backfill only the latest 100 jobs on the website.
 
 Cost note: ~5,100 backlog jobs on `gpt-4o-mini` is roughly a few dollars of OpenAI usage, then a small ongoing cost for new jobs.
 

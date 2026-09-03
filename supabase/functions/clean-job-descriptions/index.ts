@@ -8,49 +8,40 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `You clean and structure job/opportunity descriptions. You will be given raw HTML from a WordPress blog. Your task is to extract and return clean, well-structured HTML with only the essential information.
+const SYSTEM_PROMPT = `You clean and structure remote job listings for a remote-only job board. You will be given the raw text or HTML of a job posting sourced from a company career page or applicant tracking system (Greenhouse, Lever, Ashby, Breezy). Return clean, well-structured HTML containing only the essential information.
 
 RULES:
-- Remove ALL SEO spam, chatgpt:// links, social share buttons, and irrelevant content
-- NEVER mention or reference the source blog/aggregator by name or link. Explicitly strip any sentence, paragraph, disclaimer, footer, header, or link that contains any of these names or their domains: "Global South Opportunities", "GSO", "YesHub", "Yes Hub", "Opportunities for Youth", "OFY", "YuthAxis", "Yuth Axis", "NGO Jobs in Africa", "JobsToApply", "Jobs To Apply", "WPChannel", plus yeshub.ng, globalsouthopportunities.com, opportunitiesforyouth.org, yuthaxis.com, ngojobsinafrica.com, jobstoapply.com. Also strip any "Disclaimer:", "For more opportunities such as these please follow us…", "JOIN … WHATSAPP CHANNEL", "follow us on Facebook/Instagram/Twitter/LinkedIn/WhatsApp" blocks, and links to facebook.com, instagram.com, twitter.com/x.com, linkedin.com/company (or /showcase), whatsapp.com, wa.me, t.me. Delete these entirely — do not summarize or rephrase them.
-- Do NOT rewrite or fabricate content — only reorganize what exists
+- Stay faithful to the source. Reorganise, tidy and lightly rephrase for readability, but NEVER invent responsibilities, requirements, benefits, salaries, locations or deadlines that are not in the source.
+- Remove boilerplate noise: cookie notices, navigation, "share this job", tracking links, application-form field labels, EEO/legal blocks longer than a sentence, and repeated company marketing filler.
+- Never reference another job board or aggregator by name or link.
+- Fix broken formatting: run-on text with no spacing, stray HTML entities, duplicated headings and empty tags.
+- Use <h3> for section headings, <ul>/<li> for lists, <p> for paragraphs. No inline styles, no <script>, no <img>.
+- Keep it concise and scannable. Omit a section entirely if the source has nothing for it.
+- Neutral third-person tone ("The role involves…", "You will…"). Do not add hype.
 
-- Do NOT rewrite or fabricate content — only reorganize what exists
-- Use <h3> for section headings, <ul>/<li> for lists, <p> for paragraphs
-- Keep it concise and scannable
-- For OPPORTUNITIES (fellowships, scholarships, grants, conferences, internships): use applicant-centric language — "This program offers...", "Applicants will receive...", "You can apply for...". DO NOT say "is hiring", "is recruiting", "join the team". Frame everything from the applicant's perspective.
-
-STRUCTURE (jobs):
-1. <h3>Overview</h3> — Brief role summary (1-2 sentences)
+STRUCTURE:
+1. <h3>Overview</h3> — 1–3 sentence summary of the role and the company
 2. <h3>Key Responsibilities</h3>
 3. <h3>Requirements</h3>
 4. <h3>Benefits</h3>
-5. <h3>Location</h3>
+5. <h3>Location</h3> — remote scope / timezone / country restrictions if stated
 6. <h3>How to Apply</h3>
-7. <h3>Deadline</h3>
-
-STRUCTURE (opportunities — applicant tone):
-1. <h3>Overview</h3> — What the opportunity offers applicants
-2. <h3>Eligibility</h3> — Who can apply
-3. <h3>Benefits</h3> — What applicants will receive (funding, training, mentorship, etc.)
-4. <h3>How to Apply</h3>
-5. <h3>Deadline</h3>
+7. <h3>Deadline</h3> — only if stated
 
 Also extract:
-- apply_url: the actual application URL (Google Forms, mailto, company career page, or an ATS link like Greenhouse/Lever/Workable). NEVER return a link to facebook.com, instagram.com, twitter.com/x.com, linkedin.com/company/* or /showcase/*, whatsapp.com, wa.me, or t.me — those are the source blog's own social channels, not application links, even if they appear right next to the real apply link. Also ignore chatgpt:// and yeshub.ng links. If the only links present are the source blog's own social channels, return null rather than guessing.
-- company_name: actual hiring organization. PRIORITIZE the title. Don't use blog/source name. Null if unknown.
-- detected_location: COUNTRY name OR REGION name. Never a city, state, or province alone. Rules:
-  • Scan the FULL description AND title for any city, state, province, office, or parenthetical hints like "Hybrid - Ottawa", "(Remote, Nairobi)", "based in Berlin". Always infer the COUNTRY from these (Ottawa → Canada, Nairobi → Kenya, Lagos → Nigeria, California → USA, Bavaria → Germany, Ontario → Canada).
-  • A hybrid or remote role tied to ONE specific office city is NOT global — return that office's country.
-  • Only return a REGION when the role explicitly spans multiple countries in the same region. Allowed regions: "Sub-Saharan Africa", "East Africa", "West Africa", "Southern Africa", "North Africa", "MENA", "Middle East", "Europe", "Western Europe", "Eastern Europe", "Latin America", "Caribbean", "South Asia", "Southeast Asia", "East Asia", "Central Asia", "Oceania", "North America".
-  • Use "Global" ONLY if truly worldwide with NO city or country mentioned anywhere.
-  • Never return a city or US state on its own.
+- apply_url: the direct application URL for THIS posting (the ATS or company career page link, or a mailto: address). Never a social network link, never a company homepage, never another job board. null if not present.
+- company_name: the actual hiring organisation. null if unclear.
+- detected_location: COUNTRY name OR REGION name — never a city, state or province alone. Rules:
+  • Scan the FULL description AND title for cities, states, provinces, offices or hints like "Hybrid - Ottawa", "(Remote, Nairobi)", "based in Berlin", "US-based", "EU timezones". Infer the COUNTRY (Ottawa → Canada, Nairobi → Kenya, Lagos → Nigeria, California → United States, Bavaria → Germany).
+  • A remote or hybrid role tied to ONE country or office city is NOT global — return that country.
+  • Only return a REGION when the role explicitly spans several countries in one region. Allowed regions: "Sub-Saharan Africa", "East Africa", "West Africa", "Southern Africa", "North Africa", "MENA", "Middle East", "Europe", "Western Europe", "Eastern Europe", "Latin America", "Caribbean", "South Asia", "Southeast Asia", "East Asia", "Central Asia", "Oceania", "North America".
+  • Use "Global" ONLY when the role is open worldwide with no country or city restriction anywhere.
 - work_mode: "Remote", "Hybrid", or "Physical".
-- listing_type: "job" or "opportunity". Fellowships, scholarships, grants, conferences, training, awards, PhD positions, short courses, competitions are opportunities.
-- opportunity_category: when listing_type='opportunity', one of: "fellowship", "scholarship", "grant", "conference", "internship".
+- listing_type: "job" for paid employment (including paid internships and contracts). "opportunity" only for fellowships, scholarships, grants, conferences, competitions, awards, unpaid training or short courses.
+- opportunity_category: only when listing_type='opportunity', one of: "fellowship", "scholarship", "grant", "conference", "internship".
 - employment_type: "Full-time", "Part-time", "Contract", or "Internship".
 - apply_before: human-readable deadline (e.g., "April 30, 2026"). null if not stated.
-- apply_before_iso: SAME deadline in ISO format YYYY-MM-DD (e.g., "2026-04-30"). null if not stated or ambiguous.
+- apply_before_iso: SAME deadline as YYYY-MM-DD. null if not stated or ambiguous.
 - skills: up to 8 key skills/technologies as an array. [] if none.`;
 
 const TOOL_DEFINITION = {
@@ -248,8 +239,11 @@ Deno.serve(async (req) => {
 
     const reqUrl = new URL(req.url);
     const mode = reqUrl.searchParams.get("mode") || "dirty";
-    const batchSize = Math.min(parseInt(reqUrl.searchParams.get("batch") || "20"), 25);
+    const batchSize = Math.min(parseInt(reqUrl.searchParams.get("batch") || "40"), 100);
     const offset = parseInt(reqUrl.searchParams.get("offset") || "0");
+    // Stop before the worker's wall-clock limit so we always return a result.
+    const startedAt = Date.now();
+    const TIME_BUDGET_MS = 110_000;
 
     let query = supabase
       .from("jobs")
@@ -261,9 +255,12 @@ Deno.serve(async (req) => {
         .order("created_at", { ascending: false })
         .range(offset, offset + batchSize - 1);
     } else {
+      // Newest listings first — the freshest jobs are the ones people see.
       query = query
         .is("clean_description", null)
         .not("description", "is", null)
+        .is("archived_at", null)
+        .order("created_at", { ascending: false })
         .limit(batchSize);
     }
 
@@ -281,6 +278,10 @@ Deno.serve(async (req) => {
     let processed = 0;
 
     for (const job of jobs) {
+      if (Date.now() - startedAt > TIME_BUDGET_MS) {
+        console.log("Time budget reached, stopping this run");
+        break;
+      }
       try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
