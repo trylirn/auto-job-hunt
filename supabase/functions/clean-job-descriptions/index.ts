@@ -239,8 +239,11 @@ Deno.serve(async (req) => {
 
     const reqUrl = new URL(req.url);
     const mode = reqUrl.searchParams.get("mode") || "dirty";
-    const batchSize = Math.min(parseInt(reqUrl.searchParams.get("batch") || "20"), 25);
+    const batchSize = Math.min(parseInt(reqUrl.searchParams.get("batch") || "40"), 100);
     const offset = parseInt(reqUrl.searchParams.get("offset") || "0");
+    // Stop before the worker's wall-clock limit so we always return a result.
+    const startedAt = Date.now();
+    const TIME_BUDGET_MS = 110_000;
 
     let query = supabase
       .from("jobs")
@@ -252,9 +255,12 @@ Deno.serve(async (req) => {
         .order("created_at", { ascending: false })
         .range(offset, offset + batchSize - 1);
     } else {
+      // Newest listings first — the freshest jobs are the ones people see.
       query = query
         .is("clean_description", null)
         .not("description", "is", null)
+        .is("archived_at", null)
+        .order("created_at", { ascending: false })
         .limit(batchSize);
     }
 
@@ -272,6 +278,10 @@ Deno.serve(async (req) => {
     let processed = 0;
 
     for (const job of jobs) {
+      if (Date.now() - startedAt > TIME_BUDGET_MS) {
+        console.log("Time budget reached, stopping this run");
+        break;
+      }
       try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
