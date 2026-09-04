@@ -2,18 +2,20 @@
 
 ## 1. Auto-post new jobs to LinkedIn via Buffer
 
-New jobs get published straight to LinkedIn (not queued as scheduled drafts), checked every 10 minutes.
+New jobs get published straight to LinkedIn (not queued as scheduled drafts), checked every 15 minutes.
 
 How it works:
+
 - A new backend function collects jobs added since the last run that have not been posted yet, and sends each one to Buffer for immediate publishing on your LinkedIn channel.
 - Each post carries the job title, company, location/work mode, a short line, the direct job link on eplicant.com, and a few hashtags.
 - A small tracking table records which job was posted, when, and the Buffer post ID, so nothing is ever posted twice and failures can be retried.
 - Safety cap: at most 3 posts per run (max ~18/hour) so LinkedIn doesn't rate-limit or flag the account. Backlog rolls over to the next run.
 - Himalayas-sourced jobs stay excluded, matching the rest of the site.
 
-Timing note: this runs 144 times per day. Frequent checks keep the database awake even when there is nothing new, which adds a little to Cloud cost. An alternative is posting on the same 15-minute rhythm as job fetching (96 runs/day, max 15 min delay) — but the plan uses 10 minutes as you asked.
+Timing note: this runs 144 times per day. Frequent checks keep the database awake even when there is nothing new, which adds a little to Cloud cost. An alternative is posting on the same 15-minute rhythm as job fetching (96 runs/day, max 15 min delay).
 
 What I need from you:
+
 - Buffer access token (I'll request it as a secret when building).
 - Your LinkedIn channel ID in Buffer — or I can call Buffer's API with your token to list channels and pick the LinkedIn one automatically.
 
