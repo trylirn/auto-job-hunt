@@ -32,6 +32,44 @@ export type Database = {
         }
         Relationships: []
       }
+      job_social_posts: {
+        Row: {
+          created_at: string
+          error: string | null
+          external_post_id: string | null
+          id: string
+          job_id: string
+          platform: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          external_post_id?: string | null
+          id?: string
+          job_id: string
+          platform?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          external_post_id?: string | null
+          id?: string
+          job_id?: string
+          platform?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_social_posts_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           apply_before: string | null
