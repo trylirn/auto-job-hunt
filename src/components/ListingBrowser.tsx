@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useJobs } from "@/hooks/useJobs";
 import { useFilterOptions } from "@/hooks/useFilterOptions";
-import { formatLocation } from "@/lib/locationLabel";
+import { countriesFromLocations } from "@/lib/countries";
 import { ListingCard, ListingCardSkeleton } from "@/components/ListingCard";
 import { ListingToolbar, ALL_COUNTRIES } from "@/components/ListingToolbar";
 import { Pager } from "@/components/Pager";
@@ -90,17 +90,15 @@ export function ListingBrowser({
 
   const { data: filterOptions } = useFilterOptions();
 
-  const countries = useMemo(() => {
-    const seen = new Map<string, string>();
-    (filterOptions?.jobLocations ?? []).forEach((loc) => {
-      const label = formatLocation(loc);
-      if (!label) return;
-      if (!seen.has(loc)) seen.set(loc, label);
-    });
-    return Array.from(seen, ([value, label]) => ({ value, label })).sort((a, b) =>
-      a.label.localeCompare(b.label)
-    );
-  }, [filterOptions]);
+  const countries = useMemo(
+    () =>
+      countriesFromLocations(filterOptions?.jobLocations ?? []).map((c) => ({
+        value: c.query,
+        label: c.name,
+      })),
+    [filterOptions]
+  );
+
 
   const { data, isLoading } = useJobs({
     search: debouncedSearch,
