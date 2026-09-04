@@ -213,18 +213,24 @@ Deno.serve(async (req) => {
   );
 
   try {
+    if (probe === "graphql") {
+      const body = await req.json().catch(() => ({}));
+      const out = await graphql(token, body.query ?? "{ __typename }", body.variables ?? {});
+      return json(out);
+    }
+
     if (probe === "channels") {
       const gql = await graphql(
         token,
         `query Channels {
           account {
-            currentOrganization { id name channels { id service serviceUsername } }
+            currentOrganization { id name channels { id service serviceId name } }
           }
         }`,
       );
-      const rest = await restProfiles(token);
-      return json({ graphql: gql, rest });
+      return json({ graphql: gql });
     }
+
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
