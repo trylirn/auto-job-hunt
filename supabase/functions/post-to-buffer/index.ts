@@ -79,16 +79,6 @@ async function graphql(
   return last;
 }
 
-async function restProfiles(token: string) {
-  const res = await fetch(`${REST_BASE}/profiles.json?access_token=${token}`);
-  const text = await res.text();
-  try {
-    return { status: res.status, body: JSON.parse(text) };
-  } catch {
-    return { status: res.status, body: text.slice(0, 500) };
-  }
-}
-
 /** Resolve the LinkedIn channel id, preferring an explicit secret. */
 async function resolveLinkedInChannel(
   token: string,
@@ -183,7 +173,6 @@ Deno.serve(async (req) => {
   if (!token) return json({ success: false, error: "missing_buffer_token" }, 500);
 
   const url = new URL(req.url);
-  const probe = url.searchParams.get("probe");
   const dryRun = url.searchParams.get("dry_run") === "1";
   const limit = Math.min(
     Number(url.searchParams.get("limit")) || MAX_PER_RUN,
@@ -191,25 +180,6 @@ Deno.serve(async (req) => {
   );
 
   try {
-    if (probe === "graphql") {
-      const body = await req.json().catch(() => ({}));
-      const out = await graphql(token, body.query ?? "{ __typename }", body.variables ?? {});
-      return json(out);
-    }
-
-    if (probe === "channels") {
-      const gql = await graphql(
-        token,
-        `query Channels {
-          account {
-            currentOrganization { id name channels { id service serviceId name } }
-          }
-        }`,
-      );
-      return json({ graphql: gql });
-    }
-
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
