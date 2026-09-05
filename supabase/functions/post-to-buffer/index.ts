@@ -89,45 +89,41 @@ async function restProfiles(token: string) {
   }
 }
 
-/** Resolve the LinkedIn channel/profile id, preferring an explicit secret. */
+/** Resolve the LinkedIn channel id, preferring an explicit secret. */
 async function resolveLinkedInChannel(
   token: string,
 ): Promise<{ id: string | null; via: string; detail?: unknown }> {
   const explicit = Deno.env.get("BUFFER_LINKEDIN_CHANNEL_ID");
   if (explicit) return { id: explicit, via: "secret" };
 
-  const gql = await graphql(
+  const acct = await graphql(
     token,
-    `query Channels {
-      account {
-        currentOrganization {
-          channels { id service serviceType serviceUsername }
-        }
-      }
-    }`,
+    `query Account { account { id organizations { id name } } }`,
   );
-  const channels =
-    // deno-lint-ignore no-explicit-any
-    (gql.body as any)?.data?.account?.currentOrganization?.channels;
-  if (Array.isArray(channels)) {
-    const li = channels.find((c: { service?: string }) =>
+  // deno-lint-ignore no-explicit-any
+  const orgs = (acct.body as any)?.data?.account?.organizations;
+  const orgId = Array.isArray(orgs) ? orgs[0]?.id : null;
+  if (!orgId) return { id: null, via: "none", detail: acct.body };
+
+  const chans = await graphql(
+    token,
+    `query Channels($input: ChannelsInput!) {
+      channels(input: $input) { id name service }
+    }`,
+    { input: { organizationId: orgId } },
+  );
+  // deno-lint-ignore no-explicit-any
+  const list = (chans.body as any)?.data?.channels;
+  if (Array.isArray(list)) {
+    const li = list.find((c: { service?: string }) =>
       (c.service || "").toLowerCase().includes("linkedin")
     );
     if (li?.id) return { id: li.id, via: "graphql" };
   }
-
-  const rest = await restProfiles(token);
-  if (Array.isArray(rest.body)) {
-    const li = rest.body.find((p: { service?: string }) =>
-      (p.service || "").toLowerCase().includes("linkedin")
-    );
-    if (li?.id) return { id: li.id, via: "rest" };
-  }
-
-  return { id: null, via: "none", detail: { gql: gql.body, rest: rest.body } };
+  return { id: null, via: "none", detail: chans.body };
 }
 
-/** Publish immediately. Tries GraphQL first, falls back to REST v1 now=true. */
+/** Publish immediately to the given Buffer channel. */
 async function publish(
   token: string,
   channelId: string,
@@ -135,58 +131,40 @@ async function publish(
 ): Promise<{ ok: boolean; id?: string; error?: string; via: string }> {
   const gql = await graphql(
     token,
-    `mutation CreatePost($input: PostCreateInput!) {
-      postCreate(input: $input) {
+    `mutation CreatePost($input: CreatePostInput!) {
+      createPost(input: $input) {
         __typename
-        ... on PostCreateSuccess { post { id status } }
+        ... on PostActionSuccess { post { id status } }
         ... on UnauthorizedError { message }
         ... on InvalidInputError { message }
         ... on NotFoundError { message }
+        ... on LimitReachedError { message }
+        ... on RestProxyError { message }
+        ... on UnexpectedError { message }
       }
     }`,
     {
       input: {
-        organizationId: undefined,
-        channels: [{ id: channelId }],
+        channelId,
         text,
-        status: "sent",
-        shareNow: true,
+        assets: [],
+        mode: "shareNow",
+        needsApproval: false,
+        schedulingType: "automatic",
+        source: "eplicant-auto",
       },
     },
   );
   // deno-lint-ignore no-explicit-any
-  const created = (gql.body as any)?.data?.postCreate;
-  if (created?.post?.id) {
-    return { ok: true, id: created.post.id, via: "graphql" };
-  }
-
-  const params = new URLSearchParams();
-  params.set("access_token", token);
-  params.set("text", text);
-  params.set("now", "true");
-  params.append("profile_ids[]", channelId);
-  const res = await fetch(`${REST_BASE}/updates/create.json`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
-  });
-  const raw = await res.text();
-  // deno-lint-ignore no-explicit-any
-  let body: any;
-  try {
-    body = JSON.parse(raw);
-  } catch {
-    body = raw.slice(0, 400);
-  }
-  if (res.ok && body?.success) {
-    return { ok: true, id: body?.updates?.[0]?.id, via: "rest" };
-  }
+  const res = (gql.body as any)?.data?.createPost;
+  if (res?.post?.id) return { ok: true, id: res.post.id, via: "graphql" };
   return {
     ok: false,
-    via: "rest",
-    error: JSON.stringify({ graphql: gql.body, rest: body }).slice(0, 800),
+    via: "graphql",
+    error: JSON.stringify(gql.body).slice(0, 800),
   };
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
