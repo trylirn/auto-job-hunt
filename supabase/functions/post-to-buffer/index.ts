@@ -185,17 +185,22 @@ Deno.serve(async (req) => {
     );
 
     const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+    const freshPostedAt = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+      .toISOString();
     const { data: candidates, error: jobsErr } = await supabase
       .from("jobs")
       .select(
-        "id,title,company,location,job_type,employment_type,is_remote,slug,created_at",
+        "id,title,company,location,job_type,employment_type,is_remote,slug,created_at,posted_at",
       )
       .is("archived_at", null)
       .eq("listing_type", "job")
       .or("source.is.null,source.neq.himalayas")
       .gte("created_at", since)
+      .or(`posted_at.is.null,posted_at.gte.${freshPostedAt}`)
+      .order("posted_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
       .limit(40);
+
     if (jobsErr) throw jobsErr;
 
     const rows = (candidates || []) as JobRow[];
