@@ -7,6 +7,7 @@ import { useState } from "react";
 const NAV = [
   { to: "/", label: "Jobs", end: true },
   { to: "/jobs/in", label: "Locations", end: false },
+  { to: "/tools", label: "Tools", end: false },
 ];
 
 export function Header() {

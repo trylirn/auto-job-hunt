@@ -33,6 +33,15 @@ export const STATIC_ROUTES: StaticRoute[] = [
     priority: 0.8,
   },
   {
+    path: "/tools",
+    title: "Remote Salary Insights Calculator",
+    description:
+      "Real pay benchmarks for remote roles by job family and experience level, built from published salary ranges on live listings.",
+    indexable: true,
+    changefreq: "weekly",
+    priority: 0.6,
+  },
+  {
     path: "/newsletter",
     title: "Weekly Newsletter",
     description:
