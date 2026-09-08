@@ -81,25 +81,21 @@ Deno.serve(async (req) => {
   if (deletedIds.length > 0) {
     try {
       const urlList = deletedIds.map((id) => `https://eplicant.com/job/${slugById.get(id) || id}`);
-      // Best-effort; do not block on failures.
+      const indexNowKey = "8aac24519bd55434079e97180d8a080d";
+      // Best-effort; do not block on failures. URLs go one at a time
+      // ("streaming") instead of one big batch call, per Bing's guidance.
       await Promise.allSettled([
-        fetch("https://api.indexnow.org/indexnow", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            host: "eplicant.com",
-            key: "8aac24519bd55434079e97180d8a080d",
-            keyLocation:
-              "https://eplicant.com/8aac24519bd55434079e97180d8a080d.txt",
-            urlList,
-          }),
-        }),
+        ...urlList.map((url) =>
+          fetch(
+            `https://api.indexnow.org/indexnow?url=${encodeURIComponent(url)}&key=${indexNowKey}`
+          )
+        ),
         fetch(
           "https://www.google.com/ping?sitemap=" +
             encodeURIComponent("https://eplicant.com/sitemap.xml")
         ),
       ]);
-      console.log(`Pinged IndexNow + Google for ${urlList.length} URLs`);
+      console.log(`Pinged IndexNow (streaming) + Google for ${urlList.length} URLs`);
     } catch (e) {
       console.warn("IndexNow/Google ping failed:", e);
     }
