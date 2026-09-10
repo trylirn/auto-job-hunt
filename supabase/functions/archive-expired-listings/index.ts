@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     .update({ archived_at: new Date().toISOString() })
     .lt("apply_before_date", today)
     .is("archived_at", null)
-    .select("id");
+    .select("id, slug");
 
   if (archErr) {
     console.error("archive error:", archErr.message);
@@ -32,6 +32,33 @@ Deno.serve(async (req) => {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  }
+
+  // These URLs start returning 410 Gone right away (see job-gone.ts), so tell
+  // IndexNow + Google now instead of waiting for the later hard-delete pass
+  // in cleanup-old-listings. One request per URL ("streaming"), same pattern
+  // as cleanup-old-listings.
+  if (archived && archived.length > 0) {
+    try {
+      const urlList = archived.map(
+        (j: { id: string; slug: string | null }) => `https://eplicant.com/job/${j.slug || j.id}`
+      );
+      const indexNowKey = "8aac24519bd55434079e97180d8a080d";
+      await Promise.allSettled([
+        ...urlList.map((url) =>
+          fetch(
+            `https://api.indexnow.org/indexnow?url=${encodeURIComponent(url)}&key=${indexNowKey}`
+          )
+        ),
+        fetch(
+          "https://www.google.com/ping?sitemap=" +
+            encodeURIComponent("https://eplicant.com/sitemap.xml")
+        ),
+      ]);
+      console.log(`Pinged IndexNow (streaming) + Google for ${urlList.length} newly-archived URLs`);
+    } catch (e) {
+      console.warn("IndexNow/Google ping failed:", e);
+    }
   }
 
   // 2. Clear is_featured when featured_until has passed
