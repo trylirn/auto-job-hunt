@@ -8,6 +8,14 @@ export interface AtsCompany {
 }
 
 export const GREENHOUSE_COMPANIES: AtsCompany[] = [
+  { name: "Techstars", slug: "techstars57" },
+  { name: "Headspace", slug: "hs" },
+  { name: "Ada", slug: "ada18" },
+  { name: "Navan", slug: "tripactions" },
+  { name: "DigitalOcean", slug: "digitalocean98" },
+  { name: "Sourcegraph", slug: "sourcegraph91" },
+  { name: "Glean", slug: "gleanwork" },
+  { name: "DoorDash", slug: "doordashusa" },
   { name: "Wiz", slug: "wizinc" },
   { name: "Rocket Lawyer", slug: "rocketlawyer" },
   { name: "Healthie", slug: "healthie" },
@@ -141,6 +149,7 @@ export const GREENHOUSE_COMPANIES: AtsCompany[] = [
 ];
 
 export const LEVER_COMPANIES: AtsCompany[] = [
+  { name: "Fly.io", slug: "fly" },
   { name: "Bolt", slug: "boltjobs" },
   { name: "Abt Global", slug: "abt" },
   { name: "Aircall", slug: "aircall" },
@@ -177,6 +186,10 @@ export const LEVER_COMPANIES: AtsCompany[] = [
 ];
 
 export const ASHBY_COMPANIES: AtsCompany[] = [
+  { name: "Kraken", slug: "kraken.com" },
+  { name: "Timescale", slug: "tigerdata" },
+  { name: "Convex", slug: "convex-dev" },
+  { name: "Clay", slug: "claylabs" },
   { name: "Stay AI", slug: "stayai" },
   { name: "Grow", slug: "grow-inc" },
   { name: "Sentient Labs", slug: "sentient" },
