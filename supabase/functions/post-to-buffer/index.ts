@@ -10,7 +10,7 @@ const corsHeaders = {
 const GRAPHQL_URL = "https://graph.buffer.com/";
 const GRAPHQL_ALT_URL = "https://api.buffer.com/graphql";
 
-const MAX_PER_RUN = 3;
+const MAX_PER_RUN = 2;
 
 type JobRow = {
   id: string;
