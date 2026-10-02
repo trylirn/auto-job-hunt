@@ -10,7 +10,7 @@ const corsHeaders = {
 const GRAPHQL_URL = "https://graph.buffer.com/";
 const GRAPHQL_ALT_URL = "https://api.buffer.com/graphql";
 
-const MAX_PER_RUN = 2;
+const MAX_PER_RUN = 1;
 
 type JobRow = {
   id: string;
@@ -21,26 +21,34 @@ type JobRow = {
   employment_type: string | null;
   is_remote: boolean | null;
   slug: string | null;
+  salary?: string | null;
 };
 
-function buildMessage(job: JobRow): string {
-  const bits: string[] = [];
-  if (job.location) bits.push(`📍 ${job.location}`);
-  else if (job.is_remote) bits.push("📍 Remote");
-  const type = job.employment_type || job.job_type;
-  if (type) bits.push(`💼 ${type}`);
+function tidy(v: string | null | undefined): string {
+  return (v || "").replace(/\s+/g, " ").replace(/\s+([.,!?;:])/g, "$1").trim();
+}
 
+function buildMessage(job: JobRow): string {
   const url = `https://eplicant.com/job/${job.slug || job.id}`;
-  return [
-    `🚀 Now hiring: ${job.title} at ${job.company}`,
-    bits.length ? bits.join(" | ") : "",
+  const title = tidy(job.title).replace(/[.\s]+$/, "");
+  const company = tidy(job.company);
+  const salary = tidy(job.salary);
+  const location = tidy(job.location) || "Remote";
+  const lines = [
+    `${company} is on the lookout for a ${title}. Apply now!`,
     "",
-    `Apply here: ${url}`,
+    `🔗 Link: ${url}`,
     "",
-    "#RemoteJobs #Hiring #RemoteWork #Careers",
-  ]
-    .filter((l) => l !== undefined)
-    .join("\n");
+  ];
+  if (salary) lines.push(`💰 Salary: ${salary}`, "");
+  lines.push(
+    `📍 Location: ${location}`,
+    "",
+    "🧑‍💼 Share this with your network or tag someone who might benefit.",
+    "",
+    "Follow Eplicant for verified opportunities.",
+  );
+  return lines.join("\n");
 }
 
 async function graphql(
@@ -184,36 +192,58 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-    const freshPostedAt = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
-      .toISOString();
-    const { data: candidates, error: jobsErr } = await supabase
-      .from("jobs")
-      .select(
-        "id,title,company,location,job_type,employment_type,is_remote,slug,created_at,posted_at",
-      )
-      .is("archived_at", null)
-      .eq("listing_type", "job")
-      .or("source.is.null,source.neq.himalayas")
+    const cols =
+      "id,title,company,location,job_type,employment_type,is_remote,slug,salary,created_at,posted_at";
+    const today = new Date().toISOString().slice(0, 10);
+    const base = () =>
+      supabase
+        .from("jobs")
+        .select(cols)
+        .is("archived_at", null)
+        .eq("listing_type", "job")
+        .or("source.is.null,source.neq.himalayas")
+        .or(`apply_before_date.is.null,apply_before_date.gte.${today}`);
+
+    const postedIds = async (ids: string[]) => {
+      if (!ids.length) return new Set<string>();
+      const { data } = await supabase
+        .from("job_social_posts")
+        .select("job_id")
+        .eq("platform", "linkedin")
+        .in("job_id", ids);
+      return new Set((data || []).map((r) => r.job_id));
+    };
+
+    // 1) Fresh pool: last 6 hours, newest first.
+    const since = new Date(Date.now() - 6 * 3600_000).toISOString();
+    const { data: fresh, error: freshErr } = await base()
       .gte("created_at", since)
-      .or(`posted_at.is.null,posted_at.gte.${freshPostedAt}`)
       .order("posted_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
       .limit(40);
+    if (freshErr) throw freshErr;
+    let rows = (fresh || []) as JobRow[];
+    let done = await postedIds(rows.map((r) => r.id));
+    let queueSrc = rows.filter((r) => !done.has(r.id));
 
-    if (jobsErr) throw jobsErr;
+    // 2) Backlog: live, never-posted jobs from the last 15 days, newest first.
+    if (queueSrc.length < limit) {
+      const backlogSince = new Date(Date.now() - 15 * 86400_000).toISOString();
+      for (let offset = 0; offset < 1000 && queueSrc.length < limit; offset += 200) {
+        const { data: older, error: oErr } = await base()
+          .gte("created_at", backlogSince)
+          .lt("created_at", since)
+          .order("created_at", { ascending: false })
+          .range(offset, offset + 199);
+        if (oErr) throw oErr;
+        const batch = (older || []) as JobRow[];
+        if (!batch.length) break;
+        done = await postedIds(batch.map((r) => r.id));
+        queueSrc = queueSrc.concat(batch.filter((r) => !done.has(r.id)));
+      }
+    }
 
-    const rows = (candidates || []) as JobRow[];
-    if (rows.length === 0) return json({ success: true, posted: 0, reason: "no_new_jobs" });
-
-    const { data: alreadyPosted } = await supabase
-      .from("job_social_posts")
-      .select("job_id")
-      .eq("platform", "linkedin")
-      .in("job_id", rows.map((r) => r.id));
-    const posted = new Set((alreadyPosted || []).map((r) => r.job_id));
-
-    const queue = rows.filter((r) => !posted.has(r.id)).slice(0, limit);
+    const queue = queueSrc.slice(0, limit);
     if (queue.length === 0) return json({ success: true, posted: 0, reason: "all_posted" });
 
     const channel = await resolveLinkedInChannel(token);
