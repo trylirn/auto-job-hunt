@@ -15,6 +15,8 @@ export const HIDDEN_SOURCE_FILTER = [
 
 interface UseJobsParams {
   search?: string;
+  /** Match any of these words in the job title (used by category pages). */
+  titleAny?: string[];
   jobType?: string;
   location?: string;
   page?: number;
@@ -28,6 +30,7 @@ interface UseJobsParams {
 
 export function useJobs({
   search = "",
+  titleAny = [],
   jobType = "",
   location = "",
   page = 1,
@@ -39,7 +42,7 @@ export function useJobs({
   region = "",
 }: UseJobsParams = {}) {
   return useQuery({
-    queryKey: ["jobs", search, jobType, location, page, sortBy, listingType, dateRange, opportunityCategory, region],
+    queryKey: ["jobs", search, titleAny.join("|"), jobType, location, page, sortBy, listingType, dateRange, opportunityCategory, region],
     queryFn: async () => {
       let query = supabase
         .from("jobs")
@@ -54,6 +57,10 @@ export function useJobs({
         query = query.or(
           `title.ilike.%${search}%,company.ilike.%${search}%,description.ilike.%${search}%`
         );
+      }
+
+      if (titleAny.length) {
+        query = query.or(titleAny.map((t) => `title.ilike.%${t}%`).join(","));
       }
 
       if (jobType) {
