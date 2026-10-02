@@ -58,7 +58,7 @@ export function buildMeta({
 }: BuildMetaInput): PageMeta {
   const full = rawTitle ? title : `${title} — ${SITE_NAME}`;
   return {
-    title: full.length > 62 ? `${full.slice(0, 59).trimEnd()}…` : full,
+    title: full,
     description: clampDescription(description),
     canonical: absoluteUrl(path),
     image,
