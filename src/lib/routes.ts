@@ -42,6 +42,15 @@ export const STATIC_ROUTES: StaticRoute[] = [
     priority: 0.6,
   },
   {
+    path: "/blog",
+    title: "Career Advice for Remote Workers",
+    description:
+      "Practical career advice for remote job seekers: interview tips, salary guides, CV advice and how to find legitimate remote work.",
+    indexable: true,
+    changefreq: "daily",
+    priority: 0.7,
+  },
+  {
     path: "/newsletter",
     title: "Weekly Newsletter",
     description:

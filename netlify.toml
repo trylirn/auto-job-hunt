@@ -19,6 +19,13 @@
   status = 200
   force = true
 
+# Article publishing webhook → edge function
+[[redirects]]
+  from = "/api/public/webhooks/publish-article"
+  to = "https://wmfwpviizgvohgadumgp.supabase.co/functions/v1/publish-article"
+  status = 200
+  force = true
+
 # 410 Gone for deleted/archived job URLs (must run before SPA fallback)
 [[edge_functions]]
   function = "job-gone"
