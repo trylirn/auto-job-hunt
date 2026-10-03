@@ -64,6 +64,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link to="/" className="hover:text-foreground">Jobs</Link></li>
               <li><Link to="/jobs/in" className="hover:text-foreground">Remote jobs by country</Link></li>
+              <li><Link to="/blog" className="hover:text-foreground">Career advice</Link></li>
               <li><Link to="/submit" className="hover:text-foreground">Post a remote job</Link></li>
             </ul>
           </nav>

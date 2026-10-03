@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.reclassify-listings]
 verify_jwt = false
+
+[functions.publish-article]
+verify_jwt = false

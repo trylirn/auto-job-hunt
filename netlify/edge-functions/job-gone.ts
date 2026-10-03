@@ -237,6 +237,40 @@ async function fetchJob(column: "id" | "slug", value: string): Promise<JobRow | 
   return rows?.[0] ?? null;
 }
 
+
+async function articleBotHtml(slug: string): Promise<string | null> {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/articles?slug=eq.${encodeURIComponent(slug)}&select=slug,title,seo_title,meta_description,excerpt,content_markdown,cover_image_url,author_name,published_at&limit=1`,
+    { headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` } },
+  );
+  if (!res.ok) return null;
+  const a = ((await res.json()) as Record<string, string | null>[])?.[0];
+  if (!a) return null;
+  const canonical = `${SITE_ORIGIN}/blog/${a.slug}`;
+  const title = `${a.seo_title || a.title} — Eplicant`;
+  const body = (a.content_markdown || "").replace(/[#*_>`]/g, "");
+  const desc = (a.meta_description || a.excerpt || body).replace(/\s+/g, " ").trim().slice(0, 160);
+  const ld = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: a.title,
+    description: desc,
+    image: a.cover_image_url || `${SITE_ORIGIN}/logo.png`,
+    datePublished: a.published_at,
+    author: { "@type": "Person", name: a.author_name || "Editorial Team" },
+    publisher: { "@type": "Organization", name: "Eplicant", logo: { "@type": "ImageObject", url: `${SITE_ORIGIN}/logo.png` } },
+    mainEntityOfPage: canonical,
+  };
+  const paras = body.split(/\n{2,}/).map((p) => `<p>${esc(p.trim())}</p>`).join("\n");
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(title)}</title>
+<meta name="description" content="${esc(desc)}"><link rel="canonical" href="${canonical}">
+<meta property="og:type" content="article"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${canonical}">
+${a.cover_image_url ? `<meta property="og:image" content="${esc(a.cover_image_url)}">` : ""}<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script></head>
+<body><main><article><h1>${esc(a.title)}</h1><p>By ${esc(a.author_name || "Editorial Team")}</p>${paras}</article>
+<p><a href="${SITE_ORIGIN}/blog">More career advice</a> · <a href="${SITE_ORIGIN}/">Browse remote jobs</a></p></main></body></html>`;
+}
+
 function isGone(job: JobRow | null): boolean {
   if (!job) return true;
   if (job.archived_at) return true;
@@ -251,6 +285,15 @@ export default async (request: Request, context: { next: () => Promise<Response>
     if (request.method !== "GET" && request.method !== "HEAD") return context.next();
 
     const parts = url.pathname.split("/").filter(Boolean); // ["job", ...]
+    if (parts[0] === "blog" && parts.length === 2) {
+      if (!isBot(request.headers.get("user-agent"))) return context.next();
+      const html = await articleBotHtml(parts[1]);
+      if (!html) return context.next();
+      return new Response(html, {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=3600" },
+      });
+    }
     if (parts[0] !== "job" || parts.length < 2) return context.next();
 
     const ua = request.headers.get("user-agent");
@@ -323,4 +366,4 @@ export default async (request: Request, context: { next: () => Promise<Response>
   }
 };
 
-export const config = { path: "/job/*" };
+export const config = { path: ["/job/*", "/blog/*"] };

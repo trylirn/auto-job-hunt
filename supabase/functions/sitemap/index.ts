@@ -30,6 +30,8 @@ ${entries
 const STATIC_PAGES: SitemapEntry[] = [
   { loc: `${SITE_URL}/`, changefreq: "daily", priority: "1.0" },
   { loc: `${SITE_URL}/jobs/in`, changefreq: "daily", priority: "0.8" },
+  { loc: `${SITE_URL}/blog`, changefreq: "daily", priority: "0.7" },
+  { loc: `${SITE_URL}/tools`, changefreq: "weekly", priority: "0.6" },
   { loc: `${SITE_URL}/newsletter`, changefreq: "weekly", priority: "0.7" },
   { loc: `${SITE_URL}/submit`, changefreq: "monthly", priority: "0.6" },
   { loc: `${SITE_URL}/about`, changefreq: "monthly", priority: "0.5" },
@@ -121,6 +123,19 @@ Deno.serve(async () => {
 
     const today = new Date().toISOString().slice(0, 10);
 
+    const { data: articles } = await supabase
+      .from("articles")
+      .select("slug, published_at")
+      .lte("published_at", new Date().toISOString())
+      .order("published_at", { ascending: false })
+      .limit(5000);
+    const articleEntries: SitemapEntry[] = (articles || []).map((a) => ({
+      loc: `${SITE_URL}/blog/${a.slug}`,
+      lastmod: a.published_at ? a.published_at.split("T")[0] : undefined,
+      changefreq: "monthly",
+      priority: "0.6",
+    }));
+
     const [{ data: jobs, error }, countryEntries] = await Promise.all([
       supabase
         .from("jobs")
@@ -155,7 +170,7 @@ Deno.serve(async () => {
     });
 
     return new Response(
-      buildXml([...STATIC_PAGES, ...countryEntries, ...jobEntries]),
+      buildXml([...STATIC_PAGES, ...articleEntries, ...countryEntries, ...jobEntries]),
       {
         headers: {
           "Content-Type": "application/xml",
