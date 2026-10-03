@@ -32,6 +32,60 @@ export type Database = {
         }
         Relationships: []
       }
+      articles: {
+        Row: {
+          author_name: string | null
+          category: string | null
+          citations: Json | null
+          content_markdown: string
+          cover_image_prompt: string | null
+          cover_image_url: string | null
+          created_at: string | null
+          excerpt: string | null
+          id: string
+          meta_description: string | null
+          published_at: string | null
+          seo_title: string | null
+          slug: string
+          tags: string[] | null
+          title: string
+        }
+        Insert: {
+          author_name?: string | null
+          category?: string | null
+          citations?: Json | null
+          content_markdown: string
+          cover_image_prompt?: string | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          excerpt?: string | null
+          id?: string
+          meta_description?: string | null
+          published_at?: string | null
+          seo_title?: string | null
+          slug: string
+          tags?: string[] | null
+          title: string
+        }
+        Update: {
+          author_name?: string | null
+          category?: string | null
+          citations?: Json | null
+          content_markdown?: string
+          cover_image_prompt?: string | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          excerpt?: string | null
+          id?: string
+          meta_description?: string | null
+          published_at?: string | null
+          seo_title?: string | null
+          slug?: string
+          tags?: string[] | null
+          title?: string
+        }
+        Relationships: []
+      }
       job_social_posts: {
         Row: {
           created_at: string
