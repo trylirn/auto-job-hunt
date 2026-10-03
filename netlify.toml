@@ -31,6 +31,10 @@
   function = "job-gone"
   path     = "/job/*"
 
+[[edge_functions]]
+  function = "job-gone"
+  path     = "/blog/*"
+
 # SPA fallback — serve index.html for all routes
 [[redirects]]
   from = "/*"
