@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
       category: pick("category"),
       author_name: pick("author_name", "author"),
       tags: Array.isArray(tags) ? tags : undefined,
-      citations: Array.isArray(art.citations) ? art.citations : undefined,
+      citations: Array.isArray(art.citations) ? art.citations : undefined
     },
     site: top.site,
   };
