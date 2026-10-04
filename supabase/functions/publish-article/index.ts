@@ -103,8 +103,8 @@ Deno.serve(async (req) => {
       cover_image_url: pick("cover_image_url", "cover_image", "image_url", "featured_image"),
       category: pick("category"),
       author_name: pick("author_name", "author"),
-      tags,
-      citations: art.citations,
+      tags: Array.isArray(tags) ? tags : undefined,
+      citations: Array.isArray(art.citations) ? art.citations : undefined,
     },
     site: top.site,
   };
