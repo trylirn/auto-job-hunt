@@ -61,8 +61,58 @@ Deno.serve(async (req) => {
   } catch {
     return json({ error: "invalid_json" }, 400);
   }
-  const parsed = Body.safeParse(raw);
-  if (!parsed.success) return json({ error: parsed.error.flatten() }, 400);
+    // --- Normalize the incoming payload so different senders work ---
+  const asObj = (v: unknown): Record<string, unknown> =>
+    v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+  const top = asObj(raw);
+  console.log("publish-article received top-level keys:", Object.keys(top));
+
+  let candidate: unknown = top.article ?? top.post ?? top.data ?? top.payload;
+  if (typeof candidate === "string") {
+    try { candidate = JSON.parse(candidate); } catch { /* ignore */ }
+  }
+  let art = asObj(candidate);
+  if (Object.keys(art).length === 0) art = { ...top };
+
+  const pick = (...keys: string[]): string | undefined => {
+    for (const k of keys) {
+      const v = art[k];
+      if (typeof v === "string" && v.trim() !== "") return v;
+    }
+    return undefined;
+  };
+  const slugify = (s: string) =>
+    s.toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g, "").trim()
+      .replace(/[\s_]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(0, 200);
+
+  const title = pick("title", "headline", "name");
+  let tags: unknown = art.tags;
+  if (typeof tags === "string") {
+    tags = tags.split(",").map((t) => t.trim()).filter(Boolean);
+  }
+
+  const normalized = {
+    article: {
+      title,
+      slug: pick("slug") ?? (title ? slugify(title) : undefined),
+      content_markdown: pick("content_markdown", "content", "markdown", "body", "text"),
+      excerpt: pick("excerpt", "summary", "description"),
+      seo_title: pick("seo_title", "meta_title"),
+      meta_description: pick("meta_description"),
+      cover_image_prompt: pick("cover_image_prompt", "image_prompt"),
+      cover_image_url: pick("cover_image_url", "cover_image", "image_url", "featured_image"),
+      category: pick("category"),
+      author_name: pick("author_name", "author"),
+      tags,
+      citations: art.citations,
+    },
+    site: top.site,
+  };
+
+  const parsed = Body.safeParse(normalized);
+  if (!parsed.success) {
+    return json({ error: parsed.error.flatten(), received_keys: Object.keys(top) }, 400);
+  }
   const { article: a, site } = parsed.data;
 
   const supabase = createClient(
