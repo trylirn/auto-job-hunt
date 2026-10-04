@@ -18,6 +18,8 @@ import JobsIndex from "./pages/JobsIndex";
 import Tools from "./pages/Tools";
 import Blog from "./pages/Blog";
 import ArticlePage from "./pages/Article";
+import GuidePage from "./pages/Guide";
+import RemoteCategoryPage, { RemoteCategoriesIndex } from "./pages/RemoteCategory";
 
 import { WhatsAppBanner } from "./components/WhatsAppBanner";
 import { PostHogPageview } from "./components/PostHogPageview";
@@ -58,6 +60,9 @@ const App = () => (
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<ArticlePage />} />
             <Route path="/guides/un-careers" element={<Navigate to="/" replace />} />
+            <Route path="/guides/:slug" element={<GuidePage />} />
+            <Route path="/remote-jobs" element={<RemoteCategoriesIndex />} />
+            <Route path="/remote-jobs/:category" element={<RemoteCategoryPage />} />
             <Route path="/jobs/in/cities/:city" element={<LegacyCityRedirect />} />
             <Route path="/jobs/in/:country" element={<CountryOrLegacyRoute />} />
             <Route path="*" element={<NotFound />} />

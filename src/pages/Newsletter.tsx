@@ -46,10 +46,10 @@ const Newsletter = () => {
     <div className="min-h-screen bg-background">
       <Helmet>
         <title>Weekly Newsletter | Eplicant</title>
-        <meta name="description" content="Stay updated with the latest verified jobs and opportunities curated weekly by Eplicant." />
+        <meta name="description" content="Stay updated with the newest fully remote jobs, sent every Sunday by Eplicant." />
         <link rel="canonical" href="https://eplicant.com/newsletter" />
         <meta property="og:title" content="Weekly Newsletter | Eplicant" />
-        <meta property="og:description" content="Stay updated with the latest verified jobs and opportunities curated weekly by Eplicant." />
+        <meta property="og:description" content="Stay updated with the newest fully remote jobs, sent every Sunday by Eplicant." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://eplicant.com/newsletter" />
       </Helmet>
@@ -63,7 +63,7 @@ const Newsletter = () => {
             Weekly Newsletter
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Curated jobs and opportunities delivered every Monday.
+            New fully remote jobs, delivered every Sunday evening.
           </p>
         </div>
 
@@ -96,7 +96,7 @@ const Newsletter = () => {
             <Newspaper aria-hidden="true" className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <h2 className="font-medium">No newsletter available yet</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Check back on Monday for the latest curated jobs and opportunities.
+              Check back on Sunday evening for the latest remote jobs.
             </p>
           </div>
         )}
