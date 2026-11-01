@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -246,6 +246,63 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      posts: {
+        Row: {
+          author: string | null
+          category: string | null
+          citations: Json
+          content_html: string | null
+          content_markdown: string | null
+          cover_image_prompt: string | null
+          created_at: string
+          excerpt: string | null
+          id: string
+          meta_description: string | null
+          published_at: string
+          seo_title: string | null
+          slug: string
+          source_id: string
+          tags: string[]
+          title: string
+        }
+        Insert: {
+          author?: string | null
+          category?: string | null
+          citations?: Json
+          content_html?: string | null
+          content_markdown?: string | null
+          cover_image_prompt?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          meta_description?: string | null
+          published_at?: string
+          seo_title?: string | null
+          slug: string
+          source_id: string
+          tags?: string[]
+          title: string
+        }
+        Update: {
+          author?: string | null
+          category?: string | null
+          citations?: Json
+          content_html?: string | null
+          content_markdown?: string | null
+          cover_image_prompt?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          meta_description?: string | null
+          published_at?: string
+          seo_title?: string | null
+          slug?: string
+          source_id?: string
+          tags?: string[]
           title?: string
         }
         Relationships: []
