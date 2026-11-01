@@ -26,6 +26,13 @@
   status = 200
   force = true
 
+# External blog publishing endpoint → edge function (Bearer BLOG_PUBLISH_KEY)
+[[redirects]]
+  from = "/api/public/posts"
+  to = "https://wmfwpviizgvohgadumgp.supabase.co/functions/v1/publish-post"
+  status = 200
+  force = true
+
 # 410 Gone for deleted/archived job URLs (must run before SPA fallback)
 [[edge_functions]]
   function = "job-gone"
