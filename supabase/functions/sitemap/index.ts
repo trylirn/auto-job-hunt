@@ -124,7 +124,7 @@ Deno.serve(async () => {
     const today = new Date().toISOString().slice(0, 10);
 
     const { data: articles } = await supabase
-      .from("articles")
+      .from("posts")
       .select("slug, published_at")
       .lte("published_at", new Date().toISOString())
       .order("published_at", { ascending: false })
