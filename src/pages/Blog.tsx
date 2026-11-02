@@ -189,7 +189,7 @@ const Blog = () => {
                       <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{a.excerpt}</p>
                     )}
                     <p className="mt-4 text-xs text-muted-foreground">
-                      {formatDate(a.published_at)} · {readingTime(a.content_markdown)} min read
+                      {formatDate(a.published_at)} · {readingTime(a.content_markdown, a.content_html)} min read
                     </p>
                   </div>
                 </Link>

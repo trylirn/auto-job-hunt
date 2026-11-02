@@ -14,6 +14,7 @@ export interface Article {
   title: string;
   excerpt: string | null;
   content_markdown: string;
+  content_html: string | null;
   seo_title: string | null;
   meta_description: string | null;
   cover_image_url: string | null;
@@ -24,11 +25,22 @@ export interface Article {
   published_at: string | null;
 }
 
+// Blog posts live in the `posts` table (filled by the external publishing tool).
 const COLS =
-  "id,slug,title,excerpt,content_markdown,seo_title,meta_description,cover_image_url,author_name,category,tags,citations,published_at";
+  "id,slug,title,excerpt,content_markdown,content_html,seo_title,meta_description,author,category,tags,citations,published_at";
 
-export function readingTime(md: string): number {
-  const words = md.replace(/[#>*_`[\]()!-]/g, " ").split(/\s+/).filter(Boolean).length;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const toArticle = (p: any): Article => ({
+  ...p,
+  content_markdown: p.content_markdown ?? "",
+  content_html: p.content_html ?? null,
+  cover_image_url: null,
+  author_name: p.author ?? null,
+});
+
+export function readingTime(md: string, html?: string | null): number {
+  const src = md || (html ?? "").replace(/<[^>]*>/g, " ");
+  const words = src.replace(/[#>*_`[\]()!-]/g, " ").split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 220));
 }
 
@@ -37,12 +49,12 @@ export function useArticles() {
     queryKey: ["articles"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("articles")
+        .from("posts")
         .select(COLS)
         .order("published_at", { ascending: false })
         .limit(500);
       if (error) throw error;
-      return (data ?? []) as Article[];
+      return (data ?? []).map(toArticle);
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -53,12 +65,12 @@ export function useArticle(slug: string) {
     queryKey: ["article", slug],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("articles")
+        .from("posts")
         .select(COLS)
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
-      return data as Article | null;
+      return data ? toArticle(data) : null;
     },
     enabled: !!slug,
   });

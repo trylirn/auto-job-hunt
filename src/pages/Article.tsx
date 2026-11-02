@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import { Layout } from "@/components/Layout";
 import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { useArticle, useArticles, readingTime, normalizeCitations } from "@/hooks/useArticles";
 import { ArticleCover, formatDate } from "@/pages/Blog";
 import { absoluteUrl, breadcrumbJsonLd, buildMeta, clampDescription, SITE_LOGO, SITE_NAME } from "@/lib/seo";
@@ -50,7 +51,7 @@ const ArticlePage = () => {
     type: "article",
   });
   const citations = normalizeCitations(article.citations);
-  const minutes = readingTime(article.content_markdown);
+  const minutes = readingTime(article.content_markdown, article.content_html);
   const related = all
     .filter((a) => a.slug !== article.slug)
     .sort((a, b) => Number(b.category === article.category) - Number(a.category === article.category))
@@ -102,6 +103,9 @@ const ArticlePage = () => {
         )}
 
         <div className="prose prose-neutral mt-8 max-w-none dark:prose-invert prose-headings:font-display prose-a:text-primary">
+          {article.content_html ? (
+            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content_html) }} />
+          ) : (
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
@@ -118,6 +122,7 @@ const ArticlePage = () => {
           >
             {article.content_markdown}
           </ReactMarkdown>
+          )}
         </div>
 
         {(article.tags ?? []).length > 0 && (
