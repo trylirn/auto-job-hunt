@@ -1,4 +1,5 @@
-import type { JobFamily } from "@/lib/salaryBenchmarks";
+// Relative path with ".ts" so the Netlify edge function (Deno) can load this file too.
+import type { JobFamily } from "../lib/salaryBenchmarks.ts";
 
 export interface RemoteCategory {
   slug: string;

@@ -33,6 +33,15 @@ export const STATIC_ROUTES: StaticRoute[] = [
     priority: 0.8,
   },
   {
+    path: "/remote-jobs",
+    title: "Remote Jobs by Type",
+    description:
+      "Browse fully remote jobs by field — engineering, design, product, data, marketing, sales, support, operations, finance and HR — with salary data and hiring advice.",
+    indexable: true,
+    changefreq: "daily",
+    priority: 0.8,
+  },
+  {
     path: "/tools",
     title: "Remote Salary Insights Calculator",
     description:

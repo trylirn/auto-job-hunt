@@ -1,18 +1,10 @@
-import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/Header";
+import { StaticPageSeo } from "@/components/Seo";
 import { Footer } from "@/components/Footer";
 
 const Privacy = () => (
   <div className="min-h-screen bg-background">
-    <Helmet>
-      <title>Privacy Policy — Eplicant</title>
-      <meta name="description" content="How Eplicant collects, uses, and protects your personal information." />
-      <link rel="canonical" href="https://eplicant.com/privacy" />
-      <meta property="og:title" content="Privacy Policy — Eplicant" />
-      <meta property="og:description" content="How Eplicant collects, uses, and protects your personal information." />
-      <meta property="og:type" content="website" />
-      <meta property="og:url" content="https://eplicant.com/privacy" />
-    </Helmet>
+    <StaticPageSeo path="/privacy" />
     <Header />
     <main className="container max-w-3xl py-10 prose prose-sm">
       <h1 className="font-display text-3xl font-bold mb-6">Privacy Policy</h1>

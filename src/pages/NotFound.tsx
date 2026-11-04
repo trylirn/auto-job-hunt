@@ -13,7 +13,8 @@ const NotFound = () => {
     <div className="flex min-h-screen items-center justify-center bg-muted">
       <Helmet>
         <title>Page not found — Eplicant</title>
-        <meta name="robots" content="noindex, nofollow" />
+        <meta name="description" content="This page doesn't exist. Browse current fully remote jobs on Eplicant." />
+        <meta name="robots" content="noindex, follow" />
         <meta name="prerender-status-code" content="404" />
       </Helmet>
       <div className="text-center">

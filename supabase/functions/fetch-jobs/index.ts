@@ -1,6 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { mirrorUpsert } from "../_shared/eplicant-client.ts";
 import { requireCronAuth } from "../_shared/require-cron.ts";
+import { submitIndexNow, jobUrl } from "../_shared/indexnow.ts";
+import { isOfficeRequired } from "../_shared/remote-check.ts";
 import {
   GREENHOUSE_COMPANIES,
   LEVER_COMPANIES,
@@ -1144,6 +1146,7 @@ Deno.serve(async (req) => {
     const NOT_REMOTE_RE = /\b(hybrid|on[- ]?site|onsite|in[- ]person|must relocate|relocation required)\b/i;
 
     let fetched = 0;
+    const newJobUrls: string[] = [];
     let inserted = 0;
     let skipped = 0;
     const perSource: Record<string, number> = {};
@@ -1154,6 +1157,8 @@ Deno.serve(async (req) => {
       const remote = jobs.filter((j: any) => {
         const haystack = `${j.title ?? ""} ${j.location ?? ""} ${j.job_type ?? ""} ${j.description ?? ""}`;
         if (NOT_REMOTE_RE.test(`${j.title ?? ""} ${j.location ?? ""}`)) return false;
+        // "Remote" mentioned somewhere isn't enough: reject roles that need office days.
+        if (isOfficeRequired(j)) return false;
         return j.is_remote === true || REMOTE_RE.test(haystack);
       }).map((j: any) => ({ ...j, is_remote: true, listing_type: "job" }));
 
@@ -1166,15 +1171,19 @@ Deno.serve(async (req) => {
       const batchSize = 50;
       for (let i = 0; i < publishable.length; i += batchSize) {
         const batch = publishable.slice(i, i + batchSize);
-        const { error } = await supabase
+        // .select() returns only the rows that were actually inserted (duplicates
+        // are ignored), so we know exactly which URLs are new for IndexNow.
+        const { data: newRows, error } = await supabase
           .from("jobs")
-          .upsert(batch, { onConflict: "source,external_id", ignoreDuplicates: true });
+          .upsert(batch, { onConflict: "source,external_id", ignoreDuplicates: true })
+          .select("id, slug");
 
         if (error) {
           console.error("Upsert error:", error);
           skipped += batch.length;
         } else {
           inserted += batch.length;
+          for (const r of newRows ?? []) newJobUrls.push(jobUrl(r));
           mirrorUpsert("jobs", batch as unknown as Record<string, unknown>[], "source,external_id").catch(e =>
             console.error("Eplicant mirror error:", e)
           );
@@ -1193,6 +1202,17 @@ Deno.serve(async (req) => {
     await publish("breezy", await fetchBreezyBoards(slice(BREEZY_COMPANIES)));
 
     console.log(`Done: ${inserted} processed, ${skipped} skipped (of ${fetched} fetched)`);
+
+    // Tell Bing/IndexNow about brand-new job pages, plus the listing pages that
+    // now show them. Bing still decides whether to index each one.
+    if (newJobUrls.length) {
+      await submitIndexNow([
+        ...newJobUrls,
+        "https://eplicant.com/",
+        "https://eplicant.com/remote-jobs",
+        "https://eplicant.com/jobs/in",
+      ]);
+    }
 
     // Fire-and-forget: trigger AI cleanup without awaiting
     fetch(
@@ -1213,6 +1233,7 @@ Deno.serve(async (req) => {
         slice: sliceIndex,
         fetched: perSource,
         inserted,
+        new_urls: newJobUrls.length,
         skipped,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

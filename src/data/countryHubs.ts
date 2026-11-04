@@ -102,6 +102,13 @@ export function getCountryHubBySlug(slug: string): CountryHub | undefined {
   return COUNTRY_HUBS.find((h) => h.slug === slug);
 }
 
+/** H1 + <title> wording for a hub. Shared with the Netlify edge renderer. */
+export function hubHeading(hub: { slug: string; name: string }): string {
+  return hub.slug === "usa-global"
+    ? "Remote jobs open worldwide"
+    : `Remote jobs you can do from ${hub.name}`;
+}
+
 /**
  * City hubs are retired — a remote board has no city-specific inventory.
  * Old city URLs (both `/jobs/in/:city` and `/jobs/in/cities/:city`) redirect

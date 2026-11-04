@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { z } from "npm:zod@3";
+import { submitIndexNow } from "../_shared/indexnow.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -131,6 +132,12 @@ Deno.serve(async (req) => {
   if (error) {
     console.error("publish-post upsert failed", error);
     return json({ error: "database_error", details: error.message }, 500);
+  }
+
+  // Tell Bing/IndexNow about the new post and the updated blog index.
+  // Skipped for posts scheduled in the future (they join the sitemap once published).
+  if (!p.published_at || new Date(p.published_at) <= new Date()) {
+    await submitIndexNow([`https://eplicant.com/blog/${p.slug}`, "https://eplicant.com/blog"]);
   }
 
   return json({ ok: true, url: `https://eplicant.com/blog/${p.slug}` });

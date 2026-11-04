@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Helmet } from "react-helmet-async";
+import { StaticPageSeo } from "@/components/Seo";
 import { Header } from "@/components/Header";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,15 +44,7 @@ const Newsletter = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>Weekly Newsletter | Eplicant</title>
-        <meta name="description" content="Stay updated with the newest fully remote jobs, sent every Sunday by Eplicant." />
-        <link rel="canonical" href="https://eplicant.com/newsletter" />
-        <meta property="og:title" content="Weekly Newsletter | Eplicant" />
-        <meta property="og:description" content="Stay updated with the newest fully remote jobs, sent every Sunday by Eplicant." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://eplicant.com/newsletter" />
-      </Helmet>
+      <StaticPageSeo path="/newsletter" />
       <Header />
       <main className="container py-8 md:py-12">
         <div className="mb-8 text-center">

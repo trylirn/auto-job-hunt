@@ -1,7 +1,15 @@
 import { useRef } from "react";
 import { useParams, Link, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
-import { useJobBySlug, useJob } from "@/hooks/useJobs";
+import { Seo } from "@/components/Seo";
+import { useJobBySlug, useJob, usePrimaryJob } from "@/hooks/useJobs";
+import {
+  absoluteUrl,
+  jobIsIndexable,
+  jobMetaDescription,
+  jobPath as buildJobPath,
+  jobPostingJsonLd,
+  jobTitleTag,
+} from "@/lib/seo";
 import { Header } from "@/components/Header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,148 +60,6 @@ function extractApplyUrl(description: string | null): string | null {
   }
   return null;
 }
-
-// Map of region names (as emitted by fix-locations) to representative countries
-const REGION_TO_COUNTRIES: Record<string, string[]> = {
-  "Sub-Saharan Africa": ["Nigeria", "Kenya", "South Africa", "Ghana", "Ethiopia"],
-  "East Africa": ["Kenya", "Tanzania", "Uganda", "Rwanda", "Ethiopia"],
-  "West Africa": ["Nigeria", "Ghana", "Senegal", "Côte d'Ivoire"],
-  "Southern Africa": ["South Africa", "Botswana", "Zambia", "Zimbabwe"],
-  "North Africa": ["Egypt", "Morocco", "Tunisia", "Algeria"],
-  "MENA": ["Egypt", "United Arab Emirates", "Saudi Arabia", "Jordan", "Morocco"],
-  "Middle East": ["United Arab Emirates", "Saudi Arabia", "Jordan", "Qatar"],
-  "Europe": ["Germany", "France", "United Kingdom", "Netherlands", "Spain"],
-  "Western Europe": ["Germany", "France", "United Kingdom", "Netherlands"],
-  "Eastern Europe": ["Poland", "Romania", "Czech Republic", "Hungary"],
-  "Latin America": ["Brazil", "Mexico", "Argentina", "Colombia", "Chile"],
-  "Caribbean": ["Jamaica", "Dominican Republic", "Trinidad and Tobago"],
-  "South Asia": ["India", "Pakistan", "Bangladesh", "Sri Lanka"],
-  "Southeast Asia": ["Indonesia", "Philippines", "Vietnam", "Thailand", "Malaysia"],
-  "East Asia": ["China", "Japan", "South Korea"],
-  "Central Asia": ["Kazakhstan", "Uzbekistan"],
-  "Oceania": ["Australia", "New Zealand"],
-  "North America": ["United States", "Canada", "Mexico"],
-};
-
-function buildApplicantLocationRequirements(location: string | null) {
-  if (!location || location.toLowerCase() === "global" || location.toLowerCase() === "anywhere") {
-    return { "@type": "Country", name: "Anywhere" };
-  }
-  const region = REGION_TO_COUNTRIES[location];
-  if (region) {
-    return region.map((name) => ({ "@type": "Country", name }));
-  }
-  return { "@type": "Country", name: location };
-}
-
-function safeHostname(url: string | null): string | null {
-  if (!url) return null;
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return null;
-  }
-}
-
-function buildJobPostingJsonLd(job: {
-  id: string;
-  title: string;
-  company: string;
-  location?: string | null;
-  salary?: string | null;
-  posted_at?: string | null;
-  is_remote?: boolean | null;
-  job_type?: string | null;
-  clean_description?: string | null;
-  description?: string | null;
-  apply_url?: string | null;
-  slug?: string | null;
-  apply_before_date?: string | null;
-}) {
-  const plainDescription = (job.clean_description || job.description || "")
-    .replace(/<[^>]+>/g, "")
-    .slice(0, 500);
-
-  const jobPath = job.slug || job.id;
-  const datePosted = job.posted_at || new Date().toISOString();
-
-  // validThrough: deadline if present, else 30 days after posted
-  let validThrough: string;
-  if (job.apply_before_date) {
-    validThrough = new Date(job.apply_before_date).toISOString();
-  } else {
-    const d = new Date(datePosted);
-    d.setDate(d.getDate() + 30);
-    validThrough = d.toISOString();
-  }
-
-  const sameAs = safeHostname(job.apply_url);
-
-  const jsonLd: Record<string, unknown> = {
-    "@context": "https://schema.org",
-    "@type": "JobPosting",
-    title: job.title,
-    description: plainDescription,
-    identifier: {
-      "@type": "PropertyValue",
-      name: "Eplicant",
-      value: job.id,
-    },
-    hiringOrganization: {
-      "@type": "Organization",
-      name: job.company,
-      ...(sameAs ? { sameAs: `https://${sameAs}` } : {}),
-    },
-    datePosted,
-    validThrough,
-    url: `https://eplicant.com/job/${jobPath}`,
-  };
-
-  // Physical location (only when we have a real address — not just region/global)
-  const isRegion = job.location ? job.location in REGION_TO_COUNTRIES : false;
-  const isGlobal = job.location?.toLowerCase() === "global";
-  if (job.location && !isRegion && !isGlobal && !job.is_remote) {
-    jsonLd.jobLocation = {
-      "@type": "Place",
-      address: { "@type": "PostalAddress", addressLocality: job.location },
-    };
-  }
-
-  if (job.is_remote || isGlobal || isRegion) {
-    jsonLd.jobLocationType = "TELECOMMUTE";
-    // Required by Google when jobLocationType is set
-    jsonLd.applicantLocationRequirements = buildApplicantLocationRequirements(
-      job.location ?? null
-    );
-    // For TELECOMMUTE postings without a physical office, Google still expects jobLocation
-    // to be present in many cases. Provide a country-level Place when possible.
-    if (!jsonLd.jobLocation && job.location && !isGlobal) {
-      const country = isRegion ? REGION_TO_COUNTRIES[job.location][0] : job.location;
-      jsonLd.jobLocation = {
-        "@type": "Place",
-        address: { "@type": "PostalAddress", addressCountry: country },
-      };
-    }
-  }
-
-  if (job.job_type) {
-    const typeMap: Record<string, string> = {
-      "Full-time": "FULL_TIME",
-      "Part-time": "PART_TIME",
-      Contract: "CONTRACTOR",
-      Internship: "INTERN",
-      Freelance: "TEMPORARY",
-    };
-    jsonLd.employmentType = typeMap[job.job_type] || job.job_type;
-  }
-
-  if (job.apply_url) {
-    jsonLd.directApply = true;
-  }
-
-  return jsonLd;
-}
-
 
 /** Redirect component for legacy /job/id/:id URLs */
 export const JobIdRedirect = () => {
@@ -379,6 +245,7 @@ const JobDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: job, isLoading } = useJobBySlug(slug ?? "");
+  const { data: primaryJob } = usePrimaryJob(job);
   const descriptionRef = useRef<HTMLDivElement>(null);
 
   const goBack = () => {
@@ -418,11 +285,13 @@ const JobDetail = () => {
   if (!job) {
     return (
       <div className="min-h-screen bg-background">
-        <Helmet>
-          <title>Listing no longer available — Eplicant</title>
-          <meta name="robots" content="noindex, nofollow" />
-          <meta name="prerender-status-code" content="410" />
-        </Helmet>
+        <Seo
+          title="Listing no longer available — Eplicant"
+          description="This remote role has been closed or removed. Browse current openings on Eplicant."
+          canonical={absoluteUrl(`/job/${slug ?? ""}`)}
+          noindex
+          statusCode={410}
+        />
         <Header />
         <div className="container flex flex-col items-center justify-center py-20 text-center">
           <h2 className="font-display text-2xl font-semibold">Job not found</h2>
@@ -468,24 +337,23 @@ const JobDetail = () => {
     }
   };
 
-  const jobJsonLd = buildJobPostingJsonLd(job);
+  // The same role is often imported once per country. All copies point their
+  // canonical at the oldest live copy so Google sees one page, not five.
+  const canonicalUrl = absoluteUrl(buildJobPath(primaryJob ?? job));
+  const jobJsonLd = jobPostingJsonLd(job, {
+    descriptionHtml: renderDescriptionHtml(displayDescription),
+  });
 
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>{`${job.title} at ${job.company} — Eplicant`}</title>
-        <meta name="description" content={`${job.title} at ${job.company}${job.location ? ` in ${job.location}` : ""}. Apply now on Eplicant.`} />
-        <link rel="canonical" href={jobUrl} />
-        <meta property="og:title" content={`${job.title} at ${job.company}`} />
-        <meta property="og:description" content={`${job.title} at ${job.company}${job.location ? ` in ${job.location}` : ""}${job.salary ? ` — ${job.salary}` : ""}`} />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={jobUrl} />
-        <meta property="og:image" content="https://eplicant.com/logo.png" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`${job.title} at ${job.company}`} />
-        <meta name="twitter:description" content={`${job.title} at ${job.company}${job.location ? ` in ${job.location}` : ""}`} />
-        <script type="application/ld+json">{JSON.stringify(jobJsonLd)}</script>
-      </Helmet>
+      <Seo
+        title={jobTitleTag(job)}
+        description={jobMetaDescription(job)}
+        canonical={canonicalUrl}
+        image={job.company_logo || undefined}
+        noindex={!jobIsIndexable(job)}
+        jsonLd={[jobJsonLd]}
+      />
       <Header />
       <div className="container max-w-5xl py-4 md:py-8 px-4">
         <button

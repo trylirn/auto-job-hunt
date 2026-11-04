@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Layout } from "@/components/Layout";
 import { Seo } from "@/components/Seo";
 import { buildMeta } from "@/lib/seo";
+import { getStaticRoute } from "@/lib/routes";
 import AdsterraNativeAd from "@/components/AdsterraNativeAd";
 import { useSalaryData } from "@/hooks/useSalaryData";
 import {
@@ -21,10 +22,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// Title + description come from src/lib/routes.ts so the edge renderer matches.
+const route = getStaticRoute("/tools")!;
 const meta = buildMeta({
-  title: "Remote Salary Insights Calculator",
-  description:
-    "See real pay benchmarks for remote roles by job family and experience level, built from published salary ranges on live job listings.",
+  title: route.title,
+  description: route.description,
   path: "/tools",
 });
 
@@ -218,10 +220,6 @@ export default function Tools() {
             currencies are excluded so the numbers stay comparable.
           </p>
         </section>
-
-        <div className="mt-8">
-          <AdsterraNativeAd />
-        </div>
       </div>
     </Layout>
   );

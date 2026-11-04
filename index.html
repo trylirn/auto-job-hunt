@@ -11,8 +11,13 @@
       gtag('config', 'G-FJTL2TMEF2');
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Eplicant — Remote Jobs You Can Do From Anywhere</title>
-    <meta name="description" content="Fully remote jobs in engineering, design, marketing, sales, support, operations and finance. Updated daily. No commute, no relocation." />
+    <!--
+      SEO head tags (title, description, canonical, robots, Open Graph, JSON-LD)
+      are written per page by netlify/edge-functions/seo.ts, which replaces
+      everything between the two seo-head markers. Do NOT add a title tag or
+      a meta description tag anywhere else in this file.
+    -->
+    <!--seo-head--><title>Eplicant</title><!--/seo-head-->
     <meta name="author" content="Eplicant" />
     <meta name="google-site-verification" content="nGINJFU9IGi_Um1rF7gdVTWTgQVdXGg6IWPhhFkQzqQ" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -25,98 +30,13 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" />
     
 
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://eplicant.com/" />
-    <meta property="og:title" content="Eplicant — Remote Jobs You Can Do From Anywhere" />
-    <meta property="og:description" content="Fully remote jobs in engineering, design, marketing, sales, support, operations and finance. Updated daily. No commute, no relocation." />
-    <meta property="og:image" content="https://eplicant.com/logo.png" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Eplicant — Remote Jobs You Can Do From Anywhere" />
-    <meta name="twitter:description" content="Fully remote jobs in engineering, design, marketing, sales, support, operations and finance. Updated daily. No commute, no relocation." />
-    <meta name="twitter:image" content="https://eplicant.com/logo.png" />
 
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8988791559344644" crossorigin="anonymous"></script>
-    <!-- Structured Data: Organization + WebSite -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "Eplicant",
-      "url": "https://eplicant.com",
-      "logo": "https://eplicant.com/logo.png",
-      "sameAs": []
-    }
-    </script>
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "Eplicant",
-      "url": "https://eplicant.com",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://eplicant.com/?q={search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
-    }
-    </script>
+
   </head>
   <body>
-    <noscript>
-      <h1>Eplicant — Remote Jobs You Can Do From Anywhere</h1>
-      <p>Fully remote jobs in engineering, design, marketing, sales, support, operations and finance. Updated daily. No commute, no relocation.</p>
-      <p>Please enable JavaScript to use this application.</p>
-
-      <nav>
-        <ul>
-          <li><a href="https://eplicant.com/">Browse Jobs</a></li>
-          <li><a href="https://eplicant.com/jobs/in">Remote jobs by location</a></li>
-          <li><a href="https://eplicant.com/tools">Salary Insights Calculator</a></li>
-          <li><a href="https://eplicant.com/newsletter">Weekly newsletter</a></li>
-          <li><a href="https://eplicant.com/submit">Post a remote job</a></li>
-        </ul>
-      </nav>
-
-      <!-- Verification badges -->
-      <div>
-        <a href="https://findly.tools/eplicant?utm_source=eplicant" target="_blank" rel="noopener noreferrer">
-          <img src="https://findly.tools/badges/findly-tools-badge-light.svg" alt="Featured on Findly.tools" width="175" height="55"/>
-        </a>
-
-        <a href="https://twelve.tools" target="_blank" rel="noopener noreferrer">
-          <img src="https://twelve.tools/badge0-white.svg" alt="Featured on Twelve Tools" width="200" height="54"/>
-        </a>
-
-        <a href="https://dofollow.tools" target="_blank">
-          <img src="https://dofollow.tools/badge/badge_light.svg" alt="Featured on Dofollow.Tools" width="200" height="54"/>
-        </a>
-
-        <a href="https://aitop10.tools/" target="_blank">
-          AiTop10 Tools
-        </a>
-
-        <a href="https://similarlabs.com" target="_blank">
-          <img src="https://similarlabs.com/similarlabs-embed-badge-dark.svg"
-               alt="List on Similarlabs"
-               width="124"
-               height="40"/>
-        </a>
-        <a href="https://launchboard.dev" target="_blank" rel="noopener">
-          <img src="https://launchboard.dev/launchboard-badge.png" alt="Launched on LaunchBoard - Product Launch Platform" width="240" height="60" />
-        </a>
-        <a href="https://wired.business" target="_blank">
-          <img src="https://wired.business/badge0-light.svg" alt="Featured on Wired Business" width="200" height="54" />
-        </a>
-        <a href="https://dayslaunch.com" target="_blank" rel="noopener noreferrer"> 
-          <img src="https://dayslaunch.com/badages-awards.svg" alt="Featured on Days Launch" style="height: 54px; width: auto;"/>
-        </a>
-        <a href="https://theonestartup.com" target="_blank" rel="noopener noreferrer"> 
-          <img src="https://theonestartup.com/badages-awards.svg" alt="Featured on The One Startup" style="height: 54px; width: auto;"/>
-        </a>
-      </div>
-    </noscript>
+    <noscript>Please enable JavaScript to use Eplicant.</noscript>
     <div id="root"></div>
     <script>
       (function () {
@@ -137,8 +57,6 @@
       })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- In-page push ad tag -->
-    <script>(function(s){s.dataset.zone='11545863',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 
   </body>
 </html>

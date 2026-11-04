@@ -1,18 +1,10 @@
-import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/Header";
+import { StaticPageSeo } from "@/components/Seo";
 import { Footer } from "@/components/Footer";
 
 const Terms = () => (
   <div className="min-h-screen bg-background">
-    <Helmet>
-      <title>Terms of Service — Eplicant</title>
-      <meta name="description" content="Eplicant terms of service — the rules for using our job board." />
-      <link rel="canonical" href="https://eplicant.com/terms" />
-      <meta property="og:title" content="Terms of Service — Eplicant" />
-      <meta property="og:description" content="Eplicant terms of service — the rules for using our job board." />
-      <meta property="og:type" content="website" />
-      <meta property="og:url" content="https://eplicant.com/terms" />
-    </Helmet>
+    <StaticPageSeo path="/terms" />
     <Header />
     <main className="container max-w-3xl py-10 prose prose-sm">
       <h1 className="font-display text-3xl font-bold mb-6">Terms of Service</h1>

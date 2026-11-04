@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Helmet } from "react-helmet-async";
+import { StaticPageSeo } from "@/components/Seo";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { Header } from "@/components/Header";
@@ -142,15 +142,7 @@ const Submit = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>Post a Remote Job — Free | Eplicant</title>
-        <meta name="description" content="Post a fully remote job — free, no account needed." />
-        <link rel="canonical" href="https://eplicant.com/submit" />
-        <meta property="og:title" content="Post a Remote Job — Free | Eplicant" />
-        <meta property="og:description" content="Post a fully remote job — free, no account needed." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://eplicant.com/submit" />
-      </Helmet>
+      <StaticPageSeo path="/submit" />
       <Header />
       <main className="container max-w-2xl py-8 md:py-12">
         <div className="mb-6 flex items-center gap-3">
