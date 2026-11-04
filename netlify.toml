@@ -12,13 +12,6 @@
   status = 301
   force = true
 
-# Dynamic sitemap — proxy to edge function (must be before SPA fallback)
-[[redirects]]
-  from = "/sitemap.xml"
-  to = "https://wmfwpviizgvohgadumgp.supabase.co/functions/v1/sitemap"
-  status = 200
-  force = true
-
 # Article publishing webhook → edge function
 [[redirects]]
   from = "/api/public/webhooks/publish-article"
@@ -33,16 +26,11 @@
   status = 200
   force = true
 
-# 410 Gone for deleted/archived job URLs (must run before SPA fallback)
-[[edge_functions]]
-  function = "job-gone"
-  path     = "/job/*"
+# Edge functions (configured inside each file with `export const config`):
+#   netlify/edge-functions/sitemap.ts → /sitemap.xml, /sitemap-pages.xml, /sitemap-jobs.xml, /sitemap-blog.xml
+#   netlify/edge-functions/seo.ts     → every HTML page: head tags, 301/404/410 status, crawler HTML
 
-[[edge_functions]]
-  function = "job-gone"
-  path     = "/blog/*"
-
-# SPA fallback — serve index.html for all routes
+# SPA fallback — serve index.html for all routes (seo.ts sets the real status code)
 [[redirects]]
   from = "/*"
   to = "/index.html"
@@ -56,7 +44,6 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    X-Robots-Tag = "all"
 
 [[headers]]
   for = "/assets/*"
