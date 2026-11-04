@@ -42,6 +42,28 @@ export function absoluteUrl(path: string): string {
   return `${SITE_URL}${path}`;
 }
 
+/** Bing flags titles over 70 characters; Google shows about 60. Stay under both limits where possible. */
+export const MAX_TITLE_CHARS = 68;
+
+/** Cut to `max` characters at a word boundary, adding "…". */
+function cutWords(text: string, max: number): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > max * 0.5 ? cut.slice(0, lastSpace) : cut).replace(/[\s,.;:–—-]+$/, "")}…`;
+}
+
+export function clampTitle(title: string): string {
+  return cutWords(title, MAX_TITLE_CHARS);
+}
+
+/** "Page title — Eplicant", dropping the brand (then shortening) if that would be too long. */
+export function brandTitle(title: string): string {
+  const full = `${title} — ${SITE_NAME}`;
+  return full.length <= MAX_TITLE_CHARS ? full : clampTitle(title);
+}
+
 /** Trim to a length search engines actually display, without cutting a word. */
 export function clampDescription(text: string, max = 155): string {
   const clean = text.replace(/\s+/g, " ").trim();
@@ -60,9 +82,8 @@ export function buildMeta({
   type = "website",
   rawTitle = false,
 }: BuildMetaInput): PageMeta {
-  const full = rawTitle ? title : `${title} — ${SITE_NAME}`;
   return {
-    title: full,
+    title: rawTitle ? clampTitle(title) : brandTitle(title),
     description: clampDescription(description),
     canonical: absoluteUrl(path),
     image,
@@ -331,25 +352,45 @@ export function stripHtml(html: string | null | undefined): string {
  * supabase/functions/_shared/remote-check.ts (Supabase can't import from src/).
  */
 export const OFFICE_REQUIRED_PATTERNS: RegExp[] = [
+  // "2 days a week in our London office", "three days per week on-site"
   /\b(?:\d|one|two|three|four)\+?\s*(?:or more\s+)?days?\s+(?:a|per|each|every)\s+week\b[^.]{0,60}\b(?:offices?|on[- ]?site|in[- ]person)\b/i,
+  // "in the office 3 days a week"
   /\b(?:offices?|on[- ]?site|in[- ]person)\b[^.]{0,40}\b(?:\d|one|two|three|four)\+?\s*days?\s+(?:a|per|each|every)\s+week\b/i,
+  // "at least 2 days ... office"
   /\bat least\s+(?:\d|one|two|three|four)\s+days?\b[^.]{0,60}\boffice/i,
-  /\bhybrid\s+(?:role|position|working|work\s+model|model|schedule|arrangement)\b/i,
+  // "this is a hybrid role", "the position is on-site" — the ROLE's mode, not a company perk
   /\b(?:this|the)\s+(?:role|position|job)\s+is\s+(?:a\s+)?(?:hybrid|on[- ]?site|in[- ]office|office[- ]based)\b/i,
+  /\b(?:is|as)\s+a\s+hybrid\s+(?:role|position|job)\b/i,
+  // "you must work from our Berlin office"
   /\b(?:must|required to|expected to|need to)\s+(?:be\s+able\s+to\s+)?(?:work|commute|be)\s+(?:from|in|into|at)\s+(?:the|our)\s+[^.]{0,30}\boffices?\b/i,
   /\bin[- ]office\s+(?:\d|one|two|three|four)\s+days\b/i,
 ];
 
+/** A match preceded by "not", "no", "never", "don't"… is the opposite ("you don't need to be in the office"). */
+const NEGATION_BEFORE = /\b(?:not|no|never|don't|dont|doesn't|won't|isn't|without)\s+(?:\w+\s+){0,2}$/i;
+
+/** The phrase that marks the role as office-based, or null. Useful for logging why a job was flagged. */
+export function officeRequiredMatch(text: string | null | undefined): string | null {
+  if (!text) return null;
+  for (const re of OFFICE_REQUIRED_PATTERNS) {
+    const global = new RegExp(re.source, re.flags.includes("g") ? re.flags : `${re.flags}g`);
+    for (const m of text.matchAll(global)) {
+      const before = text.slice(Math.max(0, (m.index ?? 0) - 30), m.index ?? 0);
+      if (!NEGATION_BEFORE.test(before)) return m[0];
+    }
+  }
+  return null;
+}
+
 export function isOfficeRequired(text: string | null | undefined): boolean {
-  if (!text) return false;
-  return OFFICE_REQUIRED_PATTERNS.some((re) => re.test(text));
+  return officeRequiredMatch(text) !== null;
 }
 
 /* -------------------------------------------------------------- Job pages */
 
 /** Job pages with less plain text than this are noindexed as too thin
- * (fetch-jobs already rejects descriptions under ~200 characters). */
-export const MIN_JOB_DESCRIPTION_CHARS = 200;
+ * (fetch-jobs already rejects descriptions under ~200 characters of HTML). */
+export const MIN_JOB_DESCRIPTION_CHARS = 150;
 
 export interface JobSeoInput {
   id: string;
@@ -374,14 +415,39 @@ export function jobLocationLabel(location: string | null | undefined): string {
   return v;
 }
 
+/** Keep long multi-country locations short: "United States, Canada, Mexico" → "United States +2". */
+function shortLocation(loc: string): string {
+  if (loc.length <= 24) return loc;
+  const parts = loc.split(/\s*(?:,|;|\||\/|\s-\s)\s*/).filter(Boolean);
+  if (parts.length > 1 && parts[0].length <= 24) return `${parts[0]} +${parts.length - 1}`;
+  return cutWords(loc, 24);
+}
+
 /**
- * <title> for a job page. Includes the location so the same role posted for
- * several countries never produces identical titles.
- * e.g. "Staff Product Designer at Kraken (Remote, United Kingdom) — Eplicant"
+ * <title> for a job page, at most MAX_TITLE_CHARS long. Always keeps the
+ * location so the same role posted for several countries never shares a title.
+ * Tries, in order:
+ *   "Staff Product Designer at Kraken (Remote, United Kingdom) — Eplicant"
+ *   "Staff Product Designer at Kraken (Remote, United Kingdom)"
+ *   "Staff Product Designer at Kraken (United Kingdom)"
+ *   "Very Long Job Title Shortened… at Kraken (United Kingdom)"
  */
 export function jobTitleTag(job: JobSeoInput): string {
-  const loc = jobLocationLabel(job.location);
-  return `${job.title} at ${job.company} (Remote${loc ? `, ${loc}` : ""}) — ${SITE_NAME}`;
+  const t = job.title.replace(/\s+/g, " ").trim();
+  const c = job.company.replace(/\s+/g, " ").trim();
+  const loc = shortLocation(jobLocationLabel(job.location));
+  const candidates = [
+    `${t} at ${c} (Remote${loc ? `, ${loc}` : ""}) — ${SITE_NAME}`,
+    `${t} at ${c} (Remote${loc ? `, ${loc}` : ""})`,
+    `${t} at ${c}${loc ? ` (${loc})` : " (Remote)"}`,
+  ];
+  for (const candidate of candidates) {
+    if (candidate.length <= MAX_TITLE_CHARS) return candidate;
+  }
+  const tail = ` at ${c}${loc ? ` (${loc})` : ""}`;
+  const room = MAX_TITLE_CHARS - tail.length;
+  if (room >= 20) return `${cutWords(t, room)}${tail}`;
+  return cutWords(`${t}${loc ? ` (${loc})` : ""}`, MAX_TITLE_CHARS);
 }
 
 /** Meta description for a job page — unique per listing. */
@@ -464,9 +530,10 @@ export function applyQueryToMeta(meta: PageMeta, search: string): PageMeta {
 
   const suffix = ` — ${SITE_NAME}`;
   const base = meta.title.endsWith(suffix) ? meta.title.slice(0, -suffix.length) : meta.title;
+  const withBrand = `${base} (Page ${page})${suffix}`;
   return {
     ...meta,
-    title: `${base} (Page ${page})${meta.title.endsWith(suffix) ? suffix : ""}`,
+    title: withBrand.length <= MAX_TITLE_CHARS ? withBrand : `${cutWords(base, MAX_TITLE_CHARS - 10)} (Page ${page})`,
     description: clampDescription(`Page ${page}. ${meta.description}`),
     canonical: `${meta.canonical}?page=${page}`,
   };

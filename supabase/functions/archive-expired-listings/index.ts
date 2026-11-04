@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireCronAuth } from "../_shared/require-cron.ts";
 import { submitIndexNow, jobUrl } from "../_shared/indexnow.ts";
-import { isOfficeRequired } from "../_shared/remote-check.ts";
+import { officeRequiredReason } from "../_shared/remote-check.ts";
 import { mirrorUpdate } from "../_shared/eplicant-client.ts";
 
 const corsHeaders = {
@@ -53,7 +53,12 @@ Deno.serve(async (req) => {
       break;
     }
     for (const j of batch ?? []) {
-      if (isOfficeRequired(j)) nonRemote.push({ id: j.id, slug: j.slug });
+      const reason = officeRequiredReason(j);
+      if (reason) {
+        nonRemote.push({ id: j.id, slug: j.slug });
+        // Shows up in the function logs so you can see exactly why a job was removed.
+        console.log(`not remote: ${j.slug} — "${reason.slice(0, 120)}"`);
+      }
     }
     if (!batch || batch.length < 500) break;
   }
