@@ -8,6 +8,7 @@ import { REMOTE_CATEGORIES, getRemoteCategory } from "@/data/remoteCategories";
 import { useSalaryData } from "@/hooks/useSalaryData";
 import { computeBenchmarks, formatUsd, LEVELS } from "@/lib/salaryBenchmarks";
 import { breadcrumbJsonLd, buildMeta, faqJsonLd, absoluteUrl } from "@/lib/seo";
+import { getStaticRoute } from "@/lib/routes";
 import NotFound from "./NotFound";
 
 interface MiniJob { id: string; slug: string | null; title: string; company: string; salary: string | null }
@@ -164,11 +165,8 @@ const RemoteCategoryPage = () => {
 };
 
 export const RemoteCategoriesIndex = () => {
-  const meta = buildMeta({
-    title: "Remote Jobs by Type",
-    description: "Browse fully remote jobs by field — engineering, design, product, data, marketing, sales, support, operations, finance and HR — with salary data and hiring advice.",
-    path: "/remote-jobs",
-  });
+  const route = getStaticRoute("/remote-jobs")!;
+  const meta = buildMeta({ title: route.title, description: route.description, path: "/remote-jobs" });
   return (
     <Layout>
       <Seo {...meta} jsonLd={[breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Remote jobs by type", path: "/remote-jobs" }])]} />

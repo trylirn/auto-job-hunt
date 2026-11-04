@@ -1,14 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
+import { StaticPageSeo } from "@/components/Seo";
 import { Link } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRY_HUBS } from "@/data/countryHubs";
 import { HIDDEN_SOURCE_FILTER } from "@/hooks/useJobs";
 import { Globe } from "lucide-react";
-
-const SITE = "https://eplicant.com";
 
 /** Live-count jobs per hub so we only display ones with ≥1 result. */
 function useHubCounts() {
@@ -45,23 +43,9 @@ export default function JobsIndex() {
     return a.name.localeCompare(b.name);
   });
 
-  const title = "Remote jobs by country — work from anywhere | Eplicant";
-  const description =
-    "Browse fully remote jobs by country. Find work-from-anywhere roles open to candidates in your location — no commute, no relocation.";
-  const canonical = `${SITE}/jobs/in`;
-
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>{title}</title>
-        <meta name="description" content={description} />
-        <link rel="canonical" href={canonical} />
-        <meta property="og:title" content={title} />
-        <meta property="og:description" content={description} />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={canonical} />
-        <meta property="og:image" content={`${SITE}/logo.png`} />
-      </Helmet>
+      <StaticPageSeo path="/jobs/in" />
 
       <Header />
 

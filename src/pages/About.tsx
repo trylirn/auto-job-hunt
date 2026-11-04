@@ -1,18 +1,10 @@
-import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/Header";
+import { StaticPageSeo } from "@/components/Seo";
 import { Footer } from "@/components/Footer";
 
 const About = () => (
   <div className="min-h-screen bg-background">
-    <Helmet>
-      <title>About — Eplicant</title>
-      <meta name="description" content="Eplicant is a remote-only job board — fully remote roles across every industry, updated daily." />
-      <link rel="canonical" href="https://eplicant.com/about" />
-      <meta property="og:title" content="About — Eplicant" />
-      <meta property="og:description" content="Eplicant is a remote-only job board — fully remote roles across every industry, updated daily." />
-      <meta property="og:type" content="website" />
-      <meta property="og:url" content="https://eplicant.com/about" />
-    </Helmet>
+    <StaticPageSeo path="/about" />
     <Header />
     <main className="container max-w-3xl py-10 prose prose-sm">
       <h1 className="font-display text-3xl font-bold mb-6">About Eplicant</h1>

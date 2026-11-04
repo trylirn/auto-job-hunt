@@ -2,8 +2,12 @@
  * Single source of truth for page metadata.
  *
  * Every route builds its head tags through `buildMeta()` so nothing can drift.
- * The Netlify edge prerenderer imports the same shapes when it renders HTML
- * for crawlers, which keeps bot HTML and client HTML identical.
+ * The Netlify edge function (netlify/edge-functions/seo.ts) imports THIS FILE
+ * directly, so the HTML a crawler receives and the tags React writes after it
+ * loads are always identical.
+ *
+ * IMPORTANT: keep this file free of imports. Deno (Netlify edge) and Vite
+ * (the app) must both be able to load it as-is.
  */
 
 export const SITE_URL = "https://eplicant.com";
@@ -198,12 +202,17 @@ export interface JobPostingInput {
   apply_before_date?: string | null;
 }
 
-export function jobPostingJsonLd(job: JobPostingInput) {
-  const plainDescription = (job.clean_description || job.description || "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 900);
+/**
+ * Google JobPosting structured data.
+ * - `description` must be the FULL description (Google wants HTML), not an excerpt.
+ * - No `directApply`: people apply on the employer's site, not on Eplicant.
+ * - `TELECOMMUTE` only for roles that don't require office days.
+ */
+export function jobPostingJsonLd(
+  job: JobPostingInput,
+  opts: { descriptionHtml?: string; canonicalPath?: string } = {}
+) {
+  const plainDescription = stripHtml(job.clean_description || job.description || "");
 
   const jobPath = job.slug || job.id;
   const datePosted = job.posted_at || new Date().toISOString();
@@ -223,7 +232,7 @@ export function jobPostingJsonLd(job: JobPostingInput) {
     "@context": "https://schema.org",
     "@type": "JobPosting",
     title: job.title,
-    description: plainDescription,
+    description: opts.descriptionHtml || plainDescription,
     identifier: {
       "@type": "PropertyValue",
       name: SITE_NAME,
@@ -236,9 +245,10 @@ export function jobPostingJsonLd(job: JobPostingInput) {
     },
     datePosted,
     validThrough,
-    url: `${SITE_URL}/job/${jobPath}`,
+    url: `${SITE_URL}${opts.canonicalPath || `/job/${jobPath}`}`,
   };
 
+  const officeRequired = isOfficeRequired(`${job.location ?? ""} ${plainDescription}`);
   const isRegion = job.location ? job.location in REGION_TO_COUNTRIES : false;
   const isGlobal = job.location?.toLowerCase() === "global";
 
@@ -249,7 +259,7 @@ export function jobPostingJsonLd(job: JobPostingInput) {
     };
   }
 
-  if (job.is_remote || isGlobal || isRegion) {
+  if ((job.is_remote || isGlobal || isRegion) && !officeRequired) {
     jsonLd.jobLocationType = "TELECOMMUTE";
     jsonLd.applicantLocationRequirements = applicantLocationRequirements(
       job.location ?? null
@@ -275,7 +285,199 @@ export function jobPostingJsonLd(job: JobPostingInput) {
     jsonLd.employmentType = typeMap[job.job_type] || job.job_type;
   }
 
-  if (job.apply_url) jsonLd.directApply = true;
+  if (job.salary) {
+    const salary = parseSalary(job.salary);
+    if (salary) jsonLd.baseSalary = salary;
+  }
 
   return jsonLd;
+}
+
+/* ------------------------------------------------------ Shared text helpers */
+
+/** Decode the handful of HTML entities job feeds actually use. */
+export function decodeEntities(text: string): string {
+  return text
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
+}
+
+/** HTML (possibly entity-escaped) → one line of plain text. */
+export function stripHtml(html: string | null | undefined): string {
+  if (!html) return "";
+  let v = html;
+  // Some feeds double-escape markup ("&lt;p&gt;") — decode it first.
+  if (/&lt;\/?[a-z]/i.test(v)) v = decodeEntities(v);
+  return decodeEntities(
+    v
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+  )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/* ------------------------------------------------------ Remote-only checks */
+
+/**
+ * Phrases that mean a role needs office attendance, even if the listing also
+ * says "remote" somewhere. Kept in sync with
+ * supabase/functions/_shared/remote-check.ts (Supabase can't import from src/).
+ */
+export const OFFICE_REQUIRED_PATTERNS: RegExp[] = [
+  /\b(?:\d|one|two|three|four)\+?\s*(?:or more\s+)?days?\s+(?:a|per|each|every)\s+week\b[^.]{0,60}\b(?:offices?|on[- ]?site|in[- ]person)\b/i,
+  /\b(?:offices?|on[- ]?site|in[- ]person)\b[^.]{0,40}\b(?:\d|one|two|three|four)\+?\s*days?\s+(?:a|per|each|every)\s+week\b/i,
+  /\bat least\s+(?:\d|one|two|three|four)\s+days?\b[^.]{0,60}\boffice/i,
+  /\bhybrid\s+(?:role|position|working|work\s+model|model|schedule|arrangement)\b/i,
+  /\b(?:this|the)\s+(?:role|position|job)\s+is\s+(?:a\s+)?(?:hybrid|on[- ]?site|in[- ]office|office[- ]based)\b/i,
+  /\b(?:must|required to|expected to|need to)\s+(?:be\s+able\s+to\s+)?(?:work|commute|be)\s+(?:from|in|into|at)\s+(?:the|our)\s+[^.]{0,30}\boffices?\b/i,
+  /\bin[- ]office\s+(?:\d|one|two|three|four)\s+days\b/i,
+];
+
+export function isOfficeRequired(text: string | null | undefined): boolean {
+  if (!text) return false;
+  return OFFICE_REQUIRED_PATTERNS.some((re) => re.test(text));
+}
+
+/* -------------------------------------------------------------- Job pages */
+
+/** Job pages with less plain text than this are noindexed as too thin
+ * (fetch-jobs already rejects descriptions under ~200 characters). */
+export const MIN_JOB_DESCRIPTION_CHARS = 200;
+
+export interface JobSeoInput {
+  id: string;
+  slug?: string | null;
+  title: string;
+  company: string;
+  location?: string | null;
+  is_remote?: boolean | null;
+  clean_description?: string | null;
+  description?: string | null;
+}
+
+export function jobPath(job: { id: string; slug?: string | null }): string {
+  return `/job/${job.slug || job.id}`;
+}
+
+/** "United Kingdom", "Worldwide", or "" when we only know it's remote. */
+export function jobLocationLabel(location: string | null | undefined): string {
+  const v = (location || "").trim();
+  if (!v || /^remote$/i.test(v)) return "";
+  if (/^(global|anywhere|worldwide)$/i.test(v)) return "Worldwide";
+  return v;
+}
+
+/**
+ * <title> for a job page. Includes the location so the same role posted for
+ * several countries never produces identical titles.
+ * e.g. "Staff Product Designer at Kraken (Remote, United Kingdom) — Eplicant"
+ */
+export function jobTitleTag(job: JobSeoInput): string {
+  const loc = jobLocationLabel(job.location);
+  return `${job.title} at ${job.company} (Remote${loc ? `, ${loc}` : ""}) — ${SITE_NAME}`;
+}
+
+/** Meta description for a job page — unique per listing. */
+export function jobMetaDescription(job: JobSeoInput): string {
+  const loc = jobLocationLabel(job.location);
+  const plain = stripHtml(job.clean_description || job.description);
+  const lead = `${job.company} is hiring a remote ${job.title}${loc ? ` (${loc})` : ""}.`;
+  return clampDescription(plain ? `${lead} ${plain}` : `${lead} Read the full role and apply on the employer's site.`);
+}
+
+/** Should search engines index this job page? */
+export function jobIsIndexable(job: JobSeoInput): boolean {
+  const plain = stripHtml(job.clean_description || job.description);
+  if (plain.length < MIN_JOB_DESCRIPTION_CHARS) return false;
+  if (isOfficeRequired(`${job.location ?? ""} ${plain}`)) return false;
+  return true;
+}
+
+/**
+ * Key used to spot the same role imported once per country. Exact match on
+ * company + title, the same rule as usePrimaryJob() and the edge function.
+ */
+export function jobDuplicateKey(job: { company: string; title: string }): string {
+  return `${job.company}\u0000${job.title}`;
+}
+
+/**
+ * Very conservative salary parser for JobPosting.baseSalary. Only emits a
+ * value for clear yearly ranges like "$120,000 – $150,000" or "USD 90k-110k";
+ * anything ambiguous returns null (better no salary than a wrong one).
+ */
+export function parseSalary(raw: string): Record<string, unknown> | null {
+  const text = raw.replace(/,/g, "");
+  const currency =
+    /€|\bEUR\b/i.test(text) ? "EUR" :
+    /£|\bGBP\b/i.test(text) ? "GBP" :
+    /\bCAD\b|C\$/i.test(text) ? "CAD" :
+    /\bAUD\b|A\$/i.test(text) ? "AUD" :
+    /\$|\bUSD\b/i.test(text) ? "USD" : null;
+  if (!currency) return null;
+  if (/\b(hour|hr|month|mo|week|day)\b/i.test(text)) return null;
+  const nums = [...text.matchAll(/(\d+(?:\.\d+)?)\s*(k)?\b/gi)].map((m) =>
+    Number(m[1]) * (m[2] ? 1000 : 1)
+  ).filter((n) => n >= 10000 && n <= 2000000);
+  if (!nums.length) return null;
+  const min = Math.min(...nums);
+  const max = Math.max(...nums);
+  return {
+    "@type": "MonetaryAmount",
+    currency,
+    value: {
+      "@type": "QuantitativeValue",
+      ...(min === max ? { value: min } : { minValue: min, maxValue: max }),
+      unitText: "YEAR",
+    },
+  };
+}
+
+/* ------------------------------------------------- Pagination and filters */
+
+/** Country hubs with fewer live jobs than this are noindexed + left out of the sitemap. */
+export const HUB_MIN_JOBS = 5;
+
+/** Tracking params that don't change page content (kept indexable). */
+const TRACKING_PARAM = /^(utm_\w+|gclid|fbclid|msclkid|ref|source)$/i;
+
+/**
+ * Adjust a page's meta for the URL's query string:
+ * - `?page=N` (N>1): own canonical, "Page N" in title + description.
+ * - any filter/search param: noindex, canonical stays on the clean page.
+ * Used by <Seo> in the browser AND by the edge function, so both agree.
+ */
+export function applyQueryToMeta(meta: PageMeta, search: string): PageMeta {
+  const params = new URLSearchParams(search);
+  const filterKeys = [...params.keys()].filter((k) => k !== "page" && !TRACKING_PARAM.test(k));
+  if (filterKeys.length) return { ...meta, noindex: true };
+
+  const page = parseInt(params.get("page") || "1", 10);
+  if (!Number.isFinite(page) || page <= 1) return meta;
+
+  const suffix = ` — ${SITE_NAME}`;
+  const base = meta.title.endsWith(suffix) ? meta.title.slice(0, -suffix.length) : meta.title;
+  return {
+    ...meta,
+    title: `${base} (Page ${page})${meta.title.endsWith(suffix) ? suffix : ""}`,
+    description: clampDescription(`Page ${page}. ${meta.description}`),
+    canonical: `${meta.canonical}?page=${page}`,
+  };
+}
+
+/* ------------------------------------------------------------------ Bots */
+
+/** Crawlers that get fully rendered HTML from the edge function. */
+export const BOT_UA_RE =
+  /(googlebot|google-inspectiontool|googleother|storebot-google|adsbot-google|mediapartners-google|bingbot|bingpreview|msnbot|adidxbot|slurp|duckduckbot|duckassistbot|baiduspider|yandex(bot)?|applebot|petalbot|seznambot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegrambot|pinterest|redditbot|embedly|ahrefsbot|semrushbot|mj12bot|rogerbot|gptbot|oai-searchbot|chatgpt-user|claudebot|claude-searchbot|perplexitybot|amazonbot|ccbot)/i;
+
+export function isBot(userAgent: string | null | undefined): boolean {
+  return !!userAgent && BOT_UA_RE.test(userAgent);
 }

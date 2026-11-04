@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 
 const BADGES = [
@@ -35,6 +35,11 @@ const BADGES = [
 ];
 
 export function Footer() {
+  // Directory badges are shown on the homepage only, as nofollow links.
+  // Site-wide exchange links on every page look like a link scheme to Google/Bing.
+  const { pathname } = useLocation();
+  const showBadges = pathname === "/";
+
   return (
     <footer className="mt-16 border-t border-rule bg-card">
       <div className="container py-12">
@@ -104,6 +109,7 @@ export function Footer() {
         </div>
 
         <div className="mt-8 border-t border-rule pt-6">
+          {showBadges && (
           <div className="overflow-hidden py-1">
             <div className="flex w-max items-center gap-8 animate-marquee opacity-60">
               {[...BADGES, ...BADGES].map((b, i) => (
@@ -111,7 +117,7 @@ export function Footer() {
                   key={`${b.href}-${i}`}
                   href={b.href}
                   target="_blank"
-                  rel="noopener noreferrer"
+                  rel="nofollow noopener noreferrer"
                   aria-hidden={i >= BADGES.length}
                   tabIndex={i >= BADGES.length ? -1 : undefined}
                 >
@@ -127,6 +133,7 @@ export function Footer() {
               ))}
             </div>
           </div>
+          )}
           <p className="mt-6 text-center text-xs text-muted-foreground">
             © {new Date().getFullYear()} Eplicant. All rights reserved.
           </p>

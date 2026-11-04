@@ -183,3 +183,33 @@ export function useSimilarJobs(job: Job | undefined) {
     enabled: !!job,
   });
 }
+
+/**
+ * The oldest live listing with the same company + title. Roles imported once
+ * per country share a canonical URL pointing at this one (the edge function
+ * and sitemap use the same rule).
+ */
+export function usePrimaryJob(job: Pick<Job, "id" | "company" | "title"> | undefined) {
+  return useQuery({
+    queryKey: ["primary-job", job?.id],
+    queryFn: async () => {
+      if (!job) return null;
+      const today = new Date().toISOString().slice(0, 10);
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("id,slug")
+        .eq("company", job.company)
+        .eq("title", job.title)
+        .is("archived_at", null)
+        .or(HIDDEN_SOURCE_FILTER)
+        .or(`apply_before_date.is.null,apply_before_date.gte.${today}`)
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .limit(1);
+      if (error) throw error;
+      return (data?.[0] as { id: string; slug: string | null } | undefined) ?? null;
+    },
+    enabled: !!job,
+    staleTime: 10 * 60 * 1000,
+  });
+}

@@ -1,13 +1,14 @@
 import { useState, useCallback, useMemo } from "react";
 import { useParams, Link, useSearchParams, Navigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import { Seo } from "@/components/Seo";
+import { HUB_MIN_JOBS, clampDescription } from "@/lib/seo";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { JobCard } from "@/components/JobCard";
 import { JobCardSkeleton } from "@/components/JobCardSkeleton";
 import { JobPagination } from "@/components/JobPagination";
 import { useJobs } from "@/hooks/useJobs";
-import { COUNTRY_HUBS, getCountryHubBySlug, LEGACY_CITY_REDIRECTS } from "@/data/countryHubs";
+import { COUNTRY_HUBS, getCountryHubBySlug, hubHeading, LEGACY_CITY_REDIRECTS } from "@/data/countryHubs";
 import { Briefcase, MapPin } from "lucide-react";
 
 const SITE = "https://eplicant.com";
@@ -54,14 +55,14 @@ export default function LocationPage() {
   if (!hub) return <Navigate to="/jobs/in" replace />;
 
   const canonical = `${SITE}${hub.urlPath}`;
-  const heading =
-    hub.slug === "usa-global"
-      ? "Remote jobs open worldwide"
-      : `Remote jobs you can do from ${hub.displayName}`;
-  const title = `${heading} | Eplicant`;
-  const description = hub.blurb;
+  const heading = hubHeading({ slug: hub.slug, name: hub.displayName });
+  const title = `${heading} — Eplicant`;
+  const description = clampDescription(hub.blurb);
 
   const jobs = data?.jobs ?? [];
+  // Hubs with only a handful of jobs are thin pages: keep them out of the index.
+  // Same rule (HUB_MIN_JOBS) is used by the edge function and the sitemap.
+  const thinHub = !isLoading && (data?.totalCount ?? 0) < HUB_MIN_JOBS;
 
   const itemListLd = {
     "@context": "https://schema.org",
@@ -89,21 +90,14 @@ export default function LocationPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>{title}</title>
-        <meta name="description" content={description} />
-        <link rel="canonical" href={canonical} />
-        <meta property="og:title" content={title} />
-        <meta property="og:description" content={description} />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={canonical} />
-        <meta property="og:image" content={`${SITE}/logo.png`} />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={title} />
-        <meta name="twitter:description" content={description} />
-        <script type="application/ld+json">{JSON.stringify(itemListLd)}</script>
-        <script type="application/ld+json">{JSON.stringify(breadcrumbLd)}</script>
-      </Helmet>
+      <Seo
+        title={title}
+        description={description}
+        canonical={canonical}
+        image={`${SITE}/logo.png`}
+        noindex={thinHub}
+        jsonLd={[itemListLd, breadcrumbLd]}
+      />
 
       <Header />
 

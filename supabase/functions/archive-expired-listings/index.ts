@@ -1,5 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireCronAuth } from "../_shared/require-cron.ts";
+import { submitIndexNow, jobUrl } from "../_shared/indexnow.ts";
+import { isOfficeRequired } from "../_shared/remote-check.ts";
+import { mirrorUpdate } from "../_shared/eplicant-client.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,32 +37,44 @@ Deno.serve(async (req) => {
     });
   }
 
-  // These URLs start returning 410 Gone right away (see job-gone.ts), so tell
-  // IndexNow + Google now instead of waiting for the later hard-delete pass
-  // in cleanup-old-listings. One request per URL ("streaming"), same pattern
-  // as cleanup-old-listings.
-  if (archived && archived.length > 0) {
-    try {
-      const urlList = archived.map(
-        (j: { id: string; slug: string | null }) => `https://eplicant.com/job/${j.slug || j.id}`
-      );
-      const indexNowKey = "8aac24519bd55434079e97180d8a080d";
-      await Promise.allSettled([
-        ...urlList.map((url) =>
-          fetch(
-            `https://api.indexnow.org/indexnow?url=${encodeURIComponent(url)}&key=${indexNowKey}`
-          )
-        ),
-        fetch(
-          "https://www.google.com/ping?sitemap=" +
-            encodeURIComponent("https://eplicant.com/sitemap.xml")
-        ),
-      ]);
-      console.log(`Pinged IndexNow (streaming) + Google for ${urlList.length} newly-archived URLs`);
-    } catch (e) {
-      console.warn("IndexNow/Google ping failed:", e);
+  // 1b. Remote-only board: archive live listings that actually need office
+  // days (hybrid / on-site / "2 days a week in our office"). They slipped in
+  // because their text also said "remote" somewhere.
+  const nonRemote: { id: string; slug: string | null }[] = [];
+  for (let from = 0; ; from += 500) {
+    const { data: batch, error: scanErr } = await supabase
+      .from("jobs")
+      .select("id, slug, title, location, description, clean_description")
+      .is("archived_at", null)
+      .order("id", { ascending: true })
+      .range(from, from + 499);
+    if (scanErr) {
+      console.error("non-remote scan error:", scanErr.message);
+      break;
     }
+    for (const j of batch ?? []) {
+      if (isOfficeRequired(j)) nonRemote.push({ id: j.id, slug: j.slug });
+    }
+    if (!batch || batch.length < 500) break;
   }
+  if (nonRemote.length) {
+    const now = new Date().toISOString();
+    const ids = nonRemote.map((j) => j.id);
+    for (let i = 0; i < ids.length; i += 200) {
+      const chunk = ids.slice(i, i + 200);
+      const { error: nrErr } = await supabase.from("jobs").update({ archived_at: now }).in("id", chunk);
+      if (nrErr) console.error("non-remote archive error:", nrErr.message);
+    }
+    for (const id of ids) mirrorUpdate("jobs", id, { archived_at: now }).catch(() => {});
+    console.log(`Archived ${nonRemote.length} listings that require office attendance`);
+  }
+
+  // Archived URLs start returning 410 Gone right away (see
+  // netlify/edge-functions/seo.ts), so tell Bing/IndexNow now. One POST per
+  // batch. (The old google.com/ping sitemap endpoint was retired by Google in
+  // 2023 and did nothing, so it's gone.)
+  const goneUrls = [...(archived ?? []), ...nonRemote].map((j: { id: string; slug: string | null }) => jobUrl(j));
+  if (goneUrls.length) await submitIndexNow(goneUrls);
 
   // 2. Clear is_featured when featured_until has passed
   const { data: unfeat, error: unfeatErr } = await supabase
@@ -74,6 +89,7 @@ Deno.serve(async (req) => {
   return new Response(
     JSON.stringify({
       archived: archived?.length ?? 0,
+      archived_not_remote: nonRemote.length,
       unfeatured: unfeat?.length ?? 0,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }

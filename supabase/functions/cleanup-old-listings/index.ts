@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getEplicantClient } from "../_shared/eplicant-client.ts";
 import { requireCronAuth } from "../_shared/require-cron.ts";
+import { submitIndexNow } from "../_shared/indexnow.ts";
 
 Deno.serve(async (req) => {
   const authFail = await requireCronAuth(req);
@@ -77,28 +78,12 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Ping IndexNow + Google so search engines drop the dead URLs quickly.
+  // Tell Bing/IndexNow the deleted URLs are gone (they now return 410).
+  // One POST for the whole batch; the dead google.com/ping call is removed.
   if (deletedIds.length > 0) {
-    try {
-      const urlList = deletedIds.map((id) => `https://eplicant.com/job/${slugById.get(id) || id}`);
-      const indexNowKey = "8aac24519bd55434079e97180d8a080d";
-      // Best-effort; do not block on failures. URLs go one at a time
-      // ("streaming") instead of one big batch call, per Bing's guidance.
-      await Promise.allSettled([
-        ...urlList.map((url) =>
-          fetch(
-            `https://api.indexnow.org/indexnow?url=${encodeURIComponent(url)}&key=${indexNowKey}`
-          )
-        ),
-        fetch(
-          "https://www.google.com/ping?sitemap=" +
-            encodeURIComponent("https://eplicant.com/sitemap.xml")
-        ),
-      ]);
-      console.log(`Pinged IndexNow (streaming) + Google for ${urlList.length} URLs`);
-    } catch (e) {
-      console.warn("IndexNow/Google ping failed:", e);
-    }
+    await submitIndexNow(
+      deletedIds.map((id) => `https://eplicant.com/job/${slugById.get(id) || id}`)
+    );
   }
 
   return new Response(JSON.stringify({ deleted: count }), {
