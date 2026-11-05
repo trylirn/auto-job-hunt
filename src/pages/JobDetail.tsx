@@ -38,7 +38,6 @@ import { SimilarJobs } from "@/components/SimilarJobs";
 import { EmailSubscriber } from "@/components/EmailSubscriber";
 import { renderDescriptionHtml } from "@/lib/sanitize";
 import { formatDistanceToNow } from "date-fns";
-import AdsterraNativeAd from "@/components/AdsterraNativeAd";
 import { CompanyLogo } from "@/components/CompanyLogo";
 
 function extractApplyUrl(description: string | null): string | null {
@@ -494,10 +493,6 @@ const JobDetail = () => {
 
         <div className="mt-8">
           <EmailSubscriber />
-        </div>
-
-        <div className="my-8">
-          <AdsterraNativeAd />
         </div>
 
         <SimilarJobs job={job} />

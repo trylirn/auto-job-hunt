@@ -7,7 +7,6 @@ import { countriesFromLocations } from "@/lib/countries";
 import { ListingCard, ListingCardSkeleton } from "@/components/ListingCard";
 import { ListingToolbar, ALL_COUNTRIES } from "@/components/ListingToolbar";
 import { Pager } from "@/components/Pager";
-import AdsterraNativeAd from "@/components/AdsterraNativeAd";
 import { Compass } from "lucide-react";
 import type { Job } from "@/types/job";
 
@@ -143,12 +142,6 @@ export function ListingBrowser({
                 {jobs.map((job, index) => (
                   <Fragment key={job.id}>
                     <ListingCard job={job} />
-
-                    {index === 4 && (
-                      <div className="col-span-full">
-                        <AdsterraNativeAd />
-                      </div>
-                    )}
                   </Fragment>
                 ))}
               </div>
@@ -157,12 +150,6 @@ export function ListingBrowser({
                 {jobs.map((job, index) => (
                   <Fragment key={job.id}>
                     <ListingCard job={job} variant="row" />
-
-                    {index === 4 && (
-                      <div className="py-4">
-                        <AdsterraNativeAd />
-                      </div>
-                    )}
                   </Fragment>
                 ))}
               </div>
