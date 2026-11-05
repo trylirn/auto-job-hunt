@@ -3,7 +3,6 @@ import { Layout } from "@/components/Layout";
 import { Seo } from "@/components/Seo";
 import { buildMeta } from "@/lib/seo";
 import { getStaticRoute } from "@/lib/routes";
-import AdsterraNativeAd from "@/components/AdsterraNativeAd";
 import { useSalaryData } from "@/hooks/useSalaryData";
 import {
   JOB_FAMILIES,
@@ -152,10 +151,6 @@ export default function Tools() {
             )}
           </div>
         </section>
-
-        <div className="my-8">
-          <AdsterraNativeAd />
-        </div>
 
         <section aria-labelledby="table" className="mt-2">
           <h2 id="table" className="font-display text-xl tracking-tight">
